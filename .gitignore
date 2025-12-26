@@ -1,0 +1,13 @@
+# Chặn các key bảo mật
+.env
+.env.local
+
+# Chặn thư viện nặng
+node_modules/
+
+# Chặn các file build tự động
+dist/
+build/
+
+# Chặn file log lỗi
+npm-debug.log*
