@@ -1,7 +1,7 @@
 import { createClient } from '@supabase/supabase-js'
 import * as XLSX from 'xlsx'
 
-// Khởi tạo Supabase (Đảm bảo bạn đã có file .env đúng chuẩn)
+// Khởi tạo Supabase
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY
 const supabase = createClient(supabaseUrl, supabaseAnonKey)
@@ -10,7 +10,6 @@ const fileInput = document.getElementById('excel-file');
 const uploadBtn = document.getElementById('upload-btn');
 const statusDiv = document.getElementById('status');
 
-// Dòng 14: Các phần tử giao diện mới
 let searchEn, searchVi, categorySelect, editGrid;
 
 function initSearchElements() {
@@ -18,9 +17,6 @@ function initSearchElements() {
     searchVi = document.getElementById('search-vi');
     categorySelect = document.getElementById('category-select');
     editGrid = document.getElementById('edit-grid');
-
-    // Dòng mới: Đưa biến ra ngoài window để debug được từ Console
-    window.searchEn = searchEn; 
 
     if (searchEn) searchEn.addEventListener('input', performSearch);
     if (searchVi) searchVi.addEventListener('input', performSearch);
@@ -43,7 +39,6 @@ uploadBtn.addEventListener('click', async () => {
             const workbook = XLSX.read(data, { type: 'array' });
             const sheetName = workbook.SheetNames[0];
             const worksheet = workbook.Sheets[sheetName];
-            // Dòng 31: Chuyển dữ liệu Excel thành mảng JSON
             const jsonData = XLSX.utils.sheet_to_json(worksheet);
 
             let successCount = 0;
@@ -52,17 +47,15 @@ uploadBtn.addEventListener('click', async () => {
             let logMessages = [];
 
             for (const item of jsonData) {
-                // Dòng 40: Thực hiện chèn từng dòng vào table 'vocabulary'
                 const { error } = await supabase
                     .from('vocabulary')
                     .insert([{
-                        english_word: item.english_word,           // Lấy từ cột A trong Excel
-                        vietnamese_translation: item.vietnamese_translation, // Lấy từ cột B trong Excel
-                        category: item.category            // Lấy từ cột C trong Excel
+                        english_word: item.english_word,
+                        vietnamese_translation: item.vietnamese_translation,
+                        category: item.category
                     }]);
 
                 if (error) {
-                    // Kiểm tra lỗi trùng (mã 23505 thường là Unique Violation trong Postgres)
                     if (error.code === '23505') {
                         duplicateCount++;
                     } else {
@@ -74,21 +67,23 @@ uploadBtn.addEventListener('click', async () => {
                 }
             }
 
-            // Dòng 58: Hiển thị tổng hợp kết quả
             statusDiv.innerText = `Hoàn thành!
-            - Thành công: ${successCount}
-            - Trùng (bỏ qua): ${duplicateCount}
-            - Lỗi khác: ${errorCount}
-            ${logMessages.join('\n')}`;
+- Thành công: ${successCount}
+- Trùng (bỏ qua): ${duplicateCount}
+- Lỗi khác: ${errorCount}
+${logMessages.join('\n')}`;
+
+            // Load lại categories sau khi upload thành công
+            await loadCategories();
 
         } catch (err) {
             statusDiv.innerText = "Lỗi hệ thống: " + err.message;
         }
     };
     reader.readAsArrayBuffer(file);
-    loadCategories();  
 });
-// Hàm lấy danh sách Category duy nhất để bỏ vào Dropdown
+
+// Hàm lấy danh sách Category để bỏ vào Dropdown
 async function loadCategories() {
     const { data, error } = await supabase
         .from('vocabulary')
@@ -110,7 +105,7 @@ async function loadCategories() {
 function displayGrid(items) {
     if (!editGrid) return;
 
-    // 1. Vẽ lại Header để đảm bảo khung luôn đúng
+    // Vẽ lại Header
     editGrid.innerHTML = `
         <div class="grid-header">Tiếng Anh</div>
         <div class="grid-header">Tiếng Việt</div>
@@ -118,21 +113,33 @@ function displayGrid(items) {
         <div class="grid-header">Thao tác</div>
     `;
 
-    // 2. Nếu không có dữ liệu, báo cho người dùng biết
+    // Nếu không có dữ liệu
     if (!items || items.length === 0) {
         const msg = document.createElement('div');
         msg.style.gridColumn = "span 4";
-        msg.style.padding = "10px";
-        msg.innerText = "Không tìm thấy dữ liệu phù hợp.";
+        msg.style.padding = "20px";
+        msg.style.textAlign = "center";
+        msg.style.color = "#999";
+        msg.style.fontStyle = "italic";
+        
+        // Kiểm tra xem có điều kiện tìm kiếm nào không
+        const hasSearch = (searchEn?.value.trim() !== "") || 
+                         (searchVi?.value.trim() !== "") || 
+                         (categorySelect?.value !== "");
+        
+        msg.innerText = hasSearch 
+            ? "❌ Không tìm thấy kết quả phù hợp." 
+            : "💡 Nhập từ khóa (Tiếng Anh/Tiếng Việt) hoặc chọn Category để tìm kiếm.";
+        
         editGrid.appendChild(msg);
         return;
     }
 
-    // 3. Đổ dữ liệu vào
+    // Đổ dữ liệu vào
     items.forEach(item => {
         const row = document.createElement('div');
         row.className = 'grid-row';
-        row.style.display = 'contents'; // Giữ đúng layout grid
+        row.style.display = 'contents';
         row.innerHTML = `
             <input type="text" value="${item.english_word || ''}" id="en-${item.id}">
             <input type="text" value="${item.vietnamese_translation || ''}" id="vi-${item.id}">
@@ -143,28 +150,37 @@ function displayGrid(items) {
     });
 }
 
-// Hàm tìm kiếm tổng hợp
+// Hàm tìm kiếm
 async function performSearch() {
     try {
         let query = supabase.from('vocabulary').select('*');
+        let hasFilter = false;
 
         // Kiểm tra nếu có nhập Tiếng Anh
         if (searchEn && searchEn.value.trim() !== "") {
-            // Sử dụng chuỗi bình thường thay vì template literal nếu không cần thiết
-            query = query.ilike('english_word', '%' + searchEn.value.trim() + '%');
+            query = query.ilike('english_word', `%${searchEn.value.trim()}%`);
+            hasFilter = true;
         }
         
         // Kiểm tra nếu có nhập Tiếng Việt
         if (searchVi && searchVi.value.trim() !== "") {
             query = query.ilike('vietnamese_translation', `%${searchVi.value.trim()}%`);
+            hasFilter = true;
         }
         
         // Kiểm tra nếu có chọn Category
         if (categorySelect && categorySelect.value !== "") {
             query = query.eq('category', categorySelect.value);
+            hasFilter = true;
         }
 
-        const { data, error } = await query.limit(50); // Tăng giới hạn lên 50 từ
+        // Nếu không có điều kiện lọc nào, hiển thị grid rỗng
+        if (!hasFilter) {
+            displayGrid([]);
+            return;
+        }
+
+        const { data, error } = await query.limit(50);
 
         if (error) {
             console.error("Lỗi tìm kiếm:", error.message);
@@ -179,17 +195,7 @@ async function performSearch() {
     }
 }
 
-async function startAdminSystem() {
-    // Gọi hàm khởi tạo các ô nhập liệu (Giải quyết cảnh báo "never read")
-    initSearchElements(); 
-    
-    // Tải danh sách loại và hiện bảng dữ liệu ban đầu
-    await loadCategories();
-    await performSearch();
-    
-    console.log("Hệ thống quản trị đã sẵn sàng!");
-}
-// Đảm bảo nút Lưu có thể gọi được hàm
+// Hàm lưu chỉnh sửa
 window.saveRow = async (id) => {
     const newEn = document.getElementById(`en-${id}`).value;
     const newVi = document.getElementById(`vi-${id}`).value;
@@ -211,5 +217,16 @@ window.saveRow = async (id) => {
         performSearch(); // Cập nhật lại bảng sau khi lưu
     }
 };
+
+// Khởi động hệ thống
+async function startAdminSystem() {
+    initSearchElements(); 
+    await loadCategories();
+    
+    // Hiển thị grid rỗng với thông báo hướng dẫn
+    displayGrid([]);
+    
+    console.log("Hệ thống quản trị đã sẵn sàng!");
+}
 
 startAdminSystem();
