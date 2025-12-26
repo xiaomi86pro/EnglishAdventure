@@ -11,10 +11,21 @@ const uploadBtn = document.getElementById('upload-btn');
 const statusDiv = document.getElementById('status');
 
 // Dòng 14: Các phần tử giao diện mới
-const searchEn = document.getElementById('search-en');
-const searchVi = document.getElementById('search-vi');
-const categorySelect = document.getElementById('category-select');
-const editGrid = document.getElementById('edit-grid');
+let searchEn, searchVi, categorySelect, editGrid;
+
+function initSearchElements() {
+    searchEn = document.getElementById('search-en');
+    searchVi = document.getElementById('search-vi');
+    categorySelect = document.getElementById('category-select');
+    editGrid = document.getElementById('edit-grid');
+
+    // Dòng mới: Đưa biến ra ngoài window để debug được từ Console
+    window.searchEn = searchEn; 
+
+    if (searchEn) searchEn.addEventListener('input', performSearch);
+    if (searchVi) searchVi.addEventListener('input', performSearch);
+    if (categorySelect) categorySelect.addEventListener('change', performSearch);
+}
 
 uploadBtn.addEventListener('click', async () => {
     const file = fileInput.files[0];
@@ -97,18 +108,35 @@ async function loadCategories() {
 
 // Hàm hiển thị dữ liệu vào Grid
 function displayGrid(items) {
-    // Giữ lại 4 ô header đầu tiên
-    const headers = Array.from(editGrid.querySelectorAll('.grid-header'));
-    editGrid.innerHTML = '';
-    headers.forEach(h => editGrid.appendChild(h));
+    if (!editGrid) return;
 
+    // 1. Vẽ lại Header để đảm bảo khung luôn đúng
+    editGrid.innerHTML = `
+        <div class="grid-header">Tiếng Anh</div>
+        <div class="grid-header">Tiếng Việt</div>
+        <div class="grid-header">Category</div>
+        <div class="grid-header">Thao tác</div>
+    `;
+
+    // 2. Nếu không có dữ liệu, báo cho người dùng biết
+    if (!items || items.length === 0) {
+        const msg = document.createElement('div');
+        msg.style.gridColumn = "span 4";
+        msg.style.padding = "10px";
+        msg.innerText = "Không tìm thấy dữ liệu phù hợp.";
+        editGrid.appendChild(msg);
+        return;
+    }
+
+    // 3. Đổ dữ liệu vào
     items.forEach(item => {
         const row = document.createElement('div');
         row.className = 'grid-row';
+        row.style.display = 'contents'; // Giữ đúng layout grid
         row.innerHTML = `
-            <input type="text" value="${item.english_word}" id="en-${item.id}">
-            <input type="text" value="${item.vietnamese_translation}" id="vi-${item.id}">
-            <input type="text" value="${item.category}" id="cat-${item.id}">
+            <input type="text" value="${item.english_word || ''}" id="en-${item.id}">
+            <input type="text" value="${item.vietnamese_translation || ''}" id="vi-${item.id}">
+            <input type="text" value="${item.category || ''}" id="cat-${item.id}">
             <button onclick="window.saveRow('${item.id}')">Lưu</button>
         `;
         editGrid.appendChild(row);
@@ -117,22 +145,51 @@ function displayGrid(items) {
 
 // Hàm tìm kiếm tổng hợp
 async function performSearch() {
-    let query = supabase.from('vocabulary').select('*');
+    try {
+        let query = supabase.from('vocabulary').select('*');
 
-    if (searchEn.value) query = query.ilike('english_word', `%${searchEn.value}%`);
-    if (searchVi.value) query = query.ilike('vietnamese_translation', `%${searchVi.value}%`);
-    if (categorySelect.value) query = query.eq('category', categorySelect.value);
+        // Kiểm tra nếu có nhập Tiếng Anh
+        if (searchEn && searchEn.value.trim() !== "") {
+            // Sử dụng chuỗi bình thường thay vì template literal nếu không cần thiết
+            query = query.ilike('english_word', '%' + searchEn.value.trim() + '%');
+        }
+        
+        // Kiểm tra nếu có nhập Tiếng Việt
+        if (searchVi && searchVi.value.trim() !== "") {
+            query = query.ilike('vietnamese_translation', `%${searchVi.value.trim()}%`);
+        }
+        
+        // Kiểm tra nếu có chọn Category
+        if (categorySelect && categorySelect.value !== "") {
+            query = query.eq('category', categorySelect.value);
+        }
 
-    const { data, error } = await query.limit(20);
-    if (data) displayGrid(data);
+        const { data, error } = await query.limit(50); // Tăng giới hạn lên 50 từ
+
+        if (error) {
+            console.error("Lỗi tìm kiếm:", error.message);
+            return;
+        }
+
+        if (data) {
+            displayGrid(data);
+        }
+    } catch (err) {
+        console.error("Hệ thống gặp lỗi:", err);
+    }
 }
 
-// Gán sự kiện Live Search
-searchEn.addEventListener('input', performSearch);
-searchVi.addEventListener('input', performSearch);
-categorySelect.addEventListener('change', performSearch);
-
-// Hàm lưu dữ liệu khi nhấn nút Lưu
+async function startAdminSystem() {
+    // Gọi hàm khởi tạo các ô nhập liệu (Giải quyết cảnh báo "never read")
+    initSearchElements(); 
+    
+    // Tải danh sách loại và hiện bảng dữ liệu ban đầu
+    await loadCategories();
+    await performSearch();
+    
+    console.log("Hệ thống quản trị đã sẵn sàng!");
+}
+// Đảm bảo nút Lưu có thể gọi được hàm
 window.saveRow = async (id) => {
     const newEn = document.getElementById(`en-${id}`).value;
     const newVi = document.getElementById(`vi-${id}`).value;
@@ -147,10 +204,12 @@ window.saveRow = async (id) => {
         })
         .eq('id', id);
 
-    if (error) alert("Lỗi khi lưu: " + error.message);
-    else alert("Đã lưu thành công!");
+    if (error) {
+        alert("Lỗi khi lưu: " + error.message);
+    } else {
+        alert("Đã lưu thành công!");
+        performSearch(); // Cập nhật lại bảng sau khi lưu
+    }
 };
 
-// Chạy lần đầu khi load trang
-loadCategories();
-
+startAdminSystem();
