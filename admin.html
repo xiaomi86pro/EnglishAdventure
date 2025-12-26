@@ -1,1 +1,77 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin - Upload Excel</title>
+    <style>
+        body { font-family: sans-serif; padding: 20px; }
+        .controls { margin-bottom: 20px; }
+        #st
+        
+        body { font-family: sans-serif; padding: 20px; background-color: #f4f4f9; }
+        h1 { color: #333; }
+        /* Khung bao quanh phần Upload */
+        .upload-section { 
+            border: 2px dashed #007bff; padding: 20px; 
+            border-radius: 8px; background: white; margin-bottom: 30px; 
+        }
+        /* Khung bao quanh phần Tìm kiếm/Sửa */
+        .edit-section { 
+            border: 1px solid #ddd; padding: 20px; 
+            border-radius: 8px; background: #fff; margin-bottom: 20px;
+        }
+        .search-group { display: flex; gap: 10px; margin-bottom: 20px; flex-wrap: wrap; }
+        .search-group div { display: flex; flex-direction: column; }
+        input, select { padding: 8px; border: 1px solid #ccc; border-radius: 4px; }
+        /* Grid hiển thị danh sách */
+        #edit-grid { 
+            display: grid; grid-template-columns: 1fr 1fr 1fr 100px; 
+            gap: 10px; margin-top: 20px; 
+        }
+        .grid-header { font-weight: bold; border-bottom: 2px solid #eee; padding-bottom: 5px; }
+        .grid-row { display: contents; }
+        .status-msg { margin-top: 10px; font-style: italic; color: blue; }
+    
+    </style>
+</head>
+<body>
+    <h1>Quản lý Từ vựng (Admin)</h1>
+    
+    <div class="upload-section">
+        <h3>1. Upload từ file Excel</h3>
+        <input type="file" id="excel-file" accept=".xlsx, .xls" />
+        <button id="upload-btn">Upload lên Supabase</button>
+        <div id="status" class="status-msg">Chưa có hoạt động nào.</div>
+    </div>
 
+    <div class="edit-section">
+        <h3>2. Tìm kiếm & Chỉnh sửa nhanh</h3>
+        <div class="search-group">
+            <div>
+                <label>Tiếng Anh:</label>
+                <input type="text" id="search-en" placeholder="Nhập từ tiếng Anh...">
+            </div>
+            <div>
+                <label>Tiếng Việt:</label>
+                <input type="text" id="search-vi" placeholder="Nhập từ tiếng Việt...">
+            </div>
+            <div>
+                <label>Category:</label>
+                <select id="category-select">
+                    <option value="">-- Chọn loại --</option>
+                </select>
+            </div>
+        </div>
+
+        <div id="edit-grid">
+            <div class="grid-header">Tiếng Anh</div>
+            <div class="grid-header">Tiếng Việt</div>
+            <div class="grid-header">Category</div>
+            <div class="grid-header">Thao tác</div>
+            </div>
+    </div>
+
+    <script type="module" src="/js/admin.js"></script>
+</body>
+</html>
