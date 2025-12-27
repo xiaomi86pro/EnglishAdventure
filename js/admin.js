@@ -3,7 +3,7 @@ import * as XLSX from 'xlsx'
 
 // Khởi tạo Supabase
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL
-const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY
+const supabaseAnonKey =import.meta.env.VITE_SUPABASE_ANON_KEY
 const supabase = createClient(supabaseUrl, supabaseAnonKey)
 
 const fileInput = document.getElementById('excel-file');
@@ -148,7 +148,10 @@ function displayGrid(items) {
             <input type="text" value="${item.english_word || ''}" id="en-${item.id}">
             <input type="text" value="${item.vietnamese_translation || ''}" id="vi-${item.id}">
             <input type="text" value="${item.category || ''}" id="cat-${item.id}">
-            <button onclick="window.saveRow('${item.id}')">Lưu</button>
+            <div class="flex gap-1">
+                <button class="btn-save" onclick="window.saveRow('${item.id}')">Lưu</button>
+                <button class="btn-delete" onclick="window.deleteRow('${item.id}')">Xóa</button>
+            </div>
         `;
         editGrid.appendChild(row);
     });
@@ -198,6 +201,23 @@ async function performSearch() {
         console.error("Hệ thống gặp lỗi:", err);
     }
 }
+
+// Hàm xóa dòng
+window.deleteRow = async (id) => {
+    if (!confirm("Bạn có chắc chắn muốn xóa từ này không?")) return;
+
+    const { error } = await supabase
+        .from('vocabulary')
+        .delete()
+        .eq('id', id);
+
+    if (error) {
+        alert("Lỗi khi xóa: " + error.message);
+    } else {
+        alert("Đã xóa thành công!");
+        performSearch(); // Tải lại danh sách sau khi xóa
+    }
+};
 
 // Hàm lưu chỉnh sửa
 window.saveRow = async (id) => {
