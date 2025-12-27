@@ -1,8 +1,10 @@
 import { createClient } from '@supabase/supabase-js'
 
 // Khởi tạo Supabase
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL
-const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY
+const supabaseUrl = 'REPLACE_WITH_SUPABASE_URL';
+const supabaseKey = 'REPLACE_WITH_SUPABASE_ANON_KEY';
+
+//const supabase = createClient(supabaseUrl, supabaseKey);
 const supabase = createClient(supabaseUrl, supabaseAnonKey)
 
 const fileInput = document.getElementById('excel-file');
