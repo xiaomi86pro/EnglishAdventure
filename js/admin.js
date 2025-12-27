@@ -1,5 +1,4 @@
 import { createClient } from '@supabase/supabase-js'
-import * as XLSX from 'xlsx'
 
 // Khởi tạo Supabase
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL
