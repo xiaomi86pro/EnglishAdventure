@@ -1,31 +1,25 @@
-name: CI/CD Supabase Task
+name: Inject Secrets and Deploy
 
-# 1. Khi nào thì chạy? (Khi push code lên nhánh main)
 on:
   push:
     branches: [ main ]
 
 jobs:
-  build-and-deploy:
+  build-and-replace:
     runs-on: ubuntu-latest
-
     steps:
-      # 2. Lấy code từ repo về máy ảo của GitHub
-      - uses: actions/checkout@v4
+      - name: Checkout code
+        uses: actions/checkout@v4
 
-      # 3. Cài đặt môi trường Node.js
-      - name: Use Node.js
-        uses: actions/setup-node@v4
+      - name: Replace Secrets in admin.js
+        # Lệnh này sẽ tìm chữ REPLACE_... và thay bằng giá trị thật từ Secret
+        run: |
+          sed -i "s|REPLACE_WITH_SUPABASE_URL|${{ secrets.SUPABASE_URL }}|g" js/admin.js
+          sed -i "s|REPLACE_WITH_SUPABASE_ANON_KEY|${{ secrets.SUPABASE_ANON_KEY }}|g" js/admin.js
+
+      # Sau khi thay thế, bạn có thể chạy lệnh deploy hoặc build tiếp theo ở đây
+      # Ví dụ: nếu bạn dùng GitHub Pages
+      - name: Upload Artifact
+        uses: actions/upload-pages-artifact@v3
         with:
-          node-version: '20'
-
-      # 4. Cài đặt thư viện (npm install)
-      - run: npm install
-
-      # 5. Chạy lệnh Build (Ví dụ: npm run build)
-      # Tại đây ta truyền Secret vào để lúc Build nó không bị lỗi "undefined"
-      - name: Build Project
-        env:
-          VITE_SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
-          VITE_SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
-        run: npm run build
+          path: '.'
