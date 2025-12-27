@@ -4,8 +4,8 @@ import { createClient } from '@supabase/supabase-js'
 const supabaseUrl = 'REPLACE_WITH_SUPABASE_URL';
 const supabaseKey = 'REPLACE_WITH_SUPABASE_ANON_KEY';
 
-//const supabase = createClient(supabaseUrl, supabaseKey);
-const supabase = createClient(supabaseUrl, supabaseAnonKey)
+const supabase = createClient(supabaseUrl, supabaseKey);
+//const supabase = createClient(supabaseUrl, supabaseAnonKey)
 
 const fileInput = document.getElementById('excel-file');
 const uploadBtn = document.getElementById('upload-btn');
