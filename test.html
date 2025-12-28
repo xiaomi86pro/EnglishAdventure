@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<title>Sprite Animation Demo</title>
+
+<style>
+  body {
+    background: #111;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+  }
+
+  #hero {
+  width: 128px;
+  height: 128px;
+
+  background-image: url("./assets/Hero_02.png");
+  background-repeat: no-repeat;
+  background-size: 512px 512px; /* ép về 4×4 chuẩn */
+
+  image-rendering: pixelated;
+  transform: scale(2);
+}
+
+</style>
+</head>
+
+<body>
+
+<div id="hero"></div>
+
+<script>
+  const hero = document.getElementById("hero");
+
+  const FRAME_SIZE = 128;
+  const COLS = 4;
+
+  let state = "idle";
+  let frame = 0;
+  let timer = null;
+
+  const animations = {
+    idle:   { start: 0,  end: 3,  speed: 200 },
+    walk:   { start: 4,  end: 11, speed: 100 },
+    attack: { start: 12, end: 15, speed: 80 }
+  };
+
+  function updateFrame() {
+    const col = frame % COLS;
+    const row = Math.floor(frame / COLS);
+
+    hero.style.backgroundPosition =
+      `-${col * FRAME_SIZE}px -${row * FRAME_SIZE}px`;
+
+    frame++;
+    if (frame > animations[state].end) {
+      frame = animations[state].start;
+
+      // attack chạy 1 lần rồi về idle
+      if (state === "attack") play("idle");
+    }
+  }
+
+  function play(newState) {
+    if (state === newState) return;
+
+    state = newState;
+    frame = animations[state].start;
+
+    clearInterval(timer);
+    timer = setInterval(updateFrame, animations[state].speed);
+  }
+
+  play("idle");
+
+  // ===== Điều khiển =====
+  document.addEventListener("keydown", e => {
+    if (e.key === "ArrowRight" || e.key === "ArrowLeft") {
+      play("walk");
+    }
+    if (e.key === " ") {
+      play("attack");
+    }
+  });
+
+  document.addEventListener("keyup", e => {
+    if (state !== "attack") play("idle");
+  });
+</script>
+
+</body>
+</html>

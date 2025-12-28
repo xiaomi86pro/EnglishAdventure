@@ -253,4 +253,195 @@ async function startAdminSystem() {
     console.log("Hệ thống quản trị đã sẵn sàng!");
 }
 
+// Xử lý sự kiện nhấn nút "Lưu Hero"
+const saveHeroBtn = document.getElementById('save-hero-btn');
+if (saveHeroBtn) {
+    saveHeroBtn.addEventListener('click', async () => {
+        const name = document.getElementById('hero-name').value;
+        const heroFile = document.getElementById('hero-file').files[0];
+        const heroUrlInput = document.getElementById('hero-url').value;
+
+        if (!name) return alert("Vui lòng nhập tên Hero!");
+
+        try {
+            saveHeroBtn.innerText = "Đang xử lý...";
+            saveHeroBtn.disabled = true;
+
+            let finalUrl = heroUrlInput;
+
+            // Nếu có chọn file, ưu tiên upload file lên Storage
+            if (heroFile) {
+                finalUrl = await uploadAsset(heroFile, 'heroes');
+            }
+
+            const { error } = await supabase
+                .from('heroes')
+                .insert([{
+                    name: name,
+                    image_url: finalUrl,
+                    base_hp: 100, // Bạn có thể thêm input để nhập số này sau
+                    frame_width: 64,
+                    frame_height: 64,
+                    total_frames: 4 // Giả định mặc định là 4
+                }]);
+
+            if (error) throw error;
+            alert("Lưu Hero thành công!");
+            
+        } catch (err) {
+            alert("Lỗi: " + err.message);
+        } finally {
+            saveHeroBtn.innerText = "Lưu Hero";
+            saveHeroBtn.disabled = false;
+        }
+    });
+}
+
+// 1. Hàm upload ảnh tùy chỉnh theo cấu trúc của bạn
+async function uploadAsset(file, subFolder) {
+    // subFolder sẽ là 'heroes' hoặc 'monsters'
+    const fileExt = file.name.split('.').pop();
+    const fileName = `hero_${Date.now()}.${fileExt}`; // Tạo tên file unique
+    const filePath = `${subFolder}/${fileName}`; 
+
+    // Chú ý: Tên Bucket phải khớp chính xác với tên bạn tạo trên Supabase (ví dụ: 'Assets')
+    const { data, error } = await supabase.storage
+        .from('Assets') 
+        .upload(filePath, file);
+
+    if (error) throw error;
+
+    const { data: urlData } = supabase.storage
+        .from('Assets')
+        .getPublicUrl(filePath);
+
+    return urlData.publicUrl;
+}
+
+// 2. Logic lưu Monster (Dán dưới phần lưu Hero)
+const saveMonsterBtn = document.getElementById('save-monster-btn');
+if (saveMonsterBtn) {
+    saveMonsterBtn.addEventListener('click', async () => {
+        const name = document.getElementById('monster-name').value;
+        const type = document.getElementById('monster-type').value;
+        const monsterFile = document.getElementById('monster-file').files[0];
+        const monsterUrlInput = document.getElementById('monster-url').value;
+
+        if (!name) return alert("Vui lòng nhập tên Quái vật!");
+
+        try {
+            saveMonsterBtn.innerText = "Đang lưu...";
+            saveMonsterBtn.disabled = true;
+
+            let finalUrl = monsterUrlInput;
+            if (monsterFile) {
+                finalUrl = await uploadAsset(monsterFile, 'monsters');
+            }
+
+            const { error } = await supabase
+                .from('monsters')
+                .insert([{
+                    name: name,
+                    type: type,
+                    image_url: finalUrl,
+                    base_hp: 50,
+                    total_frames: 1 // Bạn có thể thêm input để nhập số này
+                }]);
+
+            if (error) throw error;
+            alert("Lưu Quái vật thành công!");
+        } catch (err) {
+            alert("Lỗi: " + err.message);
+        } finally {
+            saveMonsterBtn.innerText = "Lưu Quái vật";
+            saveMonsterBtn.disabled = false;
+        }
+    });
+} 
+
+let currentAssetTab = 'heroes'; // Mặc định bảng đầu tiên
+
+// Hàm tải và hiển thị danh sách tài nguyên
+async function loadAssets(tableName) {
+    currentAssetTab = tableName;
+    const container = document.getElementById('asset-grid-container');
+    container.innerHTML = '<p class="text-gray-500">Đang tải dữ liệu...</p>';
+
+    const { data, error } = await supabase.from(tableName).select('*').order('created_at', { ascending: false });
+
+    if (error) {
+        container.innerHTML = `<p class="text-red-500">Lỗi: ${error.message}</p>`;
+        return;
+    }
+
+    container.innerHTML = ''; // Xóa thông báo loading
+
+    data.forEach(item => {
+        const card = document.createElement('div');
+        card.className = "bg-white p-4 rounded-2xl border-2 border-gray-100 shadow-sm space-y-3";
+        card.innerHTML = `
+            <div class="flex items-center gap-4">
+                <img src="${item.image_url}" class="w-16 h-16 object-contain bg-gray-50 rounded-lg" alt="${item.name}">
+                <div class="flex-1">
+                    <input type="text" id="name-${item.id}" value="${item.name}" class="font-bold text-gray-700 w-full border-b border-transparent focus:border-blue-400 outline-none">
+                    <p class="text-xs text-gray-400">ID: ${item.id.substring(0,8)}...</p>
+                </div>
+            </div>
+            <div class="grid grid-cols-2 gap-2 text-sm">
+                <div>
+                    <label class="text-xs text-gray-400">HP</label>
+                    <input type="number" id="hp-${item.id}" value="${item.base_hp || 0}" class="w-full p-1 border rounded">
+                </div>
+                <div>
+                    <label class="text-xs text-gray-400">ATK</label>
+                    <input type="number" id="atk-${item.id}" value="${item.base_atk || 0}" class="w-full p-1 border rounded">
+                </div>
+                <div>
+                    <label class="text-xs text-gray-400">Frames</label>
+                    <input type="number" id="frames-${item.id}" value="${item.total_frames || 1}" class="w-full p-1 border rounded">
+                </div>
+                <div>
+                    <label class="text-xs text-gray-400">Loại (nếu có)</label>
+                    <input type="text" id="type-${item.id}" value="${item.type || ''}" class="w-full p-1 border rounded">
+                </div>
+            </div>
+            <div class="flex gap-2 pt-2">
+                <button onclick="updateAsset('${item.id}')" class="flex-1 py-2 bg-green-500 text-white rounded-lg text-sm font-bold hover:bg-green-600">Lưu sửa</button>
+                <button onclick="deleteAsset('${item.id}')" class="py-2 px-3 bg-red-100 text-red-600 rounded-lg text-sm hover:bg-red-200">Xóa</button>
+            </div>
+        `;
+        container.appendChild(card);
+    });
+}
+
+// Hàm cập nhật chỉ số
+window.updateAsset = async (id) => {
+    const updateData = {
+        name: document.getElementById(`name-${id}`).value,
+        base_hp: parseInt(document.getElementById(`hp-${id}`).value),
+        base_atk: parseInt(document.getElementById(`atk-${id}`).value),
+        total_frames: parseInt(document.getElementById(`frames-${id}`).value),
+    };
+
+    const { error } = await supabase.from(currentAssetTab).update(updateData).eq('id', id);
+
+    if (error) alert("Lỗi cập nhật: " + error.message);
+    else alert("Đã cập nhật chỉ số thành công!");
+};
+
+// Hàm xóa tài nguyên
+window.deleteAsset = async (id) => {
+    if(!confirm("Bạn có chắc muốn xóa tài nguyên này?")) return;
+    const { error } = await supabase.from(currentAssetTab).delete().eq('id', id);
+    if (error) alert("Lỗi khi xóa: " + error.message);
+    else loadAssets(currentAssetTab);
+};
+
+// Sự kiện bấm nút chuyển Tab
+document.getElementById('btn-show-heroes')?.addEventListener('click', () => loadAssets('heroes'));
+document.getElementById('btn-show-monsters')?.addEventListener('click', () => loadAssets('monsters'));
+
+// Load mặc định khi mở trang
+loadAssets('heroes');
+
 startAdminSystem();

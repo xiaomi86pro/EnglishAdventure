@@ -51,63 +51,39 @@ const AuthComponent = {
     /**
      * Hàm hiển thị giao diện Login/Menu chính
      */
-    displayLoginMenu: function(containerId) {
-        this.containerId = containerId || this.containerId;
+    // Tìm trong file authjs.txt và cập nhật đoạn innerHTML của displayLoginMenu:
+    displayLoginMenu: function() {
         const container = document.getElementById(this.containerId);
         if (!container) return;
 
-        // Reset trạng thái chọn khi quay lại menu
-        this.selectedUserId = null;
-
-        let htmlContent = `
-            <div id="login-menu" class="flex flex-col items-center justify-center w-full h-full animate-fade-in p-4">
-                <h2 class="text-3xl font-bold text-blue-600 mb-8 tracking-wide uppercase text-center">Ai sẽ chơi hôm nay nhỉ?</h2>
+        container.innerHTML = `
+            <div class="flex flex-col items-center gap-6 w-full max-w-2xl">
+                <h2 class="text-3xl font-black text-blue-600 uppercase tracking-wide">Ai đang chơi đấy?</h2>
                 
-                <div class="flex items-center gap-6 mb-12 overflow-x-auto py-4 px-2 no-scrollbar w-full justify-center">
+                <div class="grid grid-cols-2 md:grid-cols-4 gap-4 w-full">
                     ${this.users.map(user => `
                         <div id="user-card-${user.id}" 
-                             class="user-card group cursor-pointer flex flex-col items-center transition-all duration-300 hover:scale-105" 
-                             onclick="AuthComponent.selectUser('${user.id}')">
-                            <div class="avatar-box w-24 h-24 bg-blue-50 border-4 border-blue-200 rounded-3xl flex items-center justify-center text-5xl group-hover:border-blue-500 transition-all shadow-sm">
-                                ${user.avatar_key || '👤'}
-                            </div>
-                            <span class="mt-3 font-bold text-gray-700 group-hover:text-blue-600">${user.display_name}</span>
+                            onclick="AuthComponent.selectUser('${user.id}')"
+                            class="user-card bg-white p-4 rounded-3xl border-4 border-white shadow-lg cursor-pointer transition-all hover:scale-105 flex flex-col items-center gap-2">
+                            <div class="text-4xl">${user.avatar_key || '👤'}</div>
+                            <span class="font-bold text-gray-700">${user.display_name}</span>
                         </div>
                     `).join('')}
-
-                    <!-- NÚT TẠO USER MỚI -->
-                    <div class="group cursor-pointer flex flex-col items-center transition-all duration-300 hover:scale-105"
-                         onclick="AuthComponent.displayCreateUserForm()">
-                        <div class="w-24 h-24 bg-white border-4 border-dashed border-blue-300 rounded-3xl flex items-center justify-center text-5xl text-blue-300 group-hover:bg-blue-50 transition-all">
-                            ➕
-                        </div>
-                        <span class="mt-3 font-bold text-blue-400 uppercase">Thêm mới</span>
-                    </div>
                 </div>
 
-                <button id="btn-start" class="px-12 py-4 bg-gray-300 text-white text-3xl font-black rounded-full shadow-[0_10px_0_rgb(156,163,175)] cursor-not-allowed transition-all uppercase">
-                    Bắt đầu
+                <div id="hero-selection-area" class="hidden w-full flex flex-col items-center gap-4 mt-4 p-4 rounded-3xl bg-white/50 border-4 border-dashed border-white">
+                    <h3 class="font-black text-purple-600 uppercase">Chọn hiệp sĩ của bạn</h3>
+                    <div id="hero-list" class="flex flex-wrap justify-center gap-3">
+                        </div>
+                </div>
+
+                <button id="btn-start" 
+                        onclick="AuthComponent.startGame()"
+                        class="px-12 py-4 bg-gray-300 text-white text-2xl font-black rounded-full shadow-[0_10px_0_rgb(156,163,175)] cursor-not-allowed transition-all active:mt-2 active:shadow-none uppercase">
+                    Vào Trận!
                 </button>
             </div>
         `;
-
-        container.innerHTML = htmlContent;
-
-        const startBtn = document.getElementById('btn-start');
-        if (startBtn) {
-            startBtn.addEventListener('click', () => {
-                if (this.selectedUserId) {
-                    const userData = this.users.find(u => u.id == this.selectedUserId);
-                    localStorage.setItem('game_user_id', this.selectedUserId);
-                    console.log("Khởi động Game Engine với User:", userData.display_name);
-                    
-                    // Gọi sang GameEngine để bắt đầu trò chơi
-                    if (window.GameEngine) {
-                        GameEngine.start(userData);
-                    }
-                }
-            });
-        }
     },
 
     /**
@@ -186,20 +162,108 @@ const AuthComponent = {
         }
     },
 
+    // Thay thế hàm selectUser cũ và thêm hàm mới vào AuthComponent
     selectUser: function(userId) {
-        document.querySelectorAll('.user-card').forEach(card => card.classList.remove('user-selected'));
+        document.querySelectorAll('.user-card').forEach(card => card.classList.remove('user-selected', 'border-blue-400'));
         const selectedCard = document.getElementById(`user-card-${userId}`);
         if (selectedCard) {
-            selectedCard.classList.add('user-selected');
+            selectedCard.classList.add('user-selected', 'border-blue-400');
             this.selectedUserId = userId;
-            const btnStart = document.getElementById('btn-start');
-            if (btnStart) {
-                btnStart.classList.replace('bg-gray-300', 'bg-yellow-400');
-                btnStart.classList.remove('cursor-not-allowed');
-                btnStart.classList.add('shadow-[0_10px_0_rgb(202,138,4)]');
+            
+            // Hiện vùng chọn Hero
+            const heroArea = document.getElementById('hero-selection-area');
+            if (heroArea) {
+                heroArea.classList.remove('hidden');
+                this.loadHeroList(); 
             }
         }
+    },
+
+// Hàm lấy danh sách Hero từ bảng 'heroes'
+loadHeroList: async function() {
+    const heroListContainer = document.getElementById('hero-list');
+    const supabase = window.supabase;
+    
+    heroListContainer.innerHTML = "<p class='text-sm text-gray-400'>Đang tìm hiệp sĩ...</p>";
+
+    const { data: heroes, error } = await supabase.from('heroes').select('*');
+
+    if (error || !heroes) {
+        heroListContainer.innerHTML = "<p class='text-red-500 text-xs'>Lỗi tải Hero</p>";
+        return;
     }
+
+    heroListContainer.innerHTML = heroes.map(hero => `
+        <div onclick="AuthComponent.pickHero('${hero.id}')" 
+             id="hero-card-${hero.id}"
+             class="hero-pick-card p-2 bg-white rounded-xl border-2 border-transparent cursor-pointer hover:border-purple-400 transition-all flex flex-col items-center w-20">
+            <img src="${hero.image_url}" class="w-12 h-12 object-contain">
+            <span class="text-[10px] font-bold text-gray-600 mt-1">${hero.name}</span>
+        </div>
+    `).join('');
+},
+
+// Hàm khi người dùng nhấn chọn 1 Hero cụ thể
+selectedHeroId: null,
+pickHero: function(heroId) {
+    document.querySelectorAll('.hero-pick-card').forEach(c => c.classList.remove('border-purple-500', 'bg-purple-50'));
+    const heroCard = document.getElementById(`hero-card-${heroId}`);
+    if (heroCard) {
+        heroCard.classList.add('border-purple-500', 'bg-purple-50');
+        this.selectedHeroId = heroId;
+
+        // Kích hoạt nút Bắt đầu
+        const btnStart = document.getElementById('btn-start');
+        if (btnStart) {
+            btnStart.classList.replace('bg-gray-300', 'bg-yellow-400');
+            btnStart.classList.remove('cursor-not-allowed');
+            btnStart.classList.add('shadow-[0_10px_0_rgb(202,138,4)]');
+        }
+    }
+},
+
+startGame: async function() {
+    // Kiểm tra xem đã chọn đầy đủ chưa
+    if (!this.selectedUserId || !this.selectedHeroId) {
+        alert("Vui lòng chọn cả nhân vật và hiệp sĩ!");
+        return;
+    }
+
+    const supabase = window.supabase;
+    const btnStart = document.getElementById('btn-start');
+    btnStart.innerText = "Đang chuẩn bị...";
+    btnStart.disabled = true;
+
+    try {
+        // 1. Lưu selected_hero_id vào bảng profiles của người dùng
+        const { error: updateError } = await supabase
+            .from('profiles')
+            .update({ selected_hero_id: this.selectedHeroId })
+            .eq('id', this.selectedUserId);
+
+        if (updateError) throw updateError;
+
+        // 2. Lấy thông tin đầy đủ kèm theo dữ liệu Hero (Join bảng)
+        const { data: userData, error: fetchError } = await supabase
+            .from('profiles')
+            .select('*, heroes(*)') 
+            .eq('id', this.selectedUserId)
+            .single();
+
+        if (fetchError) throw fetchError;
+
+        // 3. Khởi động GameEngine
+        if (window.GameEngine) {
+            window.GameEngine.start(userData);
+        }
+
+    } catch (err) {
+        console.error("Lỗi:", err);
+        alert(`Lỗi: ${err.message}`);
+        btnStart.innerText = "Vào Trận!";
+        btnStart.disabled = false;
+    }
+},
 };
 
 // Đăng ký component vào window
@@ -208,4 +272,5 @@ window.AuthComponent = AuthComponent;
 // Tự động khởi chạy khi load trang
 window.addEventListener('load', () => {
     AuthComponent.init();
-});
+    }
+);
