@@ -222,7 +222,13 @@ const QuestionManager = {
                     this.checkProgress();
                 } else {
                     btn.classList.add('bg-red-100', 'border-red-400');
+
+                    if (window.GameEngine && !window.GameEngine.isBattling) {
+                        window.GameEngine.startBattleTurn(window.GameEngine.monster, window.GameEngine.player);
+                    }
+
                     setTimeout(() => btn.classList.remove('bg-red-100', 'border-red-400'), 500);
+
                 }
             };
 
