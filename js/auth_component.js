@@ -69,15 +69,19 @@ const AuthComponent = {
                             <span class="font-bold text-gray-700">${user.display_name}</span>
                         </div>
                     `).join('')}
-                </div>
-
+                        <div onclick="AuthComponent.displayCreateUserForm()" 
+                        class="bg-white/50 p-4 rounded-3xl border-4 border-dashed border-white shadow-sm cursor-pointer transition-all hover:scale-105 flex flex-col items-center justify-center gap-2 group">
+                        <div class="text-4xl group-hover:rotate-90 transition-transform">➕</div>
+                        <span class="font-bold text-gray-500">Người mới</span>
+                        </div>
+                </div>                
                 <div id="hero-selection-area" class="hidden w-full flex flex-col items-center gap-4 mt-4 p-4 rounded-3xl bg-white/50 border-4 border-dashed border-white">
                     <h3 class="font-black text-purple-600 uppercase">Chọn hiệp sĩ của bạn</h3>
                     <div id="hero-list" class="flex flex-wrap justify-center gap-3">
                         </div>
                 </div>
 
-                <button id="btn-start" 
+                <button id="btn-start"  disabled
                         onclick="AuthComponent.startGame()"
                         class="px-12 py-4 bg-gray-300 text-white text-2xl font-black rounded-full shadow-[0_10px_0_rgb(156,163,175)] cursor-not-allowed transition-all active:mt-2 active:shadow-none uppercase">
                     Vào Trận!
@@ -183,6 +187,12 @@ const AuthComponent = {
 loadHeroList: async function() {
     const heroListContainer = document.getElementById('hero-list');
     const supabase = window.supabase;
+
+    if (!supabase) {
+        heroListContainer.innerHTML = "<p class='text-sm text-gray-400'>Đang kết nối...</p>";
+        setTimeout(() => this.loadHeroList(), 500);
+        return;
+    }
     
     heroListContainer.innerHTML = "<p class='text-sm text-gray-400'>Đang tìm hiệp sĩ...</p>";
 
@@ -218,6 +228,7 @@ pickHero: function(heroId) {
             btnStart.classList.replace('bg-gray-300', 'bg-yellow-400');
             btnStart.classList.remove('cursor-not-allowed');
             btnStart.classList.add('shadow-[0_10px_0_rgb(202,138,4)]');
+            btnStart.disabled = false;
         }
     }
 },
@@ -268,9 +279,3 @@ startGame: async function() {
 
 // Đăng ký component vào window
 window.AuthComponent = AuthComponent;
-
-// Tự động khởi chạy khi load trang
-window.addEventListener('load', () => {
-    AuthComponent.init();
-    }
-);
