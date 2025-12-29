@@ -40,19 +40,27 @@
             width: 100%;
             height: 260px;
             overflow: hidden;
+            --hero-run: 0px;
+            --monster-run: 0px;
         }
 
         #hero,
         #monster {
             position: absolute;
             bottom: 0;
+            transition: transform 0.4s linear;
         }
         #hero {
-            left: 15%;
+            left: 40px;
+            transform: translateX(0);
+            transform: translateX(var(--hero-run));
+
         }
 
         #monster {
             right: 15%;
+            transform: translateX(0);
+            transform: translateX(calc(-1 * var(--monster-run)));
         }
         
     </style>

@@ -166,6 +166,9 @@ const QuestionManager = {
      * Tạo hiệu ứng chữ cái rơi và xáo trộn
      */
     animateLetters(word, lang) {
+        if (window.GameEngine && window.GameEngine.isBattling) return;
+        if (window.GameEngine && window.GameEngine.monster?.isDead) return;
+
         const lettersContainer = document.getElementById(`${lang}-letters`);
         const slotsContainer = document.getElementById(`${lang}-slots`);
         if (!lettersContainer || !slotsContainer) return;
