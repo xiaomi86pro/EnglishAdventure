@@ -2,6 +2,8 @@
  * GameEngine - Quản lý logic chính của trò chơi
  */
 const GameEngine = {
+    isBattling: false,
+
     player: null,
     monster: null,
     currentStep: 1, // Chặng đường từ 1-10
@@ -15,8 +17,10 @@ const GameEngine = {
         this.player = {
             ...userData,
             max_hp: 100,
-            hp_current: userData.hp_current || 100
+            hp_current: userData.hp_current || 100,
+            state: 'idle' // trạng thái hiện tại
         };
+        
         this.currentStep = 1;
         
         this.initUI();
@@ -58,6 +62,10 @@ const GameEngine = {
      * @param {string} word - Từ tiếng Anh đã hoàn thành để tính damage
      */
     handleCorrect(word) {
+        if (this.isBattling) return;
+        this.startBattleTurn(this.player, this.monster);
+        
+
         const damage = word.length;
         this.monster.hp -= damage;
         if (this.monster.hp < 0) this.monster.hp = 0;
@@ -199,8 +207,10 @@ const GameEngine = {
             emoji: emoji,
             hp: hp,
             max_hp: hp,
-            type: type
+            type: type,
+            state: 'idle' // trạng thái hiện tại
         };
+        
     },
 
     /**
@@ -263,7 +273,45 @@ const GameEngine = {
                 </div>
             `;
         }
+    },
+
+    setState(entity, newState) {
+        entity.state = newState;
+    },
+
+    startBattleTurn(attacker, defender) {
+        // Khoá input trong lượt
+        this.isBattling = true;
+    
+        // 1. attacker chạy tới
+        this.setState(attacker, 'running');
+    
+        setTimeout(() => {
+            // 2. attacker tấn công
+            this.setState(attacker, 'attack');
+    
+            setTimeout(() => {
+                // 3. defender bị đánh
+                this.setState(defender, 'hit');
+    
+                setTimeout(() => {
+                    // 4. attacker chạy về
+                    this.setState(attacker, 'running');
+                    this.setState(defender, 'idle');
+    
+                    setTimeout(() => {
+                        // 5. kết thúc lượt
+                        this.setState(attacker, 'idle');
+                        this.isBattling = false;
+                    }, 400);
+    
+                }, 400);
+    
+            }, 400);
+    
+        }, 400);
     }
+    
 };
 
 window.GameEngine = GameEngine;

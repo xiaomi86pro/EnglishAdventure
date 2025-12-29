@@ -34,6 +34,27 @@
         ::-webkit-scrollbar { width: 8px; }
         ::-webkit-scrollbar-track { background: #f1f1f1; }
         ::-webkit-scrollbar-thumb { background: #ff9aa2; border-radius: 10px; }
+
+        #battleview {
+            position: relative;
+            width: 100%;
+            height: 260px;
+            overflow: hidden;
+        }
+
+        #hero,
+        #monster {
+            position: absolute;
+            bottom: 0;
+        }
+        #hero {
+            left: 15%;
+        }
+
+        #monster {
+            right: 15%;
+        }
+        
     </style>
 </head>
 <body>
@@ -54,7 +75,8 @@
         
         <!-- Vùng 1: Battle View (1/3 khung giữa) -->
         <section id="battleview" class="h-1/3 rounded-3xl p-4 game-card relative overflow-hidden">
-            <!-- Nội dung sẽ được thêm vào đây -->
+            <div id="hero"></div>
+            <div id="monster"></div>
         </section>
 
         <!-- Vùng 2: Question Area (Phần còn lại chiếm 2/3) -->
