@@ -18,7 +18,8 @@ const GameEngine = {
             ...userData,
             max_hp: 100,
             hp_current: userData.hp_current || 100,
-            state: 'idle' // trạng thái hiện tại
+            state: 'idle', // trạng thái hiện tại
+            isDead: false,
         };
         
         this.currentStep = 1;
@@ -67,7 +68,7 @@ const GameEngine = {
         
 
         const damage = word.length;
-        this.monster.hp -= damage;
+        //this.monster.hp -= damage;
         if (this.monster.hp < 0) this.monster.hp = 0;
 
         // Hiển thị hiệu ứng tấn công (giả lập)
@@ -94,7 +95,12 @@ const GameEngine = {
      * Xử lý khi quái vật bị tiêu diệt
      */
     handleMonsterDefeat() {
+        setTimeout(() => {
         this.currentStep++;
+        this.spawnMonster();
+        this.isBattling = false;
+        }, 1000); // đợi die animation
+    
         if (this.currentStep > this.totalSteps) {
             alert("Chúc mừng! Bạn đã hoàn thành bản đồ!");
             return;
@@ -208,7 +214,9 @@ const GameEngine = {
             hp: hp,
             max_hp: hp,
             type: type,
-            state: 'idle' // trạng thái hiện tại
+            state: 'idle', // trạng thái hiện tại
+            isDead: false,
+
         };
         
     },
@@ -277,12 +285,27 @@ const GameEngine = {
 
     setState(entity, newState) {
         entity.state = newState;
+        this.updateBattleSprite();
     },
+
+    updateBattleSprite() {
+        const heroEl = document.getElementById('hero');
+        const monsterEl = document.getElementById('monster');
+    
+        if (heroEl) {
+            heroEl.dataset.state = this.player.state;
+        }
+    
+        if (monsterEl) {
+            monsterEl.dataset.state = this.monster.state;
+        }
+    }    
 
     startBattleTurn(attacker, defender) {
         // Khoá input trong lượt
         this.isBattling = true;
-    
+        this.setRunOffset(attacker);
+
         // 1. attacker chạy tới
         this.setState(attacker, 'running');
     
@@ -292,6 +315,7 @@ const GameEngine = {
     
             setTimeout(() => {
                 // 3. defender bị đánh
+                this.applyDamage(attacker, defender);
                 this.setState(defender, 'hit');
     
                 setTimeout(() => {
@@ -302,6 +326,7 @@ const GameEngine = {
                     setTimeout(() => {
                         // 5. kết thúc lượt
                         this.setState(attacker, 'idle');
+                        this.resetRunOffset();
                         this.isBattling = false;
                     }, 400);
     
@@ -313,5 +338,54 @@ const GameEngine = {
     }
     
 };
+
+setRunOffset(entity) {
+    const battle = document.getElementById('battleview');
+    if (!battle) return;
+
+    const width = battle.offsetWidth;
+    const runDistance = Math.floor(width * 0.35);
+
+    battle.style.setProperty(
+        entity === this.player ? '--hero-run' : '--monster-run',
+        `${runDistance}px`
+    );
+}
+
+resetRunOffset() {
+    const battle = document.getElementById('battleview');
+    if (!battle) return;
+
+    battle.style.setProperty('--hero-run', '0px');
+    battle.style.setProperty('--monster-run', '0px');
+}
+
+applyDamage(attacker, defender) {
+    if (!defender || defender.hp <= 0) return;
+
+    const damage = attacker.atk || 1;
+    defender.hp -= damage;
+
+    if (defender.hp < 0) defender.hp = 0;
+
+    this.updateBattleStatus();
+
+    if (defender.hp <= 0) {
+        defender.hp = 0;
+        defender.isDead = true;
+        this.setState(defender, 'die');
+
+        if (defender === this.monster) {
+            this.handleMonsterDefeat();
+        } else if (defender === this.player) {
+            setTimeout(() => {
+                alert('Game Over!');
+                location.reload();
+            }, 1200);
+        }
+    }
+}
+
+
 
 window.GameEngine = GameEngine;
