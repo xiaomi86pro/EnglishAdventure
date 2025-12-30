@@ -1,4 +1,4 @@
-const QuestionType2 = {
+window.QuestionType2 = {
     currentData: null,
     onCorrect: null,
     onWrong: null,
