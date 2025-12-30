@@ -35,9 +35,39 @@ const QuestionManager = {
         }
     },
 
+    loadType2(enemyType = 'elite') {
+        // Nếu đã có câu hỏi cũ → dọn
+        if (this.currentQuestion && typeof this.currentQuestion.destroy === 'function') {
+            this.currentQuestion.destroy();
+        }
+    
+        // QuestionType2 chính là module trong question2.js
+        this.currentQuestion = window.QuestionManagerType2 || window.QuestionType2;
+    
+        // Gắn callback chuẩn
+        this.currentQuestion.onCorrect = () => {
+            this.handleQuestionCorrect();
+        };
+        this.currentQuestion.onWrong = () => {
+            this.handleQuestionWrong();
+        };
+    
+        // Gọi init thực tế của question
+        if (typeof this.currentQuestion.loadType2 === 'function') {
+            this.currentQuestion.loadType2(enemyType);
+        } else {
+            console.error('QuestionType2 không có hàm loadType2');
+        }
+    },
+
     startQuestion(enemyType = 'normal') {
-        // Hiện tại chỉ có 1 loại câu hỏi
-        this.loadType1(enemyType);
+        if (enemyType === 'normal') {
+            this.loadType1(enemyType);
+        } else if (enemyType === 'elite') {
+            this.loadType2(enemyType);
+        } else if (enemyType === 'boss') {
+            this.loadType3(enemyType); // sau này bạn thêm
+        }
     },
     
     /**

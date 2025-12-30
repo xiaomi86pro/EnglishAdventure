@@ -83,24 +83,44 @@ const QuestionType1 = {
                     
                     <!-- Preview -->
                     <div id="preview-area" class="w-full flex flex-col items-center justify-center mb-6">
-                        <h2 class="text-4xl font-black text-blue-400 uppercase tracking-widest">${wordEn}</h2>
-                        <h3 class="text-2xl font-bold text-green-400 italic">${wordVi}</h3>
+                    <h2 class="text-4xl font-black text-blue-400 uppercase tracking-widest">${wordEn}</h2>
+                    <h3 class="text-2xl font-bold text-green-400 italic">${wordVi}</h3>
                     </div>
 
                     <!-- English -->
                     <div class="flex flex-col items-center w-full">
-                        <div id="en-slots" class="flex flex-wrap justify-center gap-2 mb-8 min-h-[50px] w-full border-b-2 border-dashed border-gray-200 pb-2"></div>
-                        <div id="en-letters" class="flex flex-wrap justify-center gap-3 min-h-[50px] w-full"></div>
+                    <div id="en-slots" 
+                    class="flex flex-wrap justify-center items-center gap-2 mb-8 
+                           h-16 w-full border-b-2 border-dashed border-gray-200 pb-2"></div>
+                    <div id="en-letters" 
+                    class="flex flex-wrap justify-center gap-3 min-h-[50px] w-full"></div>   
                     </div>
 
                     <!-- Vietnamese -->
                     <div class="flex flex-col items-center w-full">
-                        <div id="vi-slots" class="flex flex-wrap justify-center gap-2 mb-8 min-h-[50px] w-full border-b-2 border-dashed border-gray-200 pb-2"></div>
-                        <div id="vi-letters" class="flex flex-wrap justify-center gap-3 min-h-[50px] w-full"></div>
+                    <div id="vi-slots" 
+                    class="flex flex-wrap justify-center items-center gap-2 mb-8 
+                           h-16 w-full border-b-2 border-dashed border-gray-200 pb-2"></div>
+                    <div id="vi-letters" 
+                    class="flex flex-wrap justify-center gap-3 min-h-[50px] w-full"></div>               
                     </div>
                 </div>
             </div>
         `;
+
+        // Sau khi render, đặt hẹn giờ 2 giây để ẩn preview
+        const preview = document.getElementById("preview-area");
+        if (preview) {
+            setTimeout(() => {
+                preview.style.opacity = "0";              // mờ dần
+                preview.style.transition = "opacity 0.5s ease-out";
+                // giữ nguyên chiều cao bằng cách ẩn chữ nhưng không remove
+                setTimeout(() => {
+                    preview.innerHTML = "";               // xoá nội dung bên trong
+                    preview.style.height = "60px";        // hoặc đặt chiều cao cố định
+                }, 500);
+            }, 2000);
+        }
 
         this.animateLetters(wordEn, "en");
         this.animateLetters(wordVi, "vi");
@@ -180,6 +200,7 @@ const QuestionType1 = {
         if (this.enCompleted.toLowerCase() === cleanEn &&
             this.viCompleted.toLowerCase() === cleanVi) {
             this.speakWord(wordEn, "en-US");
+            this.speakWord(wordVi, "vi-VN");
             if (typeof this.onCorrect === "function") this.onCorrect();
         }
     },

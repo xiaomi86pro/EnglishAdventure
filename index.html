@@ -127,6 +127,10 @@
             100% { opacity: 0; transform: translate(-50%, -50px); }
         }
 
+        #preview-area {
+        min-height: 80px; /* hoặc chiều cao bạn muốn giữ */
+        }
+
         #hero.run-forward {
         transform: translateX(120px); /* hero lao sang phải */
         transition: transform 0.4s ease;
@@ -154,8 +158,9 @@
 
     <!-- 1. Cột Dashboard bên trái (1/6 màn hình, dài hết cỡ) -->
     <aside id="dashboard" class="w-1/6 h-full rounded-3xl p-4 flex flex-col gap-4 game-card">
-        <!-- Nội dung sẽ được thêm vào đây -->
-        <div class="mt-auto border-t-2 border-white/50 pt-4">
+        <div id="monster-info"></div>
+        <div id="answers-history" class="mt-4 space-y-2"></div>
+        <div class="mt-auto border-t-2 border-white/50 pt-4">          
             <a href="admin.html" class="flex items-center gap-2 p-3 rounded-2xl bg-white/30 hover:bg-white/50 transition-all text-red-600 font-bold group">
                 <span class="text-2xl group-hover:rotate-90 transition-transform duration-500">⚙️</span>
                 <span class="text-sm uppercase tracking-wider">Quản trị</span>
@@ -189,6 +194,8 @@
     <script src="./js/game_engine.js"></script>
     <script src="js/question/question_manager.js"></script>
     <script src="./js/question/question1.js"></script>
+    <script src="./js/question/question2.js"></script>
+
     <script>
         // Đảm bảo Supabase đã load xong rồi mới init Auth
         window.addEventListener('load', () => {

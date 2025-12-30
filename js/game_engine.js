@@ -54,15 +54,23 @@ const GameEngine = {
      */
     nextQuestion() {
         const questionArea = document.getElementById('questionarea');
+        const type = this.monster?.type || "normal";   // lấy loại quái hiện tại
     
-        if (window.QuestionType1) {
-            window.QuestionType1.onCorrect = () => this.handleCorrect();
-            window.QuestionType1.onWrong = () => this.startBattleTurn(this.monster, this.player);
-            window.QuestionType1.load("normal");
+        if (type === "normal" && window.QuestionType1) {
+            // Quái thường → QuestionType1
+            QuestionType1.onCorrect = () => this.handleCorrect();
+            QuestionType1.onWrong = () => this.startBattleTurn(this.monster, this.player);
+            QuestionType1.load("normal");
+    
+        } else if (type === "elite" && window.QuestionType2) {
+            // 👉 Đây là nhánh bạn cần chèn cho QuestionType2
+            QuestionType2.onCorrect = () => this.handleCorrect();
+            QuestionType2.onWrong = () => this.startBattleTurn(this.monster, this.player);
+            QuestionType2.load("elite");
+    
         } else {
-            console.warn("GameEngine: Đang đợi QuestionType1...");
+            console.warn("GameEngine: Không tìm thấy QuestionType phù hợp cho:", type);
     
-            // Hiển thị trạng thái đang tải câu hỏi nếu quá trình đợi hơi lâu
             if (questionArea && !questionArea.innerHTML.includes('Đang chuẩn bị')) {
                 questionArea.innerHTML = `
                     <div class="flex flex-col items-center justify-center gap-4">
@@ -71,12 +79,9 @@ const GameEngine = {
                     </div>
                 `;
             }
-            
-            // Thử lại sau 500ms nếu chưa thấy QuestionManager
             setTimeout(() => this.nextQuestion(), 500);
         }
     },
-
     /**
      * Xử lý khi người chơi trả lời đúng hoàn toàn
      * @param {string} word - Từ tiếng Anh đã hoàn thành để tính damage
@@ -86,7 +91,20 @@ const GameEngine = {
         this.startBattleTurn(this.player, this.monster);
         
         if (this.monster.hp < 0) this.monster.hp = 0;
-    
+        
+         // 👉 Thêm câu trả lời ngay khi đúng
+        const history = document.getElementById("answers-history");
+        if (history && window.QuestionType1?.currentData) {
+            const en = window.QuestionType1.currentData.english_word;
+            const vi = window.QuestionType1.currentData.vietnamese_translation;
+            history.insertAdjacentHTML("beforeend", `
+                <div class="bg-white/70 rounded-xl p-3 border-2 border-blue-200">
+                    <p class="text-blue-600 font-bold">${en}</p>
+                    <p class="text-green-600 italic">${vi}</p>
+                </div>
+            `);
+        }
+
         // Hiệu ứng tấn công
         const monsterEmoji = document.getElementById('monster-emoji');
         if (monsterEmoji) {
@@ -97,11 +115,7 @@ const GameEngine = {
             if (monsterEmoji) {
                 monsterEmoji.classList.remove('animate-ping', 'text-red-500');
             }
-            this.updateBattleStatus();
-    
-            if (this.monster.hp <= 0) {
-                this.handleMonsterDefeat();
-            } 
+            this.updateBattleStatus(); 
         }, 500);
     },
 
@@ -192,16 +206,22 @@ const GameEngine = {
         const battleView = document.getElementById('battleview');
         if (!battleView) return;
     
+        // Tạo progress bar chia đoạn
+        const segments = Array.from({ length: this.totalSteps }, (_, i) => {
+            return `<div id="step-${i+1}" 
+                        class="flex-1 h-6 mx-0.5 rounded-md border border-white 
+                                bg-gray-300 transition-colors duration-300"></div>`;
+        }).join('');
+
+
         // Giữ lại nội dung cũ (div#hero và div#monster) và chỉ chèn thêm UI overlay
         // Chúng ta sử dụng insertAdjacentHTML để không đè mất các thẻ sprite có sẵn trong index.html
         const uiOverlay = `
-            <div class="absolute top-4 left-1/2 -translate-x-1/2 w-2/3 h-6 bg-white/50 rounded-full border-2 border-white shadow-sm overflow-hidden z-20">
-                <div id="progress-fill" class="h-full bg-gradient-to-r from-yellow-400 to-orange-500 transition-all duration-500" style="width: 10%"></div>
-                <div class="absolute inset-0 flex justify-between px-4 items-center text-[10px] font-bold text-orange-800 uppercase">
-                    <span>Khởi hành</span>
-                    <span>Đích đến</span>
+                <div id="progress-bar" 
+                class="absolute top-4 left-1/2 -translate-x-1/2 w-2/3 flex z-20">
+            ${segments}
                 </div>
-            </div>
+          
     
             <div class="absolute inset-0 flex justify-between items-end px-10 pb-4 pointer-events-none">
                 <div class="flex flex-col items-center">
@@ -300,21 +320,11 @@ async spawnMonster() {
         if (progressFill) {
             progressFill.style.width = `${(this.currentStep / this.totalSteps) * 100}%`;
         }
-        
-        // 2. Cập nhật thông tin Quái vật (Thêm dấu ?. để an toàn tuyệt đối)
-        const mName = document.getElementById('monster-name');
-        if (mName) {
-            mName.innerText = this.monster?.name || "Đang tìm đối thủ...";
-        }
-        
-        // 3. Cập nhật chỉ số máu (HP)
-        this.updateBattleStatus();
     
-        // 4. Cập nhật Dashboard (Thông tin đối thủ)
-        const dashboard = document.getElementById('dashboard');
-        // CHÈN THÊM: Kiểm tra this.monster trước khi render
-        if (dashboard && this.monster) {
-            dashboard.innerHTML = `
+        // 2. Cập nhật thông tin Quái vật (chỉ update monster-info, không đè dashboard)
+        const mInfo = document.getElementById('monster-info');
+        if (mInfo && this.monster) {
+            mInfo.innerHTML = `
                 <h3 class="text-xl font-black text-red-600 uppercase mb-2">Đối thủ</h3>
                 <div class="bg-white/50 rounded-2xl p-3 border-2 border-red-200">
                     <p class="font-bold text-lg">${this.monster.name}</p>
@@ -323,34 +333,27 @@ async spawnMonster() {
                         "Cố lên! Đánh bại nó để đi tiếp nào."
                     </div>
                 </div>
-                <div class="mt-auto border-t-2 border-white/50 pt-4">
-                    <a href="admin.html" class="flex items-center gap-2 p-3 rounded-2xl bg-white/30 hover:bg-white/50 transition-all text-red-600 font-bold group">
-                        <span class="text-2xl group-hover:rotate-90 transition-transform duration-500">⚙️</span>
-                        <span class="text-sm uppercase tracking-wider">Quản trị</span>
-                    </a>
-                </div>
             `;
         }
     
-        // 5. Cập nhật UserUI (Chỉ cập nhật nếu chưa có nội dung để tránh giật lag)
-        const userUI = document.getElementById('userUI');
-        // XOÁ: Xoá việc render lại hòm đồ liên tục nếu nó đã tồn tại
-        if (userUI && userUI.children.length === 0) { 
-            const inventoryGrid = Array(50).fill(0).map(() => 
-                `<div class="w-full aspect-square bg-white/30 border border-blue-100 rounded-sm hover:bg-white/50 transition-colors"></div>`
-            ).join('');
+        // 3. Tô màu cho các step đã hoàn thành
+        for (let i = 1; i <= this.totalSteps; i++) {
+            const seg = document.getElementById(`step-${i}`);
+            if (!seg) continue;
     
-            userUI.innerHTML = `
-                <div class="flex flex-col items-center w-full">
-                    <div class="w-20 h-20 bg-white rounded-2xl flex items-center justify-center text-4xl shadow-inner border-2 border-blue-200 mb-2 overflow-hidden">
-                        <img src="./assets/hero_head.png" class="w-full h-full object-contain" 
-                             onerror="this.src='https://api.dicebear.com/7.x/pixel-art/svg?seed=${this.player?.display_name}'">
-                    </div>
-                    <p class="font-black text-blue-600 uppercase text-sm text-center leading-tight">${this.player?.display_name || 'Người chơi'}</p>
-                    <p class="text-[10px] font-bold text-orange-500">Cấp độ ${this.player?.level || 1}</p>
-                </div>
-                `;
+            if (i < this.currentStep) {
+                seg.className = "flex-1 h-6 mx-0.5 rounded-md border border-white bg-green-500";
+            } else if (i === this.currentStep) {
+                if (this.monster?.type === "normal") seg.className = "flex-1 h-6 mx-0.5 rounded-md border border-white bg-blue-400";
+                else if (this.monster?.type === "elite") seg.className = "flex-1 h-6 mx-0.5 rounded-md border border-white bg-yellow-400";
+                else if (this.monster?.type === "boss") seg.className = "flex-1 h-6 mx-0.5 rounded-md border border-white bg-red-500";
+            } else {
+                seg.className = "flex-1 h-6 mx-0.5 rounded-md border border-white bg-gray-300";
+            }
         }
+    
+        // 4. Cập nhật chỉ số máu
+        this.updateBattleStatus();
     },
 
     startBattleTurn(attacker, defender) {
