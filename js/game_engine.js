@@ -54,12 +54,14 @@ const GameEngine = {
      */
     nextQuestion() {
         const questionArea = document.getElementById('questionarea');
-        
-        if (window.QuestionManager) {
-            window.QuestionManager.startQuestion('normal');
+    
+        if (window.QuestionType1) {
+            window.QuestionType1.onCorrect = () => this.handleCorrect();
+            window.QuestionType1.onWrong = () => this.startBattleTurn(this.monster, this.player);
+            window.QuestionType1.load("normal");
         } else {
-            console.warn("GameEngine: Đang đợi QuestionManager tải...");
-            
+            console.warn("GameEngine: Đang đợi QuestionType1...");
+    
             // Hiển thị trạng thái đang tải câu hỏi nếu quá trình đợi hơi lâu
             if (questionArea && !questionArea.innerHTML.includes('Đang chuẩn bị')) {
                 questionArea.innerHTML = `
