@@ -115,7 +115,8 @@ const AuthComponent = {
 
                     <div class="flex gap-4">
                         <button onclick="AuthComponent.displayLoginMenu()" class="flex-1 py-3 bg-gray-200 text-gray-600 font-bold rounded-2xl uppercase">Hủy</button>
-                        <button id="btn-confirm-save" onclick="AuthComponent.handleSaveUser()" class="flex-1 py-3 bg-blue-500 text-white font-bold rounded-2xl shadow-[0_5px_0_rgb(37,99,235)] uppercase text-lg">Xác nhận</button>
+                        <button id="btn-confirm-save" onclick="AuthComponent.
+                        SaveUser()" class="flex-1 py-3 bg-blue-500 text-white font-bold rounded-2xl shadow-[0_5px_0_rgb(37,99,235)] uppercase text-lg">Xác nhận</button>
                     </div>
                 </div>
             </div>
@@ -262,6 +263,9 @@ startGame: async function() {
             .single();
 
         if (fetchError) throw fetchError;
+
+        userData.selected_hero_id = this.selectedHeroId;
+
 
         // 3. Khởi động GameEngine
         if (window.GameEngine) {

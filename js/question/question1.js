@@ -257,7 +257,7 @@ const QuestionManager = {
             this.speakWord(wordEn, 'en-US');
 
             if (window.GameEngine) {
-                setTimeout(() => window.GameEngine.handleCorrect(wordEn), 600);
+                setTimeout(() => window.GameEngine.handleCorrect(), 600);
             }
         }
     }

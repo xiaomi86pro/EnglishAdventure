@@ -79,12 +79,10 @@ const GameEngine = {
      * Xử lý khi người chơi trả lời đúng hoàn toàn
      * @param {string} word - Từ tiếng Anh đã hoàn thành để tính damage
      */
-    handleCorrect(word) {
+    handleCorrect() {
         if (this.isBattling) return;
         this.startBattleTurn(this.player, this.monster);
         
-        const damage = word.length;
-    
         if (this.monster.hp < 0) this.monster.hp = 0;
     
         // Hiệu ứng tấn công
@@ -140,11 +138,6 @@ const GameEngine = {
      */
    handleMonsterDefeat() {
     this.isBattling = true; // Khóa để tránh bấm nhầm khi đang chuyển màn
-
-    const questionArea = document.getElementById('questionarea');
-    if (questionArea) {
-        questionArea.innerHTML = `<h2 class="text-3xl font-bold text-green-500 animate-bounce">CHIẾN THẮNG!</h2>`;
-    }
     
     setTimeout(async () => {
         this.currentStep++;
