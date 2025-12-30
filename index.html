@@ -45,31 +45,109 @@
         }
 
         #hero, #monster {
-            position: absolute;
-            bottom: 20px;
-            background-size: cover; /* Hoặc điều chỉnh tùy theo kích thước sprite sheet của bạn */
-            transition: transform 0.4s linear;
-            z-index: 10;
+            width: 120px;
+            height: 120px;
+            background-size: contain;
+            background-repeat: no-repeat;
+            background-position: center; 
+            margin-top: 30px;
         }
 
         #hero {
             width: 128px;
             height: 128px;
-            left: 40px;
-            transform: translateX(var(--hero-run));
-            background-image: url('./assets/hero.png');
-            background-repeat: no-repeat;
+            margin-left: 40px;
         }
 
         #monster {
-            width: 64px; /* Điều chỉnh lại kích thước cho khớp với hero nếu cần */
+            width: 64px;
             height: 64px;
-            right: 40px;
-            transform: translateX(calc(-1 * var(--monster-run)));
-            background-image: url('./assets/monster.png');
-            background-repeat: no-repeat;
+            margin-right: 40px;
         }
-        
+
+        /* Hiệu ứng rung khi bị trúng đòn */
+        .shake {
+            animation: shake-logic 0.4s cubic-bezier(.36,.07,.19,.97) both;
+            transform: translate3d(0, 0, 0);
+            backface-visibility: hidden;
+            perspective: 1000px;
+        }
+
+        @keyframes shake-logic {
+            10%, 90% { transform: translate3d(-2px, 0, 0); }
+            20%, 80% { transform: translate3d(4px, 0, 0); }
+            30%, 50%, 70% { transform: translate3d(-8px, 0, 0); }
+            40%, 60% { transform: translate3d(8px, 0, 0); }
+        }
+
+        /* Hiệu ứng ngôi sao văng ra */
+        .star-particle {
+            position: absolute;
+            pointer-events: none;
+            font-size: 24px;
+            z-index: 100;
+            user-select: none;
+            animation: star-fly 0.7s ease-out forwards;
+        }
+
+        @keyframes star-fly {
+            0% { transform: translate(0, 0) scale(1) rotate(0deg); opacity: 1; }
+            100% { transform: translate(var(--tx), var(--ty)) scale(0) rotate(360deg); opacity: 0; }
+        }
+
+        .glow-en {
+        box-shadow: 
+            0 0 10px #3b82f6,   /* xanh dương nhạt */
+            0 0 20px #3b82f6, 
+            0 0 40px #3b82f6, 
+            0 0 80px #3b82f6;   /* xanh dương đậm */
+        }
+
+        .glow-vi {
+        box-shadow: 
+            0 0 10px #22c55e,   /* xanh lá nhạt */
+            0 0 20px #22c55e, 
+            0 0 40px #22c55e, 
+            0 0 80px #22c55e;   /* xanh lá đậm */
+        }
+        .damage-popup {
+        position: absolute;
+        transform: translate(-50%, 0);
+        font-size: 48px;
+        font-weight: 900;
+        color: #ff3333;
+        text-shadow: 0 0 6px #fff;
+        animation: floatUp 1.5s ease-out forwards;
+        pointer-events: none;
+        z-index: 50;
+        }
+
+        @keyframes floatUp {
+            0%   { opacity: 1; transform: translate(-50%, 0); }
+            100% { opacity: 0; transform: translate(-50%, -50px); }
+        }
+
+        #hero.run-forward {
+        transform: translateX(120px); /* hero lao sang phải */
+        transition: transform 0.4s ease;
+        }
+
+        #hero.run-back {
+        transform: translateX(0); /* quay về */
+        transition: transform 0.4s ease;
+        }
+
+        #monster.run-forward {
+        transform: translateX(-120px); /* quái lao sang trái nếu cần */
+        transition: transform 0.4s ease;
+        }
+
+        #monster.run-back {
+        transform: translateX(0);
+        transition: transform 0.4s ease;
+        }
+
+
     </style>
 </head>
 <body>
@@ -90,8 +168,10 @@
         
         <!-- Vùng 1: Battle View (1/3 khung giữa) -->
         <section id="battleview" class="h-1/3 rounded-3xl p-4 game-card relative overflow-hidden">
-            <div id="hero" class="sprite"></div>
-            <div id="monster" class="sprite"></div>
+            <div class="flex justify-between items-center h-full">
+                <div id="hero" class="sprite"></div>
+                <div id="monster" class="sprite"></div>
+            </div>
         </section>
 
         <!-- Vùng 2: Question Area (Phần còn lại chiếm 2/3) -->

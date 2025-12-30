@@ -3,7 +3,8 @@
  */
 const GameEngine = {
     isBattling: false,
-
+    heroSlashSound: new Audio('./sounds/Slicing_flesh.mp3'),
+    monsterPunchSound: new Audio('./sounds/Punch.mp3'),
     player: null,
     monster: null,
     currentStep: 1, // Chặng đường từ 1-10
@@ -13,22 +14,38 @@ const GameEngine = {
     /**
      * Khởi tạo game với dữ liệu User từ Auth
      */
+    /**
+     * Khởi tạo game với dữ liệu User từ Auth và thông tin Hero từ DB
+     */
     async start(userData) {
+        // 1. Lấy dữ liệu Hero
+        const { data: heroData, error } = await window.supabase
+            .from('heroes').select('*').eq('id', userData.selected_hero_id).single();
+    
+        if (error) return console.error("Lỗi:", error);
+    
         this.player = {
             ...userData,
-            max_hp: 100,
-            hp_current: userData.hp_current || 100,
-            state: 'idle', // trạng thái hiện tại
-            isDead: false,
+            max_hp: heroData.base_hp,
+            hp_current: userData.hp_current || heroData.base_hp,
+            atk: heroData.base_atk,
+            sprite_url: heroData.image_url
         };
-        
-        this.currentStep = 1;
-        
+    
+        // 2. Dựng UI trước
         this.initUI();
-        this.spawnMonster();
+    
+        // 3. Gán ảnh Hero (Ảnh tĩnh - ô đầu tiên)
+        const heroEl = document.getElementById('hero');
+        if (heroEl && this.player.sprite_url) {
+            heroEl.style.backgroundImage = `url('${this.player.sprite_url}')`;
+            // Đảm bảo xóa class animation cũ nếu có
+            heroEl.className = 'sprite'; 
+        }
+    
+        this.currentStep = 1;
+        await this.spawnMonster();
         this.updateAllUI();
-
-        // Bắt đầu tải câu hỏi đầu tiên
         this.nextQuestion();
     },
 
@@ -66,12 +83,11 @@ const GameEngine = {
         if (this.isBattling) return;
         this.startBattleTurn(this.player, this.monster);
         
-
         const damage = word.length;
-        //this.monster.hp -= damage;
+    
         if (this.monster.hp < 0) this.monster.hp = 0;
-
-        // Hiển thị hiệu ứng tấn công (giả lập)
+    
+        // Hiệu ứng tấn công
         const monsterEmoji = document.getElementById('monster-emoji');
         if (monsterEmoji) {
             monsterEmoji.classList.add('animate-ping', 'text-red-500');
@@ -82,53 +98,95 @@ const GameEngine = {
                 monsterEmoji.classList.remove('animate-ping', 'text-red-500');
             }
             this.updateBattleStatus();
-
+    
             if (this.monster.hp <= 0) {
                 this.handleMonsterDefeat();
-            } else {
-                this.nextQuestion();
-            }
+            } 
         }, 500);
     },
 
-    /**
+    showDamage(defender, damage) {
+        const battle = document.getElementById('battleview');
+        if (!battle) return;
+    
+        // Xác định element của defender
+        const defenderEl = (defender === this.player) 
+            ? document.getElementById('hero') 
+            : document.getElementById('monster');
+    
+        if (!defenderEl) return;
+    
+        // Tính tọa độ trung tâm
+        const rect = defenderEl.getBoundingClientRect();
+        const bvRect = battle.getBoundingClientRect();
+        const centerX = rect.left - bvRect.left + rect.width / 2;
+        const centerY = rect.top - bvRect.top;
+    
+        // Tạo element damage
+        const dmgEl = document.createElement('div');
+        dmgEl.className = 'damage-popup';
+        dmgEl.innerText = `-${damage}`;
+        dmgEl.style.left = centerX + 'px';
+        dmgEl.style.top = centerY + 'px';
+    
+        battle.appendChild(dmgEl);
+    
+        // Xóa sau khi animation xong
+        setTimeout(() => dmgEl.remove(), 1500);
+    },
+    
+   /**
      * Xử lý khi quái vật bị tiêu diệt
      */
-    handleMonsterDefeat() {
-        setTimeout(() => {
-        this.currentStep++;
-        this.spawnMonster();
-        this.isBattling = false;
-        }, 1000); // đợi die animation
-    
-        if (this.currentStep > this.totalSteps) {
-            alert("Chúc mừng! Bạn đã hoàn thành bản đồ!");
-            return;
-        }
+   handleMonsterDefeat() {
+    this.isBattling = true; // Khóa để tránh bấm nhầm khi đang chuyển màn
 
-        // Hiệu ứng chuyển cảnh nhẹ
-        const questionArea = document.getElementById('questionarea');
-        if (questionArea) {
-            questionArea.innerHTML = `<h2 class="text-3xl font-bold text-green-500 animate-bounce">CHIẾN THẮNG!</h2>`;
-        }
-        
-        setTimeout(() => {
-            this.spawnMonster();
+    const questionArea = document.getElementById('questionarea');
+    if (questionArea) {
+        questionArea.innerHTML = `<h2 class="text-3xl font-bold text-green-500 animate-bounce">CHIẾN THẮNG!</h2>`;
+    }
+    
+    setTimeout(async () => {
+        this.currentStep++;
+        if (this.currentStep <= this.totalSteps) {
+            await this.spawnMonster(); 
             this.updateAllUI();
+            this.isBattling = false; // Mở khóa sau khi đã chuẩn bị xong quái mới
             this.nextQuestion();
-        }, 1500);
-    },
+        } else {
+            alert("Chúc mừng! Bạn đã hoàn thành bản đồ!");
+        }
+    }, 1500);
+},
 
     /**
      * Cập nhật chỉ số máu trong trận đấu
      */
     updateBattleStatus() {
-        const mHpFill = document.getElementById('monster-hp-fill');
-        const mHpText = document.getElementById('monster-hp-text');
-        if (mHpFill && mHpText) {
-            const mPercent = (this.monster.hp / this.monster.max_hp) * 100;
-            mHpFill.style.width = `${mPercent}%`;
-            mHpText.innerText = `${this.monster.hp}/${this.monster.max_hp}`;
+        // 1. Cập nhật máu Hero
+        const heroHpPercent = (this.player.hp_current / this.player.max_hp) * 100;
+        const heroHpFill = document.getElementById('hero-hp-fill');
+        const heroHpText = document.getElementById('hero-hp-text');
+        
+        if (heroHpFill) {
+            heroHpFill.style.width = `${heroHpPercent}%`;
+            // Hiệu ứng đổi màu khi máu thấp
+            heroHpFill.style.backgroundColor = heroHpPercent < 30 ? '#ef4444' : '#22c55e';
+        }
+        if (heroHpText) {
+            heroHpText.innerText = `${Math.ceil(this.player.hp_current)}/${this.player.max_hp}`;
+        }
+
+        // 2. Cập nhật máu Monster
+        const monsterHpPercent = (this.monster.hp / this.monster.max_hp) * 100;
+        const monsterHpFill = document.getElementById('monster-hp-fill');
+        const monsterHpText = document.getElementById('monster-hp-text');
+
+        if (monsterHpFill) {
+            monsterHpFill.style.width = `${monsterHpPercent}%`;
+        }
+        if (monsterHpText) {
+            monsterHpText.innerText = `${Math.ceil(this.monster.hp)}/${this.monster.max_hp}`;
         }
     },
 
@@ -138,254 +196,299 @@ const GameEngine = {
     initUI() {
         const battleView = document.getElementById('battleview');
         if (!battleView) return;
-
-        battleView.innerHTML = `
-            <!-- Progress Bar -->
-            <div class="absolute top-4 left-1/2 -translate-x-1/2 w-2/3 h-6 bg-white/50 rounded-full border-2 border-white shadow-sm overflow-hidden">
+    
+        // Giữ lại nội dung cũ (div#hero và div#monster) và chỉ chèn thêm UI overlay
+        // Chúng ta sử dụng insertAdjacentHTML để không đè mất các thẻ sprite có sẵn trong index.html
+        const uiOverlay = `
+            <div class="absolute top-4 left-1/2 -translate-x-1/2 w-2/3 h-6 bg-white/50 rounded-full border-2 border-white shadow-sm overflow-hidden z-20">
                 <div id="progress-fill" class="h-full bg-gradient-to-r from-yellow-400 to-orange-500 transition-all duration-500" style="width: 10%"></div>
                 <div class="absolute inset-0 flex justify-between px-4 items-center text-[10px] font-bold text-orange-800 uppercase">
                     <span>Khởi hành</span>
                     <span>Đích đến</span>
                 </div>
             </div>
-
-            <div class="flex justify-between items-end h-full px-10 pb-4">
-                <div id="player-sprite" class="flex flex-col items-center">
-                    <div class="relative">
-                        <div id="player-hp-bar" class="w-24 h-6 bg-gray-200 rounded-lg border-2 border-white mb-2 overflow-hidden relative shadow-sm">
-                            <div id="player-hp-fill" class="h-full bg-green-500 transition-all duration-300" style="width: 100%"></div>
-                            <div class="absolute inset-0 flex items-center justify-center text-[10px] font-black text-white drop-shadow-md">
-                                <span id="player-hp-text">100/100</span>
-                            </div>
+    
+            <div class="absolute inset-0 flex justify-between items-end px-10 pb-4 pointer-events-none">
+                <div class="flex flex-col items-center">
+                    <div id="hero-hp-bar" class="w-24 h-6 bg-gray-200 rounded-lg border-2 border-white mb-32 overflow-hidden relative shadow-sm">
+                        <div id="hero-hp-fill" class="h-full bg-green-500 transition-all duration-300" style="width: 100%"></div>
+                        <div class="absolute inset-0 flex items-center justify-center text-[10px] font-black text-white drop-shadow-md">
+                            <span id="hero-hp-text">100/100</span>
                         </div>
-                        <div class="text-6xl animate-bounce" style="animation-duration: 2s">${this.player.avatar_key || '🧑‍🚀'}</div>
                     </div>
-                    <span class="font-bold text-blue-700 bg-white/80 px-2 rounded-lg mt-1">${this.player.display_name}</span>
+                    <span class="font-bold text-blue-700 bg-white/80 px-2 rounded-lg">${this.player.display_name}</span>
                 </div>
-
-                <div id="monster-sprite" class="flex flex-col items-center">
-                    <div class="relative">
-                        <div id="monster-hp-bar" class="w-24 h-6 bg-gray-200 rounded-lg border-2 border-white mb-2 overflow-hidden relative shadow-sm">
-                            <div id="monster-hp-fill" class="h-full bg-red-500 transition-all duration-300" style="width: 100%"></div>
-                            <div class="absolute inset-0 flex items-center justify-center text-[10px] font-black text-white drop-shadow-md">
-                                <span id="monster-hp-text">50/50</span>
-                            </div>
+    
+                <div class="flex flex-col items-center">
+                    <div id="monster-hp-bar" class="w-24 h-6 bg-gray-200 rounded-lg border-2 border-white mb-32 overflow-hidden relative shadow-sm">
+                        <div id="monster-hp-fill" class="h-full bg-red-500 transition-all duration-300" style="width: 100%"></div>
+                        <div class="absolute inset-0 flex items-center justify-center text-[10px] font-black text-white drop-shadow-md">
+                            <span id="monster-hp-text">50/50</span>
                         </div>
-                        <div id="monster-emoji" class="text-7xl transition-all duration-300">👾</div>
                     </div>
-                    <span id="monster-name" class="font-bold text-red-700 bg-white/80 px-2 rounded-lg mt-1">Quái vật</span>
+                    <span id="monster-name" class="font-bold text-red-700 bg-white/80 px-2 rounded-lg">Quái vật</span>
                 </div>
             </div>
         `;
+        
+        // Xóa các UI cũ nếu có nhưng giữ lại sprite
+        const existingOverlays = battleView.querySelectorAll('.absolute');
+        existingOverlays.forEach(el => { if(!el.classList.contains('sprite')) el.remove(); });
+        
+        battleView.insertAdjacentHTML('beforeend', uiOverlay);
     },
+    
+/**
+ * Tạo quái vật dựa trên bước đi hiện tại từ Database
+ */
+async spawnMonster() {
+    // 1. Xác định loại quái dựa trên bước đi (Step)
+    let targetType = 'normal';
+    if (this.currentStep === 5) {
+        targetType = 'elite';
+    } else if (this.currentStep === 10) {
+        targetType = 'boss';
+    }
 
-    /**
-     * Tạo quái vật dựa trên bước đi hiện tại
-     */
-    spawnMonster() {
-        let type = 'Thường';
-        let emoji = '👾';
-        let hp = 50;
-        let name = 'Quái nhỏ';
+    try {
+        // 2. Truy vấn lấy danh sách quái vật theo Type từ bảng 'monsters'
+        const { data: monsters, error } = await window.supabase
+            .from('monsters')
+            .select('*')
+            .eq('type', targetType);
 
-        if (this.currentStep === 5) {
-            type = 'Elite';
-            emoji = '👹';
-            hp = 150;
-            name = 'Đại quái';
-        } else if (this.currentStep === 10) {
-            type = 'Boss';
-            emoji = '🐉';
-            hp = 500;
-            name = 'Rồng Chúa';
+        if (error) throw error;
+
+        if (monsters && monsters.length > 0) {
+            // 3. Chọn ngẫu nhiên một con quái trong danh sách trả về
+            const randomMonster = monsters[Math.floor(Math.random() * monsters.length)];
+
+            this.monster = {
+                ...randomMonster,
+                hp: randomMonster.base_hp,
+                max_hp: randomMonster.base_hp,
+                atk: randomMonster.base_atk,
+                state: 'idle',
+                isDead: false,
+                sprite_url: randomMonster.image_url
+            };
+
+            // 4. Cập nhật hình ảnh hiển thị lên thẻ #monster
+            const monsterEl = document.getElementById('monster');
+            if (monsterEl) {
+                monsterEl.style.backgroundImage = `url('${this.monster.sprite_url}')`;
+                monsterEl.className = 'sprite';
+                console.log("Monster đã spawn:", this.monster.name);
+            }
         } else {
-            const minions = [
-                {n: 'Nấm độc', e: '🍄'}, {n: 'Nhện con', e: '🕷️'}, 
-                {n: 'Ma nhỏ', e: '👻'}, {n: 'Sói xám', e: '🐺'}
-            ];
-            const random = minions[Math.floor(Math.random() * minions.length)];
-            name = random.n;
-            emoji = random.e;
+            console.error("Không tìm thấy dữ liệu quái vật loại:", targetType);
         }
 
-        this.monster = {
-            name: name,
-            emoji: emoji,
-            hp: hp,
-            max_hp: hp,
-            type: type,
-            state: 'idle', // trạng thái hiện tại
-            isDead: false,
-
+    } catch (err) {
+        console.error("Lỗi khi spawn monster:", err);
+        // Quái vật dự phòng nếu lỗi
+        this.monster = { 
+            name: "Quái Vật Bóng Tối", 
+            hp: 50, max_hp: 50, atk: 5, 
+            type: "Normal", 
+            state: 'idle' 
         };
-        
-    },
+    }
+},
 
     /**
      * Cập nhật toàn bộ các vùng Dashboard và UserUI
      */
     updateAllUI() {
+        // 1. Cập nhật thanh tiến trình bản đồ
         const progressFill = document.getElementById('progress-fill');
-        if (progressFill) progressFill.style.width = `${(this.currentStep / this.totalSteps) * 100}%`;
+        if (progressFill) {
+            progressFill.style.width = `${(this.currentStep / this.totalSteps) * 100}%`;
+        }
         
-        const mEmoji = document.getElementById('monster-emoji');
-        if (mEmoji) mEmoji.innerText = this.monster.emoji;
-        
+        // 2. Cập nhật thông tin Quái vật (Thêm dấu ?. để an toàn tuyệt đối)
         const mName = document.getElementById('monster-name');
-        if (mName) mName.innerText = this.monster.name;
+        if (mName) {
+            mName.innerText = this.monster?.name || "Đang tìm đối thủ...";
+        }
         
+        // 3. Cập nhật chỉ số máu (HP)
         this.updateBattleStatus();
-
+    
+        // 4. Cập nhật Dashboard (Thông tin đối thủ)
         const dashboard = document.getElementById('dashboard');
-        if (dashboard) {
+        // CHÈN THÊM: Kiểm tra this.monster trước khi render
+        if (dashboard && this.monster) {
             dashboard.innerHTML = `
                 <h3 class="text-xl font-black text-red-600 uppercase mb-2">Đối thủ</h3>
                 <div class="bg-white/50 rounded-2xl p-3 border-2 border-red-200">
                     <p class="font-bold text-lg">${this.monster.name}</p>
                     <p class="text-sm text-red-500 font-bold uppercase">${this.monster.type}</p>
                     <div class="mt-4 text-xs font-bold text-gray-500 italic">
-                        "Cố lên bé ơi! Đánh bại nó để đi tiếp nào."
+                        "Cố lên! Đánh bại nó để đi tiếp nào."
                     </div>
+                </div>
+                <div class="mt-auto border-t-2 border-white/50 pt-4">
+                    <a href="admin.html" class="flex items-center gap-2 p-3 rounded-2xl bg-white/30 hover:bg-white/50 transition-all text-red-600 font-bold group">
+                        <span class="text-2xl group-hover:rotate-90 transition-transform duration-500">⚙️</span>
+                        <span class="text-sm uppercase tracking-wider">Quản trị</span>
+                    </a>
                 </div>
             `;
         }
-
+    
+        // 5. Cập nhật UserUI (Chỉ cập nhật nếu chưa có nội dung để tránh giật lag)
         const userUI = document.getElementById('userUI');
-        if (userUI) {
+        // XOÁ: Xoá việc render lại hòm đồ liên tục nếu nó đã tồn tại
+        if (userUI && userUI.children.length === 0) { 
             const inventoryGrid = Array(50).fill(0).map(() => 
                 `<div class="w-full aspect-square bg-white/30 border border-blue-100 rounded-sm hover:bg-white/50 transition-colors"></div>`
             ).join('');
-
+    
             userUI.innerHTML = `
                 <div class="flex flex-col items-center w-full">
-                    <div class="w-20 h-20 bg-white rounded-2xl flex items-center justify-center text-4xl shadow-inner border-2 border-blue-200 mb-2">
-                        ${this.player.avatar_key}
+                    <div class="w-20 h-20 bg-white rounded-2xl flex items-center justify-center text-4xl shadow-inner border-2 border-blue-200 mb-2 overflow-hidden">
+                        <img src="./assets/hero_head.png" class="w-full h-full object-contain" 
+                             onerror="this.src='https://api.dicebear.com/7.x/pixel-art/svg?seed=${this.player?.display_name}'">
                     </div>
-                    <p class="font-black text-blue-600 uppercase text-sm text-center leading-tight">${this.player.display_name}</p>
-                    <p class="text-[10px] font-bold text-orange-500">Cấp độ ${this.player.level || 1}</p>
+                    <p class="font-black text-blue-600 uppercase text-sm text-center leading-tight">${this.player?.display_name || 'Người chơi'}</p>
+                    <p class="text-[10px] font-bold text-orange-500">Cấp độ ${this.player?.level || 1}</p>
                 </div>
-
-                <div class="w-full mt-2 space-y-1">
-                    <p class="text-[9px] font-bold uppercase text-gray-500 text-center">Trang bị</p>
-                    <div class="grid grid-cols-2 gap-2 px-2">
-                        <div class="aspect-square bg-white/50 border-2 border-dashed border-blue-200 rounded-xl flex items-center justify-center text-xl">⚔️</div>
-                        <div class="aspect-square bg-white/50 border-2 border-dashed border-blue-200 rounded-xl flex items-center justify-center text-xl">🛡️</div>
-                    </div>
-                </div>
-
-                <div class="w-full mt-4 flex flex-col h-full overflow-hidden">
-                    <p class="text-[9px] font-bold uppercase text-gray-500 mb-1 text-center">Hòm đồ (50)</p>
-                    <div class="grid grid-cols-5 gap-0.5 p-1 bg-blue-50/50 rounded-lg border border-blue-100">
-                        ${inventoryGrid}
-                    </div>
-                </div>
-            `;
+                `;
         }
     },
-
-    setState(entity, newState) {
-        entity.state = newState;
-        this.updateBattleSprite();
-    },
-
-    updateBattleSprite() {
-        const heroEl = document.getElementById('hero');
-        const monsterEl = document.getElementById('monster');
-    
-        if (heroEl) {
-            heroEl.dataset.state = this.player.state;
-        }
-    
-        if (monsterEl) {
-            monsterEl.dataset.state = this.monster.state;
-        }
-    }    
 
     startBattleTurn(attacker, defender) {
-        // Khoá input trong lượt
         this.isBattling = true;
-        this.setRunOffset(attacker);
-
-        // 1. attacker chạy tới
-        this.setState(attacker, 'running');
+    
+        const attackerEl = (attacker === this.player) 
+            ? document.getElementById('hero') 
+            : document.getElementById('monster');
+    
+        if (!attackerEl) return;
+    
+        attackerEl.classList.add('run-forward');
     
         setTimeout(() => {
-            // 2. attacker tấn công
-            this.setState(attacker, 'attack');
+            // Phát âm thanh
+            if (attacker === this.player) {
+                this.heroSlashSound.currentTime = 0;
+                this.heroSlashSound.play();
+            } else {
+                this.monsterPunchSound.currentTime = 0;
+                this.monsterPunchSound.play();
+            }
+    
+            // Gây damage
+            this.applyDamage(attacker, defender);
+    
+            // Quay về
+            attackerEl.classList.remove('run-forward');
+            attackerEl.classList.add('run-back');
     
             setTimeout(() => {
-                // 3. defender bị đánh
-                this.applyDamage(attacker, defender);
-                this.setState(defender, 'hit');
-    
-                setTimeout(() => {
-                    // 4. attacker chạy về
-                    this.setState(attacker, 'running');
-                    this.setState(defender, 'idle');
-    
-                    setTimeout(() => {
-                        // 5. kết thúc lượt
-                        this.setState(attacker, 'idle');
-                        this.resetRunOffset();
-                        this.isBattling = false;
-                    }, 400);
-    
-                }, 400);
-    
+                attackerEl.classList.remove('run-back');
+                this.isBattling = false; // <-- reset lại ở đây 
+            
+                if (attacker === this.player && this.monster.hp > 0) {
+                    this.nextQuestion();
+                }
+        
             }, 400);
     
         }, 400);
-    }
+    },
     
-};
-
-setRunOffset(entity) {
-    const battle = document.getElementById('battleview');
-    if (!battle) return;
-
-    const width = battle.offsetWidth;
-    const runDistance = Math.floor(width * 0.35);
-
-    battle.style.setProperty(
-        entity === this.player ? '--hero-run' : '--monster-run',
-        `${runDistance}px`
-    );
-}
-
-resetRunOffset() {
-    const battle = document.getElementById('battleview');
-    if (!battle) return;
-
-    battle.style.setProperty('--hero-run', '0px');
-    battle.style.setProperty('--monster-run', '0px');
-}
-
-applyDamage(attacker, defender) {
-    if (!defender || defender.hp <= 0) return;
-
-    const damage = attacker.atk || 1;
-    defender.hp -= damage;
-
-    if (defender.hp < 0) defender.hp = 0;
-
-    this.updateBattleStatus();
-
-    if (defender.hp <= 0) {
-        defender.hp = 0;
-        defender.isDead = true;
-        this.setState(defender, 'die');
-
-        if (defender === this.monster) {
-            this.handleMonsterDefeat();
-        } else if (defender === this.player) {
-            setTimeout(() => {
-                alert('Game Over!');
-                location.reload();
-            }, 1200);
+    createStars(x, y) {
+        const battle = document.getElementById('battleview');
+        if (!battle) return;
+    
+        // Tạo 8 ngôi sao văng ra các hướng
+        for (let i = 0; i < 8; i++) {
+            const star = document.createElement('div');
+            star.className = 'star-particle';
+            star.innerText = '⭐';
+            star.style.left = x + 'px';
+            star.style.top = y + 'px';
+    
+            // Tính toán hướng văng ngẫu nhiên (360 độ)
+            const angle = (Math.PI * 2 / 8) * i;
+            const velocity = 100 + Math.random() * 100;
+            const tx = Math.cos(angle) * velocity;
+            const ty = Math.sin(angle) * velocity;
+    
+            star.style.setProperty('--tx', `${tx}px`);
+            star.style.setProperty('--ty', `${ty}px`);
+    
+            battle.appendChild(star);
+    
+            // Xóa ngôi sao khỏi màn hình sau khi bay xong
+            setTimeout(() => star.remove(), 700);
         }
-    }
-}
+    },
 
+    /**
+     * Xử lý gây sát thương, hiệu ứng rung và văng sao
+     */
+    applyDamage(attacker, defender) {
+        // 1. Kiểm tra an toàn: Nếu đối tượng không tồn tại hoặc đã hết máu thì thoát
+        const currentHp = (defender === this.player) ? this.player.hp_current : defender.hp;
+        if (currentHp <= 0) return;
 
+        // 2. Tính toán sát thương (Mặc định là 5 nếu không có chỉ số atk)
+        const damage = attacker.atk || 5;
+
+        // 3. Trừ máu dựa trên loại đối tượng
+        if (defender === this.player) {
+            // Nếu defender là người chơi, dùng hp_current
+            this.player.hp_current -= damage;
+            if (this.player.hp_current < 0) this.player.hp_current = 0;
+        } else {
+            // Nếu defender là quái vật, dùng hp
+            defender.hp -= damage;
+            if (defender.hp < 0) defender.hp = 0;
+        }
+
+        // 4. Xử lý hiệu ứng hình ảnh (Rung và Sao)
+        const defenderEl = (defender === this.player) ? document.getElementById('hero') : document.getElementById('monster');
+        
+        if (defenderEl) {
+            // Hiệu ứng rung (Shake)
+            defenderEl.classList.remove('shake');
+            void defenderEl.offsetWidth; // Reset animation của trình duyệt
+            defenderEl.classList.add('shake');
+            
+            // Hiệu ứng văng ngôi sao (Stars)
+            const rect = defenderEl.getBoundingClientRect();
+            const battleView = document.getElementById('battleview');
+            const bvRect = battleView.getBoundingClientRect();
+
+            // Tọa độ tâm của nhân vật
+            const centerX = rect.left - bvRect.left + (rect.width / 2);
+            const centerY = rect.top - bvRect.top + (rect.height / 2);
+
+            this.createStars(centerX, centerY);
+
+            // Dọn dẹp class shake sau khi diễn xong
+            setTimeout(() => defenderEl.classList.remove('shake'), 400);
+        }
+
+        this.showDamage(defender, damage);
+
+        // 5. Cập nhật thanh máu trên giao diện
+        this.updateBattleStatus();
+
+        // 6. Kiểm tra điều kiện kết thúc (Chết)
+        if (defender === this.player && this.player.hp_current <= 0) {
+            setTimeout(() => {
+                alert("Bạn đã bị đánh bại! Hãy cố gắng ở lần sau.");
+                location.reload();
+            }, 500);
+        } else if (defender === this.monster && this.monster.hp <= 0) {
+            this.monster.isDead = true;
+            this.handleMonsterDefeat();
+        }
+    },
+};
 
 window.GameEngine = GameEngine;

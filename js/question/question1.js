@@ -102,10 +102,11 @@ const QuestionManager = {
     renderQuestionUI(imgUrl, entry) {
         const container = document.getElementById('questionarea');
         if (!container) return;
-
+    
+        container.innerHTML = '';
         const wordEn = String(entry.english_word || "").trim();
         const wordVi = String(entry.vietnamese_translation || "").trim();
-
+    
         // Thêm Style cho hiệu ứng rơi
         if (!document.getElementById('qm-styles')) {
             const style = document.createElement('style');
@@ -118,29 +119,27 @@ const QuestionManager = {
                 }
                 .letter-fall { animation: fallIn 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards; }
                 .preview-text { transition: opacity 0.5s ease-out; }
-                .space-box { width: 24px; } /* Độ rộng cho khoảng trắng khi xếp lên */
+                .space-box { width: 24px; }
             `;
             document.head.appendChild(style);
         }
-
+    
         container.innerHTML = `
-            <div class="flex w-full h-full p-4 relative overflow-hidden bg-white rounded-3xl">
-                <!-- Bên phải: Vùng chữ cái (Chỉnh sửa để chiếm full chiều rộng khi không có ảnh) -->
-                <div class="flex-1 flex flex-col justify-center gap-8 py-2 px-4 w-full">
+            <div class="flex w-full h-full p-4 relative overflow-hidden bg-black rounded-3xl">
+                <div class="flex-1 flex flex-col justify-start gap-8 py-2 px-4 w-full">
                     
-                    <!-- Hiển thị từ hoàn chỉnh ban đầu (Sẽ biến mất sau 1.5s) -->
-                    <div id="preview-area" class="absolute inset-0 z-20 bg-white flex flex-col items-center justify-center pointer-events-none preview-text">
-                        <h2 class="text-5xl font-black text-blue-600 mb-2 uppercase tracking-widest">${wordEn}</h2>
-                        <h3 class="text-3xl font-bold text-gray-400 italic">${wordVi}</h3>
-                        <div class="mt-4 text-sm text-gray-400">🔊 Đang phát âm...</div>
+                    <!-- Hiển thị từ hoàn chỉnh luôn ở đầu -->
+                    <div id="preview-area" class="w-full flex flex-col items-center justify-center mb-6">
+                        <h2 class="text-4xl font-black text-blue-400 uppercase tracking-widest">${wordEn}</h2>
+                        <h3 class="text-2xl font-bold text-green-400 italic">${wordVi}</h3>
                     </div>
-
-                    <!-- Khu vực tương tác thực sự -->
+    
+                    <!-- Khu vực tương tác -->
                     <div class="flex flex-col items-center w-full">
                         <div id="en-slots" class="flex flex-wrap justify-center gap-2 mb-8 min-h-[50px] w-full border-b-2 border-dashed border-gray-200 pb-2"></div>
                         <div id="en-letters" class="flex flex-wrap justify-center gap-3 min-h-[50px] w-full"></div>
                     </div>
-
+    
                     <div class="flex flex-col items-center w-full">
                         <div id="vi-slots" class="flex flex-wrap justify-center gap-2 mb-8 min-h-[50px] w-full border-b-2 border-dashed border-gray-200 pb-2"></div>
                         <div id="vi-letters" class="flex flex-wrap justify-center gap-3 min-h-[50px] w-full"></div>
@@ -148,18 +147,10 @@ const QuestionManager = {
                 </div>
             </div>
         `;
-
-        // Sau 1.5 giây, ẩn từ mẫu và bắt đầu rơi chữ cái
-        setTimeout(() => {
-            const preview = document.getElementById('preview-area');
-            if (preview) preview.style.opacity = '0';
-            
-            setTimeout(() => {
-                if (preview) preview.remove();
-                this.animateLetters(wordEn, 'en');
-                this.animateLetters(wordVi, 'vi');
-            }, 500);
-        }, 1500);
+    
+        // Gọi hiệu ứng rơi chữ ngay lập tức
+        this.animateLetters(wordEn, 'en');
+        this.animateLetters(wordVi, 'vi');
     },
 
     /**
@@ -173,6 +164,9 @@ const QuestionManager = {
         const slotsContainer = document.getElementById(`${lang}-slots`);
         if (!lettersContainer || !slotsContainer) return;
 
+        lettersContainer.innerHTML = '';
+        slotsContainer.innerHTML = '';
+
         // Bỏ qua khoảng trắng khi tạo danh sách chữ cái để chơi bên dưới
         const cleanLetters = word.split('').filter(char => char !== ' ');
         
@@ -182,6 +176,12 @@ const QuestionManager = {
         shuffled.forEach((item, index) => {
             const btn = document.createElement('div');
             btn.className = `w-12 h-12 bg-white border-2 border-gray-400 rounded-xl shadow-[4px_4px_0px_#ccc] flex items-center justify-center text-2xl font-bold cursor-pointer hover:bg-yellow-50 transform transition-all opacity-0 letter-fall`;
+
+            setTimeout(() => {
+                btn.classList.add('letter-fall');
+            }, 10);
+            
+
             btn.style.animationDelay = `${index * 0.1}s`;
             btn.innerText = item.char.toUpperCase();
             
@@ -208,7 +208,7 @@ const QuestionManager = {
 
                     // Chèn chữ cái vào UI
                     const finalLetter = document.createElement('div');
-                    finalLetter.className = `w-12 h-12 ${lang === 'en' ? 'bg-blue-500' : 'bg-green-500'} text-white rounded-xl border-2 border-white shadow-lg flex items-center justify-center text-2xl font-black animate-bounce`;
+                    finalLetter.className = `w-12 h-12 text-white rounded-xl border-2 border-white flex items-center justify-center text-2xl font-black ${lang === 'en' ? 'bg-blue-500 glow-en' : 'bg-green-500 glow-vi'}`;
                     finalLetter.innerText = item.char.toUpperCase();
                     slotsContainer.appendChild(finalLetter);
 
