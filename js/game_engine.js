@@ -56,7 +56,7 @@ const GameEngine = {
         const questionArea = document.getElementById('questionarea');
         
         if (window.QuestionManager) {
-            window.QuestionManager.loadType1();
+            window.QuestionManager.startQuestion('normal');
         } else {
             console.warn("GameEngine: Đang đợi QuestionManager tải...");
             

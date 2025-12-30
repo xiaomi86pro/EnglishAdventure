@@ -1,266 +1,139 @@
-/**
- * QuestionManager - Quản lý việc tải và hiển thị các loại câu hỏi
- */
-const QuestionManager = {
+// js/question/question1.js
+// Question Type 1 – Word Order
+// KHỚP 100% layout #questionarea hiện tại
+
+const QuestionType1 = {
     currentData: null,
     enCompleted: "",
-    viCompleted: "",
-    
-    /**
-     * Hàm phát âm từ vựng sử dụng Web Speech API
-     */
-    speakWord(text, lang = 'en-US') {
+    onCorrect: null,
+    onWrong: null,
+
+    speakWord(text, lang = "en-US") {
         if (!window.speechSynthesis) return;
-        
-        // Hủy các yêu cầu phát âm đang chờ để tránh chồng chéo
-        window.speechSynthesis.cancel();
-        
-        const utterance = new SpeechSynthesisUtterance(text);
-        utterance.lang = lang;
-        utterance.rate = 0.9; // Tốc độ hơi chậm một chút cho bé dễ nghe
-        utterance.pitch = 1.1; // Giọng cao hơn một chút cho sinh động
-        
-        window.speechSynthesis.speak(utterance);
+        speechSynthesis.cancel();
+        const u = new SpeechSynthesisUtterance(text);
+        u.lang = lang;
+        speechSynthesis.speak(u);
     },
 
-    /**
-     * Tải câu hỏi loại 1: Sắp xếp chữ cái Anh - Việt
-     * @param {string} enemyType - Loại kẻ địch ('normal', 'elite', 'boss')
-     */
-    async loadType1(enemyType = 'normal') {
+    async loadType1(enemyType = "normal") {
         try {
             if (!window.supabase) {
-                console.warn("QuestionManager: Đang đợi Supabase...");
-                setTimeout(() => this.loadType1(enemyType), 500);
+                setTimeout(() => this.loadType1(enemyType), 300);
                 return;
             }
 
-            const supabase = window.supabase;
-            
-            const { data, error } = await supabase
-                .from('vocabulary')
-                .select('english_word, vietnamese_translation');
+            const { data, error } = await window.supabase
+                .from("vocabulary")
+                .select("english_word, vietnamese_translation");
 
-            if (error) {
-                console.error("Supabase Error:", error);
-                throw new Error(`Lỗi truy vấn: ${error.message}`);
-            }
-            
-            if (!data || data.length === 0) {
-                throw new Error("Bảng vocabulary đang trống hoặc không có quyền truy cập");
-            }
-            
-            // 1. Lọc các từ hợp lệ (không rỗng)
-            let validData = data.filter(item => item && item.english_word && item.vietnamese_translation);
-            
-            // 2. Lọc theo độ khó dựa trên enemyType
-            // Quái thường: <= 5 chữ cái. Elite/Boss: > 5 chữ cái.
-            if (enemyType === 'normal') {
-                validData = validData.filter(item => item.english_word.trim().length <= 5);
+            if (error) throw error;
+            if (!data || data.length === 0) throw new Error("Vocabulary trống");
+
+            let valid = data.filter(v => v?.english_word && v?.vietnamese_translation);
+
+            if (enemyType === "normal") {
+                valid = valid.filter(v => v.english_word.length <= 5);
             } else {
-                validData = validData.filter(item => item.english_word.trim().length > 5);
+                valid = valid.filter(v => v.english_word.length > 5);
             }
 
-            // Trường hợp dự phòng nếu bộ lọc quá gắt không còn từ nào
-            if (validData.length === 0) {
-                console.warn(`Không tìm thấy từ phù hợp cho loại ${enemyType}, lấy từ danh sách gốc.`);
-                validData = data.filter(item => item && item.english_word);
-            }
+            if (valid.length === 0) valid = data;
 
-            const randomEntry = validData[Math.floor(Math.random() * validData.length)];
-            this.currentData = randomEntry;
+            this.currentData = valid[Math.floor(Math.random() * valid.length)];
             this.enCompleted = "";
-            this.viCompleted = "";
 
-            // Phát âm từ tiếng Anh ngay khi vừa load được từ
-            this.speakWord(randomEntry.english_word, 'en-US');
-
-            // Tạm thời khóa phần hình ảnh
-            const imageUrl = ""; 
-            
-            this.renderQuestionUI(imageUrl, randomEntry);
+            this.renderQuestionUI();
+            this.speakWord(this.currentData.english_word);
 
         } catch (err) {
-            console.error("Lỗi QuestionManager:", err);
-            const container = document.getElementById('questionarea');
-            if (container) {
-                container.innerHTML = `
-                    <div class="flex flex-col items-center justify-center p-6 text-center">
-                        <div class="text-red-500 font-bold mb-2">⚠️ ${err.message}</div>
-                        <button onclick="window.QuestionManager.loadType1('${enemyType}')" class="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors">
-                            Thử tải lại dữ liệu
-                        </button>
-                    </div>
-                `;
-            }
+            console.error("QuestionType1:", err);
         }
     },
 
-    /**
-     * Vẽ giao diện câu hỏi vào vùng questionarea
-     */
-    renderQuestionUI(imgUrl, entry) {
-        const container = document.getElementById('questionarea');
-        if (!container) return;
-    
-        container.innerHTML = '';
-        const wordEn = String(entry.english_word || "").trim();
-        const wordVi = String(entry.vietnamese_translation || "").trim();
-    
-        // Thêm Style cho hiệu ứng rơi
-        if (!document.getElementById('qm-styles')) {
-            const style = document.createElement('style');
-            style.id = 'qm-styles';
-            style.innerHTML = `
-                @keyframes fallIn {
-                    0% { transform: translateY(-100px); opacity: 0; }
-                    60% { transform: translateY(10px); opacity: 1; }
-                    100% { transform: translateY(0); opacity: 1; }
-                }
-                .letter-fall { animation: fallIn 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards; }
-                .preview-text { transition: opacity 0.5s ease-out; }
-                .space-box { width: 24px; }
-            `;
-            document.head.appendChild(style);
-        }
-    
-        container.innerHTML = `
-            <div class="flex w-full h-full p-4 relative overflow-hidden bg-black rounded-3xl">
-                <div class="flex-1 flex flex-col justify-start gap-8 py-2 px-4 w-full">
-                    
-                    <!-- Hiển thị từ hoàn chỉnh luôn ở đầu -->
-                    <div id="preview-area" class="w-full flex flex-col items-center justify-center mb-6">
-                        <h2 class="text-4xl font-black text-blue-400 uppercase tracking-widest">${wordEn}</h2>
-                        <h3 class="text-2xl font-bold text-green-400 italic">${wordVi}</h3>
-                    </div>
-    
-                    <!-- Khu vực tương tác -->
-                    <div class="flex flex-col items-center w-full">
-                        <div id="en-slots" class="flex flex-wrap justify-center gap-2 mb-8 min-h-[50px] w-full border-b-2 border-dashed border-gray-200 pb-2"></div>
-                        <div id="en-letters" class="flex flex-wrap justify-center gap-3 min-h-[50px] w-full"></div>
-                    </div>
-    
-                    <div class="flex flex-col items-center w-full">
-                        <div id="vi-slots" class="flex flex-wrap justify-center gap-2 mb-8 min-h-[50px] w-full border-b-2 border-dashed border-gray-200 pb-2"></div>
-                        <div id="vi-letters" class="flex flex-wrap justify-center gap-3 min-h-[50px] w-full"></div>
-                    </div>
+    renderQuestionUI() {
+        const area = document.getElementById("questionarea");
+        if (!area || !this.currentData) return;
+
+        const word = this.currentData.english_word.toUpperCase();
+        const meaning = this.currentData.vietnamese_translation;
+
+        // 🔴 QUAN TRỌNG: 1 ROOT WRAPPER DUY NHẤT
+        area.innerHTML = `
+            <div class="w-full h-full flex flex-col justify-between">
+
+                <!-- Nghĩa -->
+                <div class="text-center text-xl font-semibold text-gray-200">
+                    ${meaning}
                 </div>
+
+                <!-- Answer -->
+                <div id="answer"
+                     class="text-center text-3xl font-bold tracking-widest min-h-[3rem]">
+                </div>
+
+                <!-- Letters -->
+                <div id="letters"
+                     class="flex flex-wrap justify-center gap-3">
+                </div>
+
             </div>
         `;
-    
-        // Gọi hiệu ứng rơi chữ ngay lập tức
-        this.animateLetters(wordEn, 'en');
-        this.animateLetters(wordVi, 'vi');
-    },
 
-    /**
-     * Tạo hiệu ứng chữ cái rơi và xáo trộn
-     */
-    animateLetters(word, lang) {
-        if (window.GameEngine && window.GameEngine.isBattling) return;
-        if (window.GameEngine && window.GameEngine.monster?.isDead) return;
+        const lettersBox = area.querySelector("#letters");
+        const shuffled = word.split("").sort(() => Math.random() - 0.5);
 
-        const lettersContainer = document.getElementById(`${lang}-letters`);
-        const slotsContainer = document.getElementById(`${lang}-slots`);
-        if (!lettersContainer || !slotsContainer) return;
+        shuffled.forEach(char => {
+            const btn = document.createElement("button");
+            btn.textContent = char;
 
-        lettersContainer.innerHTML = '';
-        slotsContainer.innerHTML = '';
+            // ⚠️ KHÔNG STYLE – CHỈ DÙNG CLASS CŨ
+            btn.className =
+                "px-4 py-2 rounded-xl font-bold text-xl game-btn";
 
-        // Bỏ qua khoảng trắng khi tạo danh sách chữ cái để chơi bên dưới
-        const cleanLetters = word.split('').filter(char => char !== ' ');
-        
-        const shuffled = cleanLetters.map((char, originalIdx) => ({ char, originalIdx }))
-                           .sort(() => Math.random() - 0.5);
-        
-        shuffled.forEach((item, index) => {
-            const btn = document.createElement('div');
-            btn.className = `w-12 h-12 bg-white border-2 border-gray-400 rounded-xl shadow-[4px_4px_0px_#ccc] flex items-center justify-center text-2xl font-bold cursor-pointer hover:bg-yellow-50 transform transition-all opacity-0 letter-fall`;
-
-            setTimeout(() => {
-                btn.classList.add('letter-fall');
-            }, 10);
-            
-
-            btn.style.animationDelay = `${index * 0.1}s`;
-            btn.innerText = item.char.toUpperCase();
-            
-            btn.onclick = () => {
-                const currentStr = lang === 'en' ? this.enCompleted : this.viCompleted;
-                
-                // Xác định index thực tế của ký tự tiếp theo trong từ gốc (bao gồm cả khoảng trắng)
-                let actualIdx = 0;
-                let cleanCount = 0;
-                while (actualIdx < word.length) {
-                    if (word[actualIdx] !== ' ') {
-                        if (cleanCount === currentStr.length) break;
-                        cleanCount++;
-                    }
-                    actualIdx++;
-                }
-
-                const targetChar = word[actualIdx];
-
-                if (item.char.toLowerCase() === targetChar.toLowerCase()) {
-                    // Cập nhật trạng thái hoàn thành
-                    if (lang === 'en') this.enCompleted += item.char;
-                    else this.viCompleted += item.char;
-
-                    // Chèn chữ cái vào UI
-                    const finalLetter = document.createElement('div');
-                    finalLetter.className = `w-12 h-12 text-white rounded-xl border-2 border-white flex items-center justify-center text-2xl font-black ${lang === 'en' ? 'bg-blue-500 glow-en' : 'bg-green-500 glow-vi'}`;
-                    finalLetter.innerText = item.char.toUpperCase();
-                    slotsContainer.appendChild(finalLetter);
-
-                    // Kiểm tra xem ký tự TIẾP THEO trong từ gốc có phải là khoảng trắng không
-                    let nextIdx = actualIdx + 1;
-                    while (nextIdx < word.length && word[nextIdx] === ' ') {
-                        const spaceBox = document.createElement('div');
-                        spaceBox.className = "space-box h-12"; 
-                        slotsContainer.appendChild(spaceBox);
-                        nextIdx++;
-                    }
-
-                    btn.style.visibility = 'hidden';
-                    this.checkProgress();
-                } else {
-                    btn.classList.add('bg-red-100', 'border-red-400');
-
-                    if (window.GameEngine && !window.GameEngine.isBattling) {
-                        window.GameEngine.startBattleTurn(window.GameEngine.monster, window.GameEngine.player);
-                    }
-
-                    setTimeout(() => btn.classList.remove('bg-red-100', 'border-red-400'), 500);
-
-                }
-            };
-
-            lettersContainer.appendChild(btn);
+            btn.onclick = () => this.handleLetterClick(btn);
+            lettersBox.appendChild(btn);
         });
     },
 
-    /**
-     * Kiểm tra tiến trình hoàn thành
-     */
+    handleLetterClick(btn) {
+        if (btn.disabled) return;
+
+        btn.disabled = true;
+        btn.classList.add("opacity-40");
+
+        this.enCompleted += btn.textContent;
+
+        const answer = document.getElementById("answer");
+        if (answer) answer.textContent = this.enCompleted;
+
+        this.checkProgress();
+    },
+
     checkProgress() {
         if (!this.currentData) return;
-        const wordEn = this.currentData.english_word;
-        const wordVi = this.currentData.vietnamese_translation;
 
-        const cleanEn = wordEn.replace(/\s+/g, '').toLowerCase();
-        const cleanVi = wordVi.replace(/\s+/g, '').toLowerCase();
+        const target = this.currentData.english_word.toUpperCase();
 
-        if (this.enCompleted.toLowerCase() === cleanEn && 
-            this.viCompleted.toLowerCase() === cleanVi) {
-            
-            // Phát âm lại từ tiếng Anh khi bé hoàn thành đúng toàn bộ
-            this.speakWord(wordEn, 'en-US');
+        if (this.enCompleted.length < target.length) return;
 
-            if (window.GameEngine) {
-                setTimeout(() => window.GameEngine.handleCorrect(), 600);
+        if (this.enCompleted === target) {
+            if (typeof this.onCorrect === "function") {
+                this.onCorrect();
+            }
+        } else {
+            if (typeof this.onWrong === "function") {
+                this.onWrong();
             }
         }
+    },
+
+    destroy() {
+        const area = document.getElementById("questionarea");
+        if (area) area.innerHTML = "";
+        this.currentData = null;
+        this.enCompleted = "";
     }
 };
 
-window.QuestionManager = QuestionManager;
+window.QuestionType1 = QuestionType1;
