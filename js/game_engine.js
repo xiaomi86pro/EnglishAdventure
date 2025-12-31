@@ -26,8 +26,10 @@ const GameEngine = {
     
         this.player = {
             ...userData,
-            max_hp: heroData.base_hp,
-            hp_current: userData.hp_current || heroData.base_hp,
+            base_hp: heroData.base_hp,
+            hp_bonus: userData.hp_current || 0, // phần cộng thêm khi lên level
+            max_hp: heroData.base_hp + (userData.hp_current || 0),
+            hp_current: heroData.base_hp + (userData.hp_current || 0), // bắt đầu đầy máu
             atk: heroData.base_atk,
             sprite_url: heroData.image_url
         };
@@ -128,7 +130,7 @@ const GameEngine = {
     async nextQuestion() {
         const questionArea = document.getElementById('questionarea');
         const type = this.monster?.type || "normal";
-        
+    
         // Hiện loading
         if (questionArea && !questionArea.innerHTML.includes('Đang chuẩn bị')) {
             questionArea.innerHTML = `
@@ -138,17 +140,12 @@ const GameEngine = {
                 </div>
             `;
         }
-        
+    
         // Gọi QuestionManager để load câu hỏi
         if (window.QuestionManager) {
             try {
-                if (type === "normal") {
-                    await window.QuestionManager.loadType1("normal");
-                } else if (type === "elite") {
-                    await window.QuestionManager.loadType2("elite");
-                } else if (type === "boss") {
-                    await window.QuestionManager.loadType3("boss");
-                }
+                // Chỉ cần gọi hàm chung, để QuestionManager tự quyết định loại câu hỏi
+                await window.QuestionManager.startQuestion(type);
             } catch (error) {
                 console.error("Lỗi load question:", error);
                 setTimeout(() => this.nextQuestion(), 500);
@@ -158,6 +155,7 @@ const GameEngine = {
             setTimeout(() => this.nextQuestion(), 500);
         }
     },
+    
     /**
      * Xử lý khi người chơi trả lời đúng hoàn toàn
      * @param {string} word - Từ tiếng Anh đã hoàn thành để tính damage
@@ -192,6 +190,13 @@ const GameEngine = {
             this.updateBattleStatus(); 
         }, 500);
     },
+
+    handleWrong() {
+        if (this.isBattling) return;
+        // Monster tấn công người chơi khi trả lời sai
+        this.startBattleTurn(this.monster, this.player);
+    },
+    
 
     showDamage(defender, damage) {
         const battle = document.getElementById('battleview');
@@ -238,6 +243,7 @@ const GameEngine = {
             this.nextQuestion();
         } else {
             alert("Chúc mừng! Bạn đã hoàn thành bản đồ!");
+            this.showMainMenu();
         }
     }, 1500);
 },

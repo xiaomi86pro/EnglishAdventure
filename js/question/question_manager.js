@@ -8,24 +8,26 @@ const QuestionManager = {
      * Load động một QuestionType từ file
      */
     async loadQuestionType(typeNumber) {
-        // Nếu đã load rồi thì dùng luôn
-        if (this.loadedTypes[typeNumber]) {
-            return this.loadedTypes[typeNumber];
-        }
-        
         try {
-            // Import động file question
+            if (this.loadedTypes[typeNumber]) {
+                console.log("Cache hit for type", typeNumber, this.loadedTypes[typeNumber]);
+                return this.loadedTypes[typeNumber];
+            }
+
             const module = await import(`./question${typeNumber}.js`);
-            
-            // Lưu vào cache
-            this.loadedTypes[typeNumber] = module.default || window[`QuestionType${typeNumber}`];
-            
-            return this.loadedTypes[typeNumber];
+            console.log("Imported module for type", typeNumber, module);
+
+            const qType = module.default;   // chỉ lấy default export
+            this.loadedTypes[typeNumber] = qType;
+            console.log("LoadedTypes set for type", typeNumber, qType);
+
+            return qType;
         } catch (error) {
             console.error(`Lỗi load QuestionType${typeNumber}:`, error);
             return null;
         }
     },
+
     
     /**
      * Load câu hỏi loại 1 (word sort)
@@ -107,13 +109,19 @@ const QuestionManager = {
         }
 
         const QuestionType3 = await this.loadQuestionType(3);
+        console.log("loadType3 got object:", QuestionType3);
+
+
         if (!QuestionType3) return;
 
         this.currentQuestion = QuestionType3;
+        console.log("CurrentQuestion set to type3:", this.currentQuestion);
+
         this.currentQuestion.onCorrect = () => this.handleQuestionCorrect();
         this.currentQuestion.onWrong = () => this.handleQuestionWrong();
 
         if (typeof this.currentQuestion.load === 'function') {
+            console.log("Calling QuestionType3.load with enemyType:", enemyType);
             this.currentQuestion.load(enemyType);
         }
     },
@@ -127,14 +135,14 @@ const QuestionManager = {
 
         if (enemyType === 'normal') {
             if (Math.random() > 0.5) {
-                await this.loadType3(enemyType);
+                await this.loadType1(enemyType);
             } else {
                 await this.loadType3(enemyType);
             }
         } else if (enemyType === 'elite') {
             await this.loadType2(enemyType);
         } else if (enemyType === 'boss') {
-            await this.loadType3(enemyType);
+            await this.loadType3(enemyType); // Sau này thêm
         }
     },
         

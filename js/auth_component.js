@@ -230,7 +230,7 @@ const AuthComponent = {
                     avatar_key: this.tempAvatar,
                     level: 1,
                     exp: 0,
-                    hp_current: 100
+                    hp_current: 0
                 }])
                 .select();
 

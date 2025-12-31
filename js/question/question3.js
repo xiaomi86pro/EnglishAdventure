@@ -17,7 +17,7 @@ const QuestionType3 = {
         speechSynthesis.speak(u);
     },
 
-    // Phát âm từng chữ cái một cách tuần tự (để gợi ý đầu trận)
+    // Phát âm từng chữ cái một cách tuần tự
     async speakLetters(word) {
         const letters = word.split("").filter(c => c !== " ");
         for (let char of letters) {
@@ -32,6 +32,7 @@ const QuestionType3 = {
     },
 
     async load(enemyType = "normal") {
+        console.log("QuestionType3.load called, enemyType:", enemyType);
         try {
             if (!window.supabase) {
                 setTimeout(() => this.load(enemyType), 300);
@@ -51,18 +52,21 @@ const QuestionType3 = {
             if (enemyType === "normal") {
                 valid = valid.filter(v => v.english_word.trim().length <= 5);
             } else {
-                // Elite hoặc Boss lấy từ dài hơn 5 ký tự
                 valid = valid.filter(v => v.english_word.trim().length > 5);
             }
 
-            if (valid.length === 0) valid = data;
+            if (valid.length === 0) {
+    console.warn("Không tìm thấy từ phù hợp, fallback toàn bộ data");
+    valid = data;
+}
+
 
             this.currentData = valid[Math.floor(Math.random() * valid.length)];
             this.enCompleted = "";
 
             this.renderQuestionUI();
-            
-            // Bắt đầu logic âm thanh: Đọc cả từ -> Chờ 1.2s -> Đọc từng chữ cái
+
+            // Bắt đầu logic âm thanh
             this.speak(this.currentData.english_word);
             setTimeout(() => {
                 this.speakLetters(this.currentData.english_word);
@@ -99,11 +103,10 @@ const QuestionType3 = {
     setupGame(word) {
         const lettersContainer = document.getElementById("en-letters");
         const slotsContainer = document.getElementById("en-slots");
-        
-        // Loại bỏ khoảng trắng để xử lý logic xếp chữ
+
         const cleanWord = word.replace(/\s+/g, "");
         const cleanLetters = cleanWord.split("");
-        
+
         const shuffled = cleanLetters.map((c, i) => ({ c, i }))
             .sort(() => Math.random() - 0.5);
 
@@ -113,15 +116,13 @@ const QuestionType3 = {
             btn.innerText = item.c.toUpperCase();
 
             btn.onclick = () => {
-                // Phát âm chữ cái khi người dùng bấm
                 this.speak(item.c, "en-US", 1.2);
 
                 const targetChar = cleanWord[this.enCompleted.length];
 
                 if (item.c.toLowerCase() === targetChar.toLowerCase()) {
                     this.enCompleted += item.c;
-                    
-                    // Tạo hiệu ứng chữ bay lên ô kết quả
+
                     const slot = document.createElement("div");
                     slot.className = "w-14 h-14 bg-green-500 text-white rounded-2xl flex items-center justify-center text-2xl font-black border-b-4 border-green-700 animate-bounce";
                     slot.innerText = item.c.toUpperCase();
@@ -129,10 +130,9 @@ const QuestionType3 = {
 
                     btn.style.visibility = "hidden";
                     btn.style.pointerEvents = "none";
-                    
+
                     this.checkWin();
                 } else {
-                    // Hiệu ứng khi bấm sai
                     btn.classList.add("bg-red-500", "text-white", "border-red-700", "shake");
                     setTimeout(() => {
                         btn.classList.remove("bg-red-500", "text-white", "border-red-700", "shake");
