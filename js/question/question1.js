@@ -177,23 +177,59 @@ const QuestionType1 = {
         const lettersContainer = document.getElementById(`${lang}-letters`);
         const slotsContainer = document.getElementById(`${lang}-slots`);
         if (!lettersContainer || !slotsContainer) return;
-
+    
         lettersContainer.innerHTML = "";
         slotsContainer.innerHTML = "";
-
-        const cleanLetters = word.split("").filter(c => c !== " ");
+    
+        let cleanLetters = word.split("").filter(c => c !== " ");
+        
+        // Nếu là tiếng Việt, tách tiền tố và phần cần trộn
+        if (lang === "vi") {
+            const prefixes = ["màu", "quả", "con", "cái", "hình"];
+            let prefix = "";
+            let remaining = word;
+            
+            // Tìm tiền tố phù hợp (không phân biệt hoa thường)
+            for (let p of prefixes) {
+                if (word.toLowerCase().startsWith(p)) {
+                    prefix = word.substring(0, p.length);
+                    remaining = word.substring(p.length).trim();
+                    break;
+                }
+            }
+            
+            // Nếu có tiền tố, hiển thị tiền tố trước
+            if (prefix) {
+                // Hiển thị tiền tố cố định
+                prefix.split("").forEach(char => {
+                    const fixedLetter = document.createElement("div");
+                    fixedLetter.className = `w-12 h-12 text-white rounded-xl border-2 border-white flex items-center justify-center text-2xl font-black bg-green-500`;
+                    fixedLetter.innerText = char.toUpperCase();
+                    slotsContainer.appendChild(fixedLetter);
+                });
+                
+                // Thêm khoảng trắng
+                const spaceBox = document.createElement("div");
+                spaceBox.className = "space-box h-12";
+                slotsContainer.appendChild(spaceBox);
+                
+                // Chỉ trộn phần còn lại
+                cleanLetters = remaining.split("").filter(c => c !== " ");
+            }
+        }
+    
         const shuffled = cleanLetters.map((c, i) => ({ c, i }))
             .sort(() => Math.random() - 0.5);
-
+    
         shuffled.forEach((item, index) => {
             const btn = document.createElement("div");
             btn.className = `w-12 h-12 bg-white border-2 border-gray-400 rounded-xl shadow-[4px_4px_0px_#ccc] flex items-center justify-center text-2xl font-bold cursor-pointer hover:bg-yellow-50 transform transition-all opacity-0 letter-fall`;
             btn.style.animationDelay = `${index * 0.1}s`;
             btn.innerText = item.c.toUpperCase();
-
+    
             btn.onclick = () => {
                 const currentStr = lang === "en" ? this.enCompleted : this.viCompleted;
-
+    
                 // tìm vị trí ký tự tiếp theo trong từ gốc
                 let actualIdx = 0, cleanCount = 0;
                 while (actualIdx < word.length) {
@@ -204,16 +240,16 @@ const QuestionType1 = {
                     actualIdx++;
                 }
                 const targetChar = word[actualIdx];
-
+    
                 if (item.c.toLowerCase() === targetChar.toLowerCase()) {
                     if (lang === "en") this.enCompleted += item.c;
                     else this.viCompleted += item.c;
-
+    
                     const finalLetter = document.createElement("div");
                     finalLetter.className = `w-12 h-12 text-white rounded-xl border-2 border-white flex items-center justify-center text-2xl font-black ${lang === "en" ? "bg-blue-500" : "bg-green-500"}`;
                     finalLetter.innerText = item.c.toUpperCase();
                     slotsContainer.appendChild(finalLetter);
-
+    
                     // thêm khoảng trắng nếu có
                     let nextIdx = actualIdx + 1;
                     while (nextIdx < word.length && word[nextIdx] === " ") {
@@ -222,7 +258,7 @@ const QuestionType1 = {
                         slotsContainer.appendChild(spaceBox);
                         nextIdx++;
                     }
-
+    
                     btn.style.visibility = "hidden";
                     this.checkProgress();
                 } else {
@@ -231,7 +267,7 @@ const QuestionType1 = {
                     if (typeof this.onWrong === "function") this.onWrong();
                 }
             };
-
+    
             lettersContainer.appendChild(btn);
         });
     },
@@ -262,3 +298,4 @@ const QuestionType1 = {
 };
 
 window.QuestionType1 = QuestionType1;
+export default QuestionType1;

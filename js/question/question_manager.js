@@ -2,22 +2,51 @@
 
 const QuestionManager = {
     currentQuestion: null,
+    loadedTypes: {}, // Cache các QuestionType đã load
+    
+    /**
+     * Load động một QuestionType từ file
+     */
+    async loadQuestionType(typeNumber) {
+        // Nếu đã load rồi thì dùng luôn
+        if (this.loadedTypes[typeNumber]) {
+            return this.loadedTypes[typeNumber];
+        }
+        
+        try {
+            // Import động file question
+            const module = await import(`./question${typeNumber}.js`);
+            
+            // Lưu vào cache
+            this.loadedTypes[typeNumber] = module.default || window[`QuestionType${typeNumber}`];
+            
+            return this.loadedTypes[typeNumber];
+        } catch (error) {
+            console.error(`Lỗi load QuestionType${typeNumber}:`, error);
+            return null;
+        }
+    },
+    
     /**
      * Load câu hỏi loại 1 (word sort)
-     * Hàm này TỒN TẠI chỉ để GameEngine gọi
-     * Logic thật sự nằm trong question1.js
      */
-    loadType1(enemyType = 'normal') {
-        // Nếu đã có câu hỏi cũ → dọn
+    async loadType1(enemyType = 'normal') {
+        // Dọn câu hỏi cũ
         if (this.currentQuestion && typeof this.currentQuestion.destroy === 'function') {
             this.currentQuestion.destroy();
         }
 
-        // QuestionType1 hiện tại chính là QuestionManager trong question1.js
-        // (bạn chưa tách class QuestionType riêng)
-        this.currentQuestion = window.QuestionManagerType1 || window.QuestionType1 || window.Question1 || window.QuestionManager;
+        // Load QuestionType1
+        const QuestionType1 = await this.loadQuestionType(1);
+        
+        if (!QuestionType1) {
+            console.error('Không thể load QuestionType1');
+            return;
+        }
 
-        // Gắn callback chuẩn
+        this.currentQuestion = QuestionType1;
+
+        // Gắn callback
         this.currentQuestion.onCorrect = () => {
             this.handleQuestionCorrect();
         };
@@ -26,24 +55,34 @@ const QuestionManager = {
             this.handleQuestionWrong();
         };
 
-        // Gọi init thực tế của question
-        if (typeof this.currentQuestion.loadType1 === 'function') {
-            this.currentQuestion.loadType1(enemyType);
+        // Gọi hàm load
+        if (typeof this.currentQuestion.load === 'function') {
+            this.currentQuestion.load(enemyType);
         } else {
-            console.error('QuestionType1 không có hàm loadType1');
+            console.error('QuestionType1 không có hàm load');
         }
     },
 
-    loadType2(enemyType = 'elite') {
-        // Nếu đã có câu hỏi cũ → dọn
+    /**
+     * Load câu hỏi loại 2
+     */
+    async loadType2(enemyType = 'elite') {
+        // Dọn câu hỏi cũ
         if (this.currentQuestion && typeof this.currentQuestion.destroy === 'function') {
             this.currentQuestion.destroy();
         }
     
-        // QuestionType2 chính là module trong question2.js
-        this.currentQuestion = window.QuestionManagerType2 || window.QuestionType2;
+        // Load QuestionType2
+        const QuestionType2 = await this.loadQuestionType(2);
+        
+        if (!QuestionType2) {
+            console.error('Không thể load QuestionType2');
+            return;
+        }
+
+        this.currentQuestion = QuestionType2;
     
-        // Gắn callback chuẩn
+        // Gắn callback
         this.currentQuestion.onCorrect = () => {
             this.handleQuestionCorrect();
         };
@@ -51,32 +90,32 @@ const QuestionManager = {
             this.handleQuestionWrong();
         };
     
-        // Gọi init thực tế của question
-        if (typeof this.currentQuestion.loadType2 === 'function') {
-            this.currentQuestion.loadType2(enemyType);
+        // Gọi hàm load
+        if (typeof this.currentQuestion.load === 'function') {
+            this.currentQuestion.load(enemyType);
         } else {
-            console.error('QuestionType2 không có hàm loadType2');
+            console.error('QuestionType2 không có hàm load');
         }
     },
 
-    startQuestion(enemyType = 'normal') {
-        const area = document.getElementById("question-area"); 
-        area.innerHTML = "";
+    /**
+     * Hàm chung để start question theo enemy type
+     */
+    async startQuestion(enemyType = 'normal') {
+        const area = document.getElementById("questionarea"); 
+        if (area) area.innerHTML = "";
 
         if (enemyType === 'normal') {
-            this.loadType1(enemyType);
+            await this.loadType1(enemyType);
         } else if (enemyType === 'elite') {
-            this.loadType2(enemyType);
+            await this.loadType2(enemyType);
         } else if (enemyType === 'boss') {
-            this.loadType3(enemyType); // sau này bạn thêm
+            await this.loadType3(enemyType); // Sau này thêm
         }
-
-        this.hintUsed = false; // Đăng ký listener Hint trên vùng câu hỏi    
-        },
+    },
         
     /**
      * Khi câu hỏi trả lời ĐÚNG
-     * CHỈ Ở ĐÂY mới gọi GameEngine
      */
     handleQuestionCorrect() {
         if (window.GameEngine && typeof window.GameEngine.handleCorrect === 'function') {
@@ -86,7 +125,6 @@ const QuestionManager = {
 
     /**
      * Khi câu hỏi trả lời SAI
-     * Hiện chưa dùng, để sẵn cho mở rộng
      */
     handleQuestionWrong() {
         if (window.GameEngine && typeof window.GameEngine.handleWrong === 'function') {
@@ -94,9 +132,8 @@ const QuestionManager = {
         }
     },
 
-
     /**
-     * Dọn toàn bộ question (khi reset game, đổi mode, v.v.)
+     * Dọn toàn bộ question
      */
     destroy() {
         if (this.currentQuestion && typeof this.currentQuestion.destroy === 'function') {

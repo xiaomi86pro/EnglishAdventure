@@ -72,3 +72,4 @@ window.QuestionType2 = {
         }
     }
 };
+export default QuestionType2;

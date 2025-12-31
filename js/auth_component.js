@@ -14,13 +14,7 @@ const AuthComponent = {
      * Hàm khởi tạo component
      */
     init: function() {
-        // Kiểm tra game đã lưu ngay khi load
-        const savedGame = this.checkSavedGame();
-        if (savedGame) {
-            this.displayContinueOrNewMenu(savedGame);
-        } else {
-            this.fetchUsers();
-        }
+        this.fetchUsers();
     },
 
     /**
@@ -65,7 +59,7 @@ const AuthComponent = {
                 <div class="bg-white p-6 rounded-3xl border-4 border-blue-200 w-full">
                     <div class="text-center mb-4">
                         <div class="text-5xl mb-2">${savedGame.player.sprite || '🧑‍🚀'}</div>
-                        <p class="font-bold text-xl text-gray-700">${savedGame.player.name}</p>
+                        <p class="font-bold text-xl text-gray-700">${savedGame.player.display_name}</p>
                         <p class="text-sm text-gray-500">Level ${savedGame.player.level} - Stage ${savedGame.currentStage}</p>
                     </div>
                 </div>
@@ -135,8 +129,6 @@ const AuthComponent = {
             this.displayLoginMenu();
         } catch (err) {
             console.error("Lỗi fetchUsers:", err.message);
-            // Hiển thị menu trống nếu lỗi để người dùng vẫn có thể ấn "Thêm mới"
-            this.checkAndShowMenu();
         }
     },
 
@@ -267,11 +259,20 @@ const AuthComponent = {
             selectedCard.classList.add('user-selected', 'border-blue-400');
             this.selectedUserId = userId;
             
-            // Hiện vùng chọn Hero
-            const heroArea = document.getElementById('hero-selection-area');
-            if (heroArea) {
-                heroArea.classList.remove('hidden');
-                this.loadHeroList(); 
+            // Kiểm tra xem profile này có game đã lưu không
+            const savedGame = this.checkSavedGame();
+            
+            if (savedGame && savedGame.player.id === userId) {
+                // Profile này có game đã lưu → Hiện menu Continue/New
+                this.displayContinueOrNewMenu(savedGame);
+            } else {
+                // Profile này chưa có game hoặc game đã lưu là của user khác
+                // → Hiện vùng chọn Hero
+                const heroArea = document.getElementById('hero-selection-area');
+                if (heroArea) {
+                    heroArea.classList.remove('hidden');
+                    this.loadHeroList(); 
+                }
             }
         }
     },

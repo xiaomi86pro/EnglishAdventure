@@ -125,33 +125,37 @@ const GameEngine = {
     /**
      * Gọi câu hỏi tiếp theo
      */
-    nextQuestion() {
+    async nextQuestion() {
         const questionArea = document.getElementById('questionarea');
-        const type = this.monster?.type || "normal";   // lấy loại quái hiện tại
-    
-        if (type === "normal" && window.QuestionType1) {
-            // Quái thường → QuestionType1
-            QuestionType1.onCorrect = () => this.handleCorrect();
-            QuestionType1.onWrong = () => this.startBattleTurn(this.monster, this.player);
-            QuestionType1.load("normal");
-    
-        } else if (type === "elite" && window.QuestionType2) {
-            // 👉 Đây là nhánh bạn cần chèn cho QuestionType2
-            QuestionType2.onCorrect = () => this.handleCorrect();
-            QuestionType2.onWrong = () => this.startBattleTurn(this.monster, this.player);
-            QuestionType2.load("elite");
-    
-        } else {
-            console.warn("GameEngine: Không tìm thấy QuestionType phù hợp cho:", type);
-    
-            if (questionArea && !questionArea.innerHTML.includes('Đang chuẩn bị')) {
-                questionArea.innerHTML = `
-                    <div class="flex flex-col items-center justify-center gap-4">
-                        <div class="w-12 h-12 border-4 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
-                        <p class="text-blue-500 font-bold animate-pulse">Đang chuẩn bị thử thách...</p>
-                    </div>
-                `;
+        const type = this.monster?.type || "normal";
+        
+        // Hiện loading
+        if (questionArea && !questionArea.innerHTML.includes('Đang chuẩn bị')) {
+            questionArea.innerHTML = `
+                <div class="flex flex-col items-center justify-center gap-4">
+                    <div class="w-12 h-12 border-4 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
+                    <p class="text-blue-500 font-bold animate-pulse">Đang chuẩn bị thử thách...</p>
+                </div>
+            `;
+        }
+        
+        // Gọi QuestionManager để load câu hỏi
+        if (window.QuestionManager) {
+            try {
+                if (type === "normal") {
+                    await window.QuestionManager.loadType1("normal");
+                } else if (type === "elite") {
+                    await window.QuestionManager.loadType2("elite");
+                } else if (type === "boss") {
+                    // Sau này thêm loadType3
+                    console.warn("Boss question chưa được implement");
+                }
+            } catch (error) {
+                console.error("Lỗi load question:", error);
+                setTimeout(() => this.nextQuestion(), 500);
             }
+        } else {
+            console.warn("QuestionManager chưa sẵn sàng");
             setTimeout(() => this.nextQuestion(), 500);
         }
     },
@@ -602,25 +606,52 @@ async spawnMonster() {
         // Dừng game
         this.isBattling = false;
         
-        // Xóa nội dung các vùng
+        // Xóa hoàn toàn nội dung các vùng
         const questionArea = document.getElementById('questionarea');
         const battleView = document.getElementById('battleview');
+        const userUI = document.getElementById('userUI');
+        const dashboard = document.getElementById('dashboard');
         
         if (questionArea) questionArea.innerHTML = '';
+        if (userUI) userUI.innerHTML = '';
+        
+        // Reset battleView về trạng thái ban đầu
         if (battleView) {
-            // Giữ lại cấu trúc sprite nhưng xóa UI overlay
-            const overlays = battleView.querySelectorAll('.absolute');
-            overlays.forEach(el => el.remove());
+            battleView.innerHTML = `
+                <div class="flex justify-between items-center h-full">
+                    <div id="hero" class="sprite"></div>
+                    <div id="monster" class="sprite"></div>
+                </div>
+            `;
+        }
+        
+        // Xóa monster-info và answers-history trong dashboard
+        if (dashboard) {
+            const monsterInfo = document.getElementById('monster-info');
+            const answersHistory = document.getElementById('answers-history');
+            if (monsterInfo) monsterInfo.innerHTML = '';
+            if (answersHistory) answersHistory.innerHTML = '';
         }
         
         // Dọn dẹp câu hỏi hiện tại
-        if (window.QuestionManager) {
+        if (window.QuestionManager && typeof window.QuestionManager.destroy === 'function') {
             window.QuestionManager.destroy();
         }
+        if (window.QuestionType1 && typeof window.QuestionType1.destroy === 'function') {
+            window.QuestionType1.destroy();
+        }
+        if (window.QuestionType2 && typeof window.QuestionType2.destroy === 'function') {
+            window.QuestionType2.destroy();
+        }
         
-        // Quay về màn hình auth
+        // Reset player và monster
+        this.player = null;
+        this.monster = null;
+        this.currentStep = 1;
+        
+        // Quay về màn hình chọn profiles
         if (window.AuthComponent) {
-            window.AuthComponent.checkAndShowMenu();
+            window.AuthComponent.displayLoginMenu();
         }
     },
     
