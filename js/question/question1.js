@@ -197,6 +197,8 @@ const QuestionType1 = {
             
             // Nếu có tiền tố, hiển thị tiền tố trước
             if (prefix) {
+                // Cập nhật tiến độ: báo cho game biết là phần "màu/quả..." đã được điền rồi
+                this.viCompleted = prefix.replace(/\s+/g, "");
                 // Hiển thị tiền tố cố định
                 prefix.split("").forEach(char => {
                     const fixedLetter = document.createElement("div");

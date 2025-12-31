@@ -97,6 +97,26 @@ const QuestionManager = {
             console.error('QuestionType2 không có hàm load');
         }
     },
+ 
+    /**
+     * Load câu hỏi loại 3
+     */
+    async loadType3(enemyType = 'normal') {
+        if (this.currentQuestion && typeof this.currentQuestion.destroy === 'function') {
+            this.currentQuestion.destroy();
+        }
+
+        const QuestionType3 = await this.loadQuestionType(3);
+        if (!QuestionType3) return;
+
+        this.currentQuestion = QuestionType3;
+        this.currentQuestion.onCorrect = () => this.handleQuestionCorrect();
+        this.currentQuestion.onWrong = () => this.handleQuestionWrong();
+
+        if (typeof this.currentQuestion.load === 'function') {
+            this.currentQuestion.load(enemyType);
+        }
+    },
 
     /**
      * Hàm chung để start question theo enemy type
@@ -106,11 +126,15 @@ const QuestionManager = {
         if (area) area.innerHTML = "";
 
         if (enemyType === 'normal') {
-            await this.loadType1(enemyType);
+            if (Math.random() > 0.5) {
+                await this.loadType3(enemyType);
+            } else {
+                await this.loadType3(enemyType);
+            }
         } else if (enemyType === 'elite') {
             await this.loadType2(enemyType);
         } else if (enemyType === 'boss') {
-            await this.loadType3(enemyType); // Sau này thêm
+            await this.loadType3(enemyType);
         }
     },
         

@@ -147,8 +147,7 @@ const GameEngine = {
                 } else if (type === "elite") {
                     await window.QuestionManager.loadType2("elite");
                 } else if (type === "boss") {
-                    // Sau này thêm loadType3
-                    console.warn("Boss question chưa được implement");
+                    await window.QuestionManager.loadType3("boss");
                 }
             } catch (error) {
                 console.error("Lỗi load question:", error);
