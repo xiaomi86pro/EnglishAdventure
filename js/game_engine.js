@@ -3,8 +3,8 @@
  */
 const GameEngine = {
     isBattling: false,
-    heroSlashSound: new Audio('./sounds/Slicing_flesh.mp3'),
-    monsterPunchSound: new Audio('./sounds/Punch.mp3'),
+    heroSlashSound: new Audio('../sounds/Slicing_flesh.mp3'),
+    monsterPunchSound: new Audio('../sounds/Punch.mp3'),
     player: null,
     monster: null,
     currentStep: 1, // Chặng đường từ 1-10
@@ -89,8 +89,6 @@ const GameEngine = {
     handleCorrect() {
         if (this.isBattling) return;
         this.startBattleTurn(this.player, this.monster);
-        
-        if (this.monster.hp < 0) this.monster.hp = 0;
         
          // 👉 Thêm câu trả lời ngay khi đúng
         const history = document.getElementById("answers-history");
@@ -217,12 +215,10 @@ const GameEngine = {
         // Giữ lại nội dung cũ (div#hero và div#monster) và chỉ chèn thêm UI overlay
         // Chúng ta sử dụng insertAdjacentHTML để không đè mất các thẻ sprite có sẵn trong index.html
         const uiOverlay = `
-                <div id="progress-bar" 
-                class="absolute top-4 left-1/2 -translate-x-1/2 w-2/3 flex z-20">
+                <div id="progress-bar" class="absolute top-4 left-1/2 -translate-x-1/2 w-2/3 flex z-20">
             ${segments}
                 </div>
-          
-    
+
             <div class="absolute inset-0 flex justify-between items-end px-10 pb-4 pointer-events-none">
                 <div class="flex flex-col items-center">
                     <div id="hero-hp-bar" class="w-24 h-6 bg-gray-200 rounded-lg border-2 border-white mb-32 overflow-hidden relative shadow-sm">
@@ -305,7 +301,7 @@ async spawnMonster() {
         this.monster = { 
             name: "Quái Vật Bóng Tối", 
             hp: 50, max_hp: 50, atk: 5, 
-            type: "Normal", 
+            type: "normal", 
             state: 'idle' 
         };
     }
@@ -315,12 +311,7 @@ async spawnMonster() {
      * Cập nhật toàn bộ các vùng Dashboard và UserUI
      */
     updateAllUI() {
-        // 1. Cập nhật thanh tiến trình bản đồ
-        const progressFill = document.getElementById('progress-fill');
-        if (progressFill) {
-            progressFill.style.width = `${(this.currentStep / this.totalSteps) * 100}%`;
-        }
-    
+        
         // 2. Cập nhật thông tin Quái vật (chỉ update monster-info, không đè dashboard)
         const mInfo = document.getElementById('monster-info');
         if (mInfo && this.monster) {
@@ -363,7 +354,10 @@ async spawnMonster() {
             ? document.getElementById('hero') 
             : document.getElementById('monster');
     
-        if (!attackerEl) return;
+            if (!attackerEl) {
+                this.isBattling = false;
+                return;
+              }
     
         attackerEl.classList.add('run-forward');
     

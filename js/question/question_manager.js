@@ -2,7 +2,6 @@
 
 const QuestionManager = {
     currentQuestion: null,
-
     /**
      * Load câu hỏi loại 1 (word sort)
      * Hàm này TỒN TẠI chỉ để GameEngine gọi
@@ -61,6 +60,9 @@ const QuestionManager = {
     },
 
     startQuestion(enemyType = 'normal') {
+        const area = document.getElementById("question-area"); 
+        area.innerHTML = "";
+
         if (enemyType === 'normal') {
             this.loadType1(enemyType);
         } else if (enemyType === 'elite') {
@@ -68,8 +70,10 @@ const QuestionManager = {
         } else if (enemyType === 'boss') {
             this.loadType3(enemyType); // sau này bạn thêm
         }
-    },
-    
+
+        this.hintUsed = false; // Đăng ký listener Hint trên vùng câu hỏi    
+        },
+        
     /**
      * Khi câu hỏi trả lời ĐÚNG
      * CHỈ Ở ĐÂY mới gọi GameEngine
@@ -89,6 +93,7 @@ const QuestionManager = {
             window.GameEngine.handleWrong();
         }
     },
+
 
     /**
      * Dọn toàn bộ question (khi reset game, đổi mode, v.v.)

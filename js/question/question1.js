@@ -45,12 +45,45 @@ const QuestionType1 = {
             this.currentData = valid[Math.floor(Math.random() * valid.length)];
             this.enCompleted = "";
             this.viCompleted = "";
+            this.hintUsed = false;
 
             this.renderQuestionUI();
             this.speakWord(this.currentData.english_word);
 
         } catch (err) {
             console.error("QuestionType1:", err);
+        }
+    },
+
+    useHint(btn) {
+        if (this.hintUsed || !this.currentData) return;
+        this.hintUsed = true;
+    
+        // 1. Hiện lại từ vựng
+        const preview = document.getElementById("preview-area");
+        if (preview) {
+            preview.innerHTML = `
+                <h2 class="text-4xl font-black text-blue-400 uppercase tracking-widest">${this.currentData.english_word}</h2>
+                <h3 class="text-2xl font-bold text-green-400 italic">${this.currentData.vietnamese_translation}</h3>
+            `;
+            preview.style.opacity = "1";
+            preview.style.height = "auto";
+        }
+    
+        // 2. Trừ 5 HP Hero (dùng hp_current) & Cập nhật UI
+        if (window.GameEngine && window.GameEngine.player) {
+            window.GameEngine.player.hp_current = Math.max(0, window.GameEngine.player.hp_current - 5);
+            window.GameEngine.updateAllUI();
+    
+            // Hiệu ứng damage lên Hero (nếu cần)
+            if (typeof window.GameEngine.showDamage === 'function') {
+                window.GameEngine.showDamage(window.GameEngine.player, 5);
+            }
+        }
+    
+        // 3. Làm mờ nút Hint
+        if (btn) {
+            btn.classList.add("opacity-50", "cursor-not-allowed");
         }
     },
 
@@ -79,12 +112,10 @@ const QuestionType1 = {
 
         area.innerHTML = `
             <div class="flex w-full h-full p-4 relative overflow-hidden bg-black rounded-3xl">
+            <button id="hint-btn" class="absolute top-3 right-3 p-2 rounded-full bg-yellow-300 hover:bg-yellow-400 shadow text-xl">💡</button>
                 <div class="flex-1 flex flex-col justify-start gap-8 py-2 px-4 w-full">
-                    
                     <!-- Preview -->
                     <div id="preview-area" class="w-full flex flex-col items-center justify-center mb-6">
-                    <h2 class="text-4xl font-black text-blue-400 uppercase tracking-widest">${wordEn}</h2>
-                    <h3 class="text-2xl font-bold text-green-400 italic">${wordVi}</h3>
                     </div>
 
                     <!-- English -->
@@ -109,8 +140,24 @@ const QuestionType1 = {
         `;
 
         // Sau khi render, đặt hẹn giờ 2 giây để ẩn preview
+        // Gắn sự kiện cho nút Hint ngay sau khi tạo HTML
+        const hintBtn = document.getElementById("hint-btn");
+        if (hintBtn) {
+            hintBtn.onclick = () => {
+                this.useHint(hintBtn);
+            };
+        }
+
         const preview = document.getElementById("preview-area");
+
         if (preview) {
+            preview.innerHTML = ` 
+            <h2 class="text-4xl font-black text-blue-400 uppercase tracking-widest">${this.wordEn}</h2> 
+            <h3 class="text-2xl font-bold text-green-400 italic">${this.wordVi}</h3> `;
+            // Gắn dữ liệu gốc để manager đọc lại khi dùng Hint 
+            preview.setAttribute("data-en", wordEn); 
+            preview.setAttribute("data-vi", wordVi);    
+
             setTimeout(() => {
                 preview.style.opacity = "0";              // mờ dần
                 preview.style.transition = "opacity 0.5s ease-out";

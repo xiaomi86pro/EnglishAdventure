@@ -151,6 +151,23 @@
         transition: transform 0.4s ease;
         }
 
+        #answer-history { 
+            position: fixed; /* cố định theo màn hình */ 
+            right: 0; 
+            top: 0; 
+            width: 250px; 
+            height: 100vh; /* chiếm toàn bộ chiều cao màn hình */ 
+            overflow-y: auto; /* có thanh cuộn */ 
+            background: rgba(255,255,255,0.8); 
+            padding: 10px; 
+            box-sizing: border-box; 
+            z-index: 50; /* đảm bảo nổi lên trên */ 
+        }
+
+        #answers-history::-webkit-scrollbar-thumb { 
+            background-color: rgba(0,0,0,0.3); 
+            border-radius: 3px; 
+        }
 
     </style>
 </head>
@@ -159,7 +176,7 @@
     <!-- 1. Cột Dashboard bên trái (1/6 màn hình, dài hết cỡ) -->
     <aside id="dashboard" class="w-1/6 h-full rounded-3xl p-4 flex flex-col gap-4 game-card">
         <div id="monster-info"></div>
-        <div id="answers-history" class="mt-4 space-y-2"></div>
+        <div id="answers-history" class="mt-4 space-y-2 flex-1 overflow-y-auto pr-2"></div>
         <div class="mt-auto border-t-2 border-white/50 pt-4">          
             <a href="admin.html" class="flex items-center gap-2 p-3 rounded-2xl bg-white/30 hover:bg-white/50 transition-all text-red-600 font-bold group">
                 <span class="text-2xl group-hover:rotate-90 transition-transform duration-500">⚙️</span>
