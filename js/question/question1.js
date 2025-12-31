@@ -129,11 +129,8 @@ const QuestionType1 = {
 
                     <!-- Vietnamese -->
                     <div class="flex flex-col items-center w-full">
-                    <div id="vi-slots" 
-                    class="flex flex-wrap justify-center items-center gap-2 mb-8 
-                           h-16 w-full border-b-2 border-dashed border-gray-200 pb-2"></div>
-                    <div id="vi-letters" 
-                    class="flex flex-wrap justify-center gap-3 min-h-[50px] w-full"></div>               
+                    <div id="vi-slots" class="flex flex-wrap justify-center items-center gap-2 mb-8 h-16 w-full border-b-2 border-dashed border-gray-200 pb-2"></div>
+                    <div id="vi-letters" class="flex flex-wrap justify-center gap-3 min-h-[50px] w-full"></div>               
                     </div>
                 </div>
             </div>
