@@ -50,6 +50,79 @@ const GameEngine = {
     },
 
     /**
+     * Lưu trạng thái game vào localStorage
+     */
+    saveGameState() {
+        const gameState = {
+            player: {
+                id: this.player.id,
+                display_name: this.player.display_name,
+                avatar_key: this.player.avatar_key,
+                level: this.player.level,
+                exp: this.player.exp,
+                max_hp: this.player.max_hp,
+                hp_current: this.player.hp_current,
+                atk: this.player.atk,
+                sprite_url: this.player.sprite_url,
+                selected_hero_id: this.player.selected_hero_id,
+                sprite: this.player.avatar_key // Để hiển thị trên menu
+            },
+            currentStage: this.currentStep,
+            monster: this.monster ? {
+                name: this.monster.name,
+                hp: this.monster.hp,
+                max_hp: this.monster.max_hp,
+                atk: this.monster.atk,
+                type: this.monster.type,
+                sprite_url: this.monster.sprite_url
+            } : null
+        };
+        
+        localStorage.setItem('gameState', JSON.stringify(gameState));
+        console.log('Game đã được lưu:', gameState);
+    },
+
+    /**
+     * Khôi phục trạng thái game từ localStorage
+     */
+    async restoreGameState(savedGame) {
+        console.log('Đang khôi phục game:', savedGame);
+        
+        // Khôi phục thông tin player
+        this.player = savedGame.player;
+        this.currentStep = savedGame.currentStage || 1;
+        
+        // Khởi tạo UI
+        this.initUI();
+        
+        // Cập nhật sprite hero
+        const heroEl = document.getElementById('hero');
+        if (heroEl && this.player.sprite_url) {
+            heroEl.style.backgroundImage = `url('${this.player.sprite_url}')`;
+            heroEl.className = 'sprite';
+        }
+        
+        // Khôi phục monster nếu có
+        if (savedGame.monster) {
+            this.monster = savedGame.monster;
+            const monsterEl = document.getElementById('monster');
+            if (monsterEl && this.monster.sprite_url) {
+                monsterEl.style.backgroundImage = `url('${this.monster.sprite_url}')`;
+                monsterEl.className = 'sprite';
+            }
+        } else {
+            // Nếu không có monster đã lưu, spawn monster mới
+            await this.spawnMonster();
+        }
+        
+        // Cập nhật UI
+        this.updateAllUI();
+        
+        // Bắt đầu câu hỏi
+        this.nextQuestion();
+    },
+
+    /**
      * Gọi câu hỏi tiếp theo
      */
     nextQuestion() {
@@ -345,6 +418,28 @@ async spawnMonster() {
     
         // 4. Cập nhật chỉ số máu
         this.updateBattleStatus();
+
+        // 5. Thêm nút Thoát ra Menu vào UserUI
+        const userUI = document.getElementById('userUI');
+        if (userUI) {
+            // Xóa nút cũ nếu có
+            const oldExitBtn = document.getElementById('exit-menu-btn');
+            if (oldExitBtn) oldExitBtn.remove();
+            
+            // Tạo nút mới
+            const exitBtn = document.createElement('button');
+            exitBtn.id = 'exit-menu-btn';
+            exitBtn.className = 'w-full mt-auto p-3 rounded-2xl bg-red-400 hover:bg-red-500 text-white font-bold transition-all shadow-md';
+            exitBtn.innerHTML = '🚪 Thoát ra Menu';
+            exitBtn.onclick = () => {
+                const confirm = window.confirm('Bạn có muốn lưu game và thoát ra menu?');
+                if (confirm) {
+                    this.saveGameState();
+                    this.showMainMenu();
+                }
+            };
+            userUI.appendChild(exitBtn);
+        }
     },
 
     startBattleTurn(attacker, defender) {
@@ -480,6 +575,66 @@ async spawnMonster() {
             this.monster.isDead = true;
             this.handleMonsterDefeat();
         }
+    },
+
+        // Load trạng thái game từ localStorage
+        loadGameState() {
+            const saved = localStorage.getItem('gameState');
+            if (!saved) return null;
+            
+            try {
+                return JSON.parse(saved);
+            } catch (e) {
+                console.error('Lỗi load game:', e);
+                return null;
+            }
+        },
+
+        // Xóa game đã lưu (khi chơi lại từ đầu)
+        clearGameState() {
+            localStorage.removeItem('gameState');
+    },
+
+    /**
+     * Hiển thị lại menu chính (quay về màn hình chọn user)
+     */
+    showMainMenu() {
+        // Dừng game
+        this.isBattling = false;
+        
+        // Xóa nội dung các vùng
+        const questionArea = document.getElementById('questionarea');
+        const battleView = document.getElementById('battleview');
+        
+        if (questionArea) questionArea.innerHTML = '';
+        if (battleView) {
+            // Giữ lại cấu trúc sprite nhưng xóa UI overlay
+            const overlays = battleView.querySelectorAll('.absolute');
+            overlays.forEach(el => el.remove());
+        }
+        
+        // Dọn dẹp câu hỏi hiện tại
+        if (window.QuestionManager) {
+            window.QuestionManager.destroy();
+        }
+        
+        // Quay về màn hình auth
+        if (window.AuthComponent) {
+            window.AuthComponent.checkAndShowMenu();
+        }
+    },
+    
+    stopGame() {
+        // Dọn dẹp câu hỏi hiện tại
+        if (window.QuestionManager) {
+            window.QuestionManager.destroy();
+        }
+        
+        // Xóa nội dung các vùng
+        const questionArea = document.getElementById('questionarea');
+        const battleView = document.getElementById('battleview');
+        if (questionArea) questionArea.innerHTML = '';
+        if (battleView) battleView.innerHTML = '';
     },
 };
 

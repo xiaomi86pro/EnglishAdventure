@@ -14,7 +14,99 @@ const AuthComponent = {
      * Hàm khởi tạo component
      */
     init: function() {
-        this.fetchUsers();
+        // Kiểm tra game đã lưu ngay khi load
+        const savedGame = this.checkSavedGame();
+        if (savedGame) {
+            this.displayContinueOrNewMenu(savedGame);
+        } else {
+            this.fetchUsers();
+        }
+    },
+
+    /**
+     * Kiểm tra xem có game đã lưu không
+     */
+    checkSavedGame: function() {
+        const saved = localStorage.getItem('gameState');
+        if (!saved) return null;
+        
+        try {
+            return JSON.parse(saved);
+        } catch (e) {
+            console.error('Lỗi load game:', e);
+            return null;
+        }
+    },
+
+    /**
+     * Kiểm tra và hiển thị menu phù hợp
+     */
+    checkAndShowMenu: function() {
+        const savedGame = this.checkSavedGame();
+        
+        if (savedGame) {
+            this.displayContinueOrNewMenu(savedGame);
+        } else {
+            this.displayLoginMenu();
+        }
+    },
+
+    /**
+     * Hiển thị menu Chơi tiếp hoặc Chơi lại
+     */
+    displayContinueOrNewMenu: function(savedGame) {
+        const container = document.getElementById(this.containerId);
+        if (!container) return;
+
+        container.innerHTML = `
+            <div class="flex flex-col items-center gap-6 w-full max-w-md">
+                <h2 class="text-3xl font-black text-blue-600 uppercase tracking-wide">Game đã lưu!</h2>
+                
+                <div class="bg-white p-6 rounded-3xl border-4 border-blue-200 w-full">
+                    <div class="text-center mb-4">
+                        <div class="text-5xl mb-2">${savedGame.player.sprite || '🧑‍🚀'}</div>
+                        <p class="font-bold text-xl text-gray-700">${savedGame.player.name}</p>
+                        <p class="text-sm text-gray-500">Level ${savedGame.player.level} - Stage ${savedGame.currentStage}</p>
+                    </div>
+                </div>
+
+                <div class="flex flex-col gap-4 w-full">
+                    <button onclick="AuthComponent.continueGame()" 
+                            class="w-full px-8 py-4 bg-green-500 text-white text-2xl font-black rounded-full shadow-[0_10px_0_rgb(22,163,74)] hover:bg-green-600 transition-all active:mt-2 active:shadow-none uppercase">
+                        ▶️ Chơi tiếp
+                    </button>
+                    
+                    <button onclick="AuthComponent.startNewGame()" 
+                            class="w-full px-8 py-4 bg-blue-500 text-white text-2xl font-black rounded-full shadow-[0_10px_0_rgb(37,99,235)] hover:bg-blue-600 transition-all active:mt-2 active:shadow-none uppercase">
+                        🆕 Chơi lại từ đầu
+                    </button>
+                </div>
+            </div>
+        `;
+    },
+
+    /**
+     * Tiếp tục game đã lưu
+     */
+    continueGame: function() {
+        const savedGame = this.checkSavedGame();
+        if (!savedGame) {
+            alert('Không tìm thấy game đã lưu!');
+            this.displayLoginMenu();
+            return;
+        }
+        
+        if (window.GameEngine) {
+            window.GameEngine.restoreGameState(savedGame);
+        }
+    },
+
+    /**
+     * Bắt đầu game mới (xóa game cũ)
+     */
+    startNewGame: function() {
+        localStorage.removeItem('gameState'); // Xóa game đã lưu
+        this.displayLoginMenu(); // Hiện menu chọn user
     },
 
     /**
@@ -44,7 +136,7 @@ const AuthComponent = {
         } catch (err) {
             console.error("Lỗi fetchUsers:", err.message);
             // Hiển thị menu trống nếu lỗi để người dùng vẫn có thể ấn "Thêm mới"
-            this.displayLoginMenu();
+            this.checkAndShowMenu();
         }
     },
 
