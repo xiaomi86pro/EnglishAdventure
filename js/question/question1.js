@@ -152,8 +152,8 @@ const QuestionType1 = {
 
         if (preview) {
             preview.innerHTML = ` 
-            <h2 class="text-4xl font-black text-blue-400 uppercase tracking-widest">${this.wordEn}</h2> 
-            <h3 class="text-2xl font-bold text-green-400 italic">${this.wordVi}</h3> `;
+            <h2 class="text-4xl font-black text-blue-400 uppercase tracking-widest">${wordEn}</h2> 
+            <h3 class="text-2xl font-bold text-green-400 italic">${wordVi}</h3> `;
             // Gắn dữ liệu gốc để manager đọc lại khi dùng Hint 
             preview.setAttribute("data-en", wordEn); 
             preview.setAttribute("data-vi", wordVi);    
