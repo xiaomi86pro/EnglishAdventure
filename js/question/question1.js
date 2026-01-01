@@ -222,7 +222,7 @@ const QuestionType1 = {
         
         // Nếu là tiếng Việt, tách tiền tố và phần cần trộn
         if (lang === "vi") {
-            const prefixes = ["màu", "quả", "con", "cái", "hình"];
+            const prefixes = ["màu", "quả", "con", "cái", "hình" ,"bức"];
             let prefix = "";
             let remaining = word;
             
