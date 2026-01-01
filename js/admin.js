@@ -5,6 +5,7 @@ import * as XLSX from 'xlsx'
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL
 const supabaseAnonKey =import.meta.env.VITE_SUPABASE_ANON_KEY
 const supabase = createClient(supabaseUrl, supabaseAnonKey)
+window.supabase = supabase;
 
 const fileInput = document.getElementById('excel-file');
 const uploadBtn = document.getElementById('upload-btn');

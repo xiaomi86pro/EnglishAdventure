@@ -28,6 +28,36 @@ const QuestionManager = {
         }
     },
 
+   
+    /**
+     * Hàm chung để load QuestionType theo số
+     */
+    async loadType(typeNumber, enemyType = 'normal') {
+        // Dọn câu hỏi cũ
+        if (this.currentQuestion && typeof this.currentQuestion.destroy === 'function') {
+            this.currentQuestion.destroy();
+        }
+
+        // Import module tương ứng
+        const QuestionType = await this.loadQuestionType(typeNumber);
+        if (!QuestionType) {
+            console.error(`Không thể load QuestionType${typeNumber}`);
+            return;
+        }
+
+        this.currentQuestion = QuestionType;
+
+        // Gắn callback
+        this.currentQuestion.onCorrect = () => this.handleQuestionCorrect();
+        this.currentQuestion.onWrong = () => this.handleQuestionWrong();
+
+        // Gọi hàm load
+        if (typeof this.currentQuestion.load === 'function') {
+            this.currentQuestion.load(enemyType);
+        } else {
+            console.error(`QuestionType${typeNumber} không có hàm load`);
+        }
+    },
     
     /**
      * Load câu hỏi loại 1 (word sort)
@@ -132,17 +162,23 @@ const QuestionManager = {
     async startQuestion(enemyType = 'normal') {
         const area = document.getElementById("questionarea"); 
         if (area) area.innerHTML = "";
-
+    
         if (enemyType === 'normal') {
+            // Ví dụ: random giữa type1 và type3
             if (Math.random() > 0.5) {
-                await this.loadType1(enemyType);
+                await this.loadType(1, enemyType);
             } else {
-                await this.loadType3(enemyType);
+                await this.loadType(3, enemyType);
             }
         } else if (enemyType === 'elite') {
-            await this.loadType2(enemyType);
+            await this.loadType(2, enemyType);
         } else if (enemyType === 'boss') {
-            await this.loadType3(enemyType); // Sau này thêm
+            // Boss có thể random giữa type3 và type4
+            if (Math.random() > 0.5) {
+                await this.loadType(3, enemyType);
+            } else {
+                await this.loadType(4, enemyType);
+            }
         }
     },
         

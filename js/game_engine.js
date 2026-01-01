@@ -331,9 +331,9 @@ const GameEngine = {
         battleView.insertAdjacentHTML('beforeend', uiOverlay);
     },
     
-/**
- * Tạo quái vật dựa trên bước đi hiện tại từ Database
- */
+    /**
+     * Tạo quái vật dựa trên bước đi hiện tại từ Database
+     */
 async spawnMonster() {
     // 1. Xác định loại quái dựa trên bước đi (Step)
     let targetType = 'normal';

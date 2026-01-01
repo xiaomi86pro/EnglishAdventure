@@ -1,5 +1,11 @@
 // js/question/question1.js
 // Question Type 1 – Word Order (English + Vietnamese)
+if (window.speechSynthesis) {
+    speechSynthesis.getVoices();
+    if (speechSynthesis.onvoiceschanged !== undefined) {
+        speechSynthesis.onvoiceschanged = () => speechSynthesis.getVoices();
+    }
+}
 
 const QuestionType1 = {
     currentData: null,
@@ -8,13 +14,42 @@ const QuestionType1 = {
     onCorrect: null,
     onWrong: null,
 
+    
+
     speakWord(text, lang = "en-US") {
+        if (!text) return;
+
+        // Ưu tiên 1: Sử dụng Google Translate qua Internet (Cho cả Anh và Việt)
+        const cleanText = text.split('(')[0].trim();
+        const googleUrl = `https://translate.google.com/translate_tts?ie=UTF-8&q=${encodeURIComponent(cleanText)}&tl=${lang.split('-')[0]}&client=tw-ob`;
+        
+        const audio = new Audio(googleUrl);
+        
+        audio.play()
+            .then(() => {
+                console.log(`Đang đọc online (${lang}): ${cleanText}`);
+            })
+            .catch(err => {
+                // Ưu tiên 2: Nếu Internet lỗi hoặc Google chặn, dùng máy tính đọc (Dự phòng)
+                console.warn("Không thể dùng Google TTS, chuyển sang Offline...");
+                this.speakOffline(text, lang);
+            });
+    },
+
+    // Hàm dự phòng khi không có mạng
+    speakOffline(text, lang) {
         if (!window.speechSynthesis) return;
         speechSynthesis.cancel();
+
         const u = new SpeechSynthesisUtterance(text);
         u.lang = lang;
         u.rate = 0.9;
-        u.pitch = 1.1;
+        u.pitch = 1.0;
+
+        const voices = speechSynthesis.getVoices();
+        const targetVoice = voices.find(v => v.lang.includes(lang.split('-')[0]));
+        if (targetVoice) u.voice = targetVoice;
+
         speechSynthesis.speak(u);
     },
 
@@ -112,6 +147,11 @@ const QuestionType1 = {
 
         area.innerHTML = `
             <div class="flex w-full h-full p-4 relative overflow-hidden bg-black rounded-3xl">
+            <!-- Hiển thị loại câu hỏi -->
+            <div class="absolute top-0 left-0 bg-purple-600 text-white px-3 py-1 rounded-br-2xl text-xs font-bold shadow">
+                Question Type 1
+            </div>
+
             <button id="hint-btn" class="absolute top-3 right-3 p-2 rounded-full bg-yellow-300 hover:bg-yellow-400 shadow text-xl">💡</button>
                 <div class="flex-1 flex flex-col justify-start gap-8 py-2 px-4 w-full">
                     <!-- Preview -->
@@ -293,7 +333,7 @@ const QuestionType1 = {
         this.currentData = null;
         this.enCompleted = "";
         this.viCompleted = "";
-    }
+    },
 };
 
 window.QuestionType1 = QuestionType1;

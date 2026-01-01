@@ -85,6 +85,11 @@
             <button onclick="switchTab('assets')" id="btn-tab-assets" class="px-8 py-3 rounded-2xl font-black uppercase transition-all tab-inactive">
                 🎨 Nhập ảnh & Tài nguyên
             </button>
+            <button onclick="switchTab('questions')" id="btn-tab-questions" class="px-8 py-3 rounded-2xl font-black uppercase transition-all tab-inactive">
+                ❓ Test câu hỏi
+            </button>
+        </div>
+        
         </div>
 
         <!-- CONTENT: TAB NHẬP TỪ -->
@@ -226,29 +231,62 @@
                 </div>
             </div>
         </div>
+
+        <!-- CONTENT: TAB TEST CÂU HỎI -->
+        <div id="tab-questions" class="hidden space-y-6">
+            <div class="bg-white p-6 rounded-3xl admin-card">
+                <h3 class="text-xl font-bold text-purple-600 mb-6 uppercase">Test câu hỏi</h3>
+                
+                <div class="flex gap-4 mb-4">
+                    <button onclick="QuestionManager.startQuestion('normal')" class="px-6 py-2 bg-green-500 text-white rounded-xl font-bold">Test Normal</button>
+                    <button onclick="QuestionManager.startQuestion('elite')" class="px-6 py-2 bg-yellow-500 text-white rounded-xl font-bold">Test Elite</button>
+                    <button onclick="QuestionManager.startQuestion('boss')" class="px-6 py-2 bg-red-500 text-white rounded-xl font-bold">Test Boss</button>
+                </div>
+
+                <div id="questionarea" class="p-6 border-2 border-dashed rounded-xl bg-gray-50 min-h-[200px]">
+                    <p class="text-gray-400 italic">Câu hỏi sẽ hiển thị tại đây...</p>
+                </div>
+            </div>
+        </div>
+
     </div>
 
     <script>
         function switchTab(tabName) {
             const vocabTab = document.getElementById('tab-vocab');
             const assetsTab = document.getElementById('tab-assets');
+            const questionsTab = document.getElementById('tab-questions');
             const btnVocab = document.getElementById('btn-tab-vocab');
             const btnAssets = document.getElementById('btn-tab-assets');
+            const btnQuestions = document.getElementById('btn-tab-questions');
 
+            // Ẩn tất cả
+            vocabTab.classList.add('hidden');
+            assetsTab.classList.add('hidden');
+            questionsTab.classList.add('hidden');
+            btnVocab.className = btnVocab.className.replace('tab-active', 'tab-inactive');
+            btnAssets.className = btnAssets.className.replace('tab-active', 'tab-inactive');
+            btnQuestions.className = btnQuestions.className.replace('tab-active', 'tab-inactive');
+
+
+
+            // Hiện tab được chọn
             if (tabName === 'vocab') {
                 vocabTab.classList.remove('hidden');
-                assetsTab.classList.add('hidden');
                 btnVocab.className = btnVocab.className.replace('tab-inactive', 'tab-active');
-                btnAssets.className = btnAssets.className.replace('tab-active', 'tab-inactive');
-            } else {
-                vocabTab.classList.add('hidden');
+            } else if (tabName === 'assets') {
                 assetsTab.classList.remove('hidden');
-                btnVocab.className = btnVocab.className.replace('tab-active', 'tab-inactive');
                 btnAssets.className = btnAssets.className.replace('tab-inactive', 'tab-active');
+            } else if (tabName === 'questions') {
+                questionsTab.classList.remove('hidden');
+                btnQuestions.className = btnQuestions.className.replace('tab-inactive', 'tab-active');
             }
+
         }
     </script>
     
     <script type="module" src="./js/admin.js"></script>
+    <script type="module" src="./js/question/question_manager.js"></script>
+
 </body>
 </html>

@@ -85,6 +85,12 @@ const QuestionType3 = {
 
         area.innerHTML = `
             <div class="flex flex-col w-full h-full p-6 bg-slate-800 rounded-3xl items-center justify-center gap-6 relative overflow-hidden">
+
+                <!-- Hiển thị loại câu hỏi -->
+                <div class="absolute top-0 left-0 bg-purple-600 text-white px-3 py-1 rounded-br-2xl text-xs font-bold shadow">
+                    Question Type 3
+                </div>
+
                 <button id="replay-btn" class="absolute top-4 right-4 p-3 rounded-full bg-blue-500 hover:bg-blue-600 shadow-lg text-2xl transition-all active:scale-90">🔊</button>
                 
                 <div class="text-white/50 text-sm uppercase tracking-widest mb-2 font-bold">Listen and Type</div>
