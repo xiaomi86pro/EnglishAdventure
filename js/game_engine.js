@@ -80,7 +80,7 @@ const GameEngine = {
             } : null
         };
         
-        localStorage.setItem('gameState', JSON.stringify(gameState));
+        localStorage.setItem(`gameState-${this.player.id}`, JSON.stringify(gameState));
         console.log('Game đã được lưu:', gameState);
     },
 

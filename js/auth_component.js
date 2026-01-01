@@ -20,10 +20,9 @@ const AuthComponent = {
     /**
      * Kiểm tra xem có game đã lưu không
      */
-    checkSavedGame: function() {
-        const saved = localStorage.getItem('gameState');
+    checkSavedGame: function(userId) {
+        const saved = localStorage.getItem(`gameState-${userId}`);
         if (!saved) return null;
-        
         try {
             return JSON.parse(saved);
         } catch (e) {
@@ -31,6 +30,24 @@ const AuthComponent = {
             return null;
         }
     },
+    
+    continueGame: function() {
+        const savedGame = this.checkSavedGame(this.selectedUserId);
+        if (!savedGame) {
+            alert('Không tìm thấy game đã lưu!');
+            this.displayLoginMenu();
+            return;
+        }
+        if (window.GameEngine) {
+            window.GameEngine.restoreGameState(savedGame);
+        }
+    },
+    
+    startNewGame: function() {
+        localStorage.removeItem(`gameState-${this.selectedUserId}`);
+        this.displayLoginMenu();
+    },
+    
 
     /**
      * Kiểm tra và hiển thị menu phù hợp
@@ -74,33 +91,17 @@ const AuthComponent = {
                             class="w-full px-8 py-4 bg-blue-500 text-white text-2xl font-black rounded-full shadow-[0_10px_0_rgb(37,99,235)] hover:bg-blue-600 transition-all active:mt-2 active:shadow-none uppercase">
                         🆕 Chơi lại từ đầu
                     </button>
+
+                    <!-- Nút quay lại -->
+                    <div class="w-full flex justify-start mt-4">
+                        <button onclick="AuthComponent.displayLoginMenu()" 
+                                class="px-6 py-2 bg-gray-400 text-white text-lg font-bold rounded-full shadow hover:bg-gray-500 transition-all">
+                            ⬅️ Quay lại
+                        </button>
+                    </div>
                 </div>
             </div>
         `;
-    },
-
-    /**
-     * Tiếp tục game đã lưu
-     */
-    continueGame: function() {
-        const savedGame = this.checkSavedGame();
-        if (!savedGame) {
-            alert('Không tìm thấy game đã lưu!');
-            this.displayLoginMenu();
-            return;
-        }
-        
-        if (window.GameEngine) {
-            window.GameEngine.restoreGameState(savedGame);
-        }
-    },
-
-    /**
-     * Bắt đầu game mới (xóa game cũ)
-     */
-    startNewGame: function() {
-        localStorage.removeItem('gameState'); // Xóa game đã lưu
-        this.displayLoginMenu(); // Hiện menu chọn user
     },
 
     /**
@@ -259,9 +260,8 @@ const AuthComponent = {
             this.selectedUserId = userId;
             
             // Kiểm tra xem profile này có game đã lưu không
-            const savedGame = this.checkSavedGame();
-            
-            if (savedGame && savedGame.player.id === userId) {
+            const savedGame = this.checkSavedGame(userId);
+            if (savedGame) {
                 // Profile này có game đã lưu → Hiện menu Continue/New
                 this.displayContinueOrNewMenu(savedGame);
             } else {

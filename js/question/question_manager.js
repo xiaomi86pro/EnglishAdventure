@@ -172,13 +172,8 @@ const QuestionManager = {
             }
         } else if (enemyType === 'elite') {
             await this.loadType(2, enemyType);
-        } else if (enemyType === 'boss') {
-            // Boss có thể random giữa type3 và type4
-            if (Math.random() > 0.5) {
-                await this.loadType(3, enemyType);
-            } else {
-                await this.loadType(4, enemyType);
-            }
+        } else if (enemyType === 'boss') {         
+                await this.loadType(4, enemyType);       
         }
     },
         
