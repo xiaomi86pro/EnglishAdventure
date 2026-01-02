@@ -280,10 +280,7 @@ if (saveHeroBtn) {
                 .insert([{
                     name: name,
                     image_url: finalUrl,
-                    base_hp: 100, // Bạn có thể thêm input để nhập số này sau
-                    frame_width: 64,
-                    frame_height: 64,
-                    total_frames: 4 // Giả định mặc định là 4
+                    base_hp: 100, // Bạn có thể thêm input để nhập số này sau 
                 }]);
 
             if (error) throw error;
@@ -398,10 +395,6 @@ async function loadAssets(tableName) {
                     <input type="number" id="atk-${item.id}" value="${item.base_atk || 0}" class="w-full p-1 border rounded">
                 </div>
                 <div>
-                    <label class="text-xs text-gray-400">Frames</label>
-                    <input type="number" id="frames-${item.id}" value="${item.total_frames || 1}" class="w-full p-1 border rounded">
-                </div>
-                <div>
                     <label class="text-xs text-gray-400">Loại (nếu có)</label>
                     <input type="text" id="type-${item.id}" value="${item.type || ''}" class="w-full p-1 border rounded">
                 </div>
@@ -421,7 +414,6 @@ window.updateAsset = async (id) => {
         name: document.getElementById(`name-${id}`).value,
         base_hp: parseInt(document.getElementById(`hp-${id}`).value),
         base_atk: parseInt(document.getElementById(`atk-${id}`).value),
-        total_frames: parseInt(document.getElementById(`frames-${id}`).value),
     };
 
     const { error } = await supabase.from(currentAssetTab).update(updateData).eq('id', id);

@@ -487,7 +487,7 @@ async spawnMonster() {
                 this.isBattling = false; // <-- reset lại ở đây 
             
                 if (attacker === this.player && this.monster.hp > 0) {
-                    this.nextQuestion();
+                    //this.nextQuestion();
                 }
         
             }, 400);
