@@ -301,25 +301,21 @@ const GameEngine = {
             ${segments}
                 </div>
 
-            <div class="absolute inset-0 flex justify-between items-end px-10 pb-4 pointer-events-none">
-                <div class="flex flex-col items-center">
-                    <div id="hero-hp-bar" class="w-24 h-6 bg-gray-200 rounded-lg border-2 border-white mb-32 overflow-hidden relative shadow-sm">
-                        <div id="hero-hp-fill" class="h-full bg-green-500 transition-all duration-300" style="width: 100%"></div>
-                        <div class="absolute inset-0 flex items-center justify-center text-[10px] font-black text-white drop-shadow-md">
-                            <span id="hero-hp-text">100/100</span>
-                        </div>
+                <div class="absolute inset-0 flex justify-between items-end px-10 pb-4 pointer-events-none">
+                <!-- Hero HP Bar -->
+                <div id="hero-hp-bar" class="w-32 h-8 bg-gray-200 rounded-lg border-2 border-white overflow-hidden relative shadow-lg">
+                    <div id="hero-hp-fill" class="h-full bg-green-500 transition-all duration-300" style="width: 100%"></div>
+                    <div class="absolute inset-0 flex items-center justify-center text-xs font-black text-white drop-shadow-md">
+                        <span id="hero-hp-text">100/100</span>
                     </div>
-                    <span class="font-bold text-blue-700 bg-white/80 px-2 rounded-lg">${this.player.display_name}</span>
                 </div>
-    
-                <div class="flex flex-col items-center">
-                    <div id="monster-hp-bar" class="w-24 h-6 bg-gray-200 rounded-lg border-2 border-white mb-32 overflow-hidden relative shadow-sm">
-                        <div id="monster-hp-fill" class="h-full bg-red-500 transition-all duration-300" style="width: 100%"></div>
-                        <div class="absolute inset-0 flex items-center justify-center text-[10px] font-black text-white drop-shadow-md">
-                            <span id="monster-hp-text">50/50</span>
-                        </div>
+            
+                <!-- Monster HP Bar -->
+                <div id="monster-hp-bar" class="w-32 h-8 bg-gray-200 rounded-lg border-2 border-white overflow-hidden relative shadow-lg">
+                    <div id="monster-hp-fill" class="h-full bg-red-500 transition-all duration-300" style="width: 100%"></div>
+                    <div class="absolute inset-0 flex items-center justify-center text-xs font-black text-white drop-shadow-md">
+                        <span id="monster-hp-text">50/50</span>
                     </div>
-                    <span id="monster-name" class="font-bold text-red-700 bg-white/80 px-2 rounded-lg">Quái vật</span>
                 </div>
             </div>
         `;
@@ -366,12 +362,18 @@ async spawnMonster() {
                 sprite_url: randomMonster.image_url
             };
 
-            // 4. Cập nhật hình ảnh hiển thị lên thẻ #monster
+            // 4. Cập nhật hình ảnh và kích thước hiển thị
             const monsterEl = document.getElementById('monster');
             if (monsterEl) {
                 monsterEl.style.backgroundImage = `url('${this.monster.sprite_url}')`;
-                monsterEl.className = 'sprite';
-                console.log("Monster đã spawn:", this.monster.name);
+                
+                // Thêm class size dựa trên type
+                let sizeClass = 'size-normal';
+                if (targetType === 'elite') sizeClass = 'size-elite';
+                else if (targetType === 'boss') sizeClass = 'size-boss';
+                
+                monsterEl.className = `sprite ${sizeClass}`;
+                console.log("Monster đã spawn:", this.monster.name, "Size:", sizeClass);
             }
         } else {
             console.error("Không tìm thấy dữ liệu quái vật loại:", targetType);
@@ -393,6 +395,31 @@ async spawnMonster() {
      * Cập nhật toàn bộ các vùng Dashboard và UserUI
      */
     updateAllUI() {
+
+        // 1. Cập nhật thông tin người chơi ở UserUI
+        const userUI = document.getElementById('userUI');
+        if (userUI && this.player) {
+            // Xóa nội dung cũ nếu có
+            const oldPlayerInfo = document.getElementById('player-info-card');
+            if (oldPlayerInfo) oldPlayerInfo.remove();
+            
+            // Tạo card thông tin người chơi
+            const playerCard = document.createElement('div');
+            playerCard.id = 'player-info-card';
+            playerCard.className = 'bg-white/70 rounded-2xl p-4 border-4 border-blue-200 shadow-lg mb-4';
+            playerCard.innerHTML = `
+                <div class="flex flex-col items-center gap-3">
+                    <div class="text-5xl">${this.player.avatar_key || '👤'}</div>
+                    <div class="text-center">
+                        <p class="font-black text-xl text-blue-700">${this.player.display_name}</p>
+                        <p class="text-sm font-bold text-gray-500">Level ${this.player.level || 1}</p>
+                    </div>
+                </div>
+            `;
+            
+            // Chèn vào đầu userUI
+            userUI.insertBefore(playerCard, userUI.firstChild);
+        }
         
         // 2. Cập nhật thông tin Quái vật (chỉ update monster-info, không đè dashboard)
         const mInfo = document.getElementById('monster-info');
@@ -429,7 +456,7 @@ async spawnMonster() {
         this.updateBattleStatus();
 
         // 5. Thêm nút Thoát ra Menu vào UserUI
-        const userUI = document.getElementById('userUI');
+        //const userUI = document.getElementById('userUI');
         if (userUI) {
             // Xóa nút cũ nếu có
             const oldExitBtn = document.getElementById('exit-menu-btn');
