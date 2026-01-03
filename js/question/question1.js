@@ -8,6 +8,7 @@ if (window.speechSynthesis) {
 }
 
 const QuestionType1 = {
+    autoReload: true,
     currentData: null,
     enCompleted: "",
     viCompleted: "",

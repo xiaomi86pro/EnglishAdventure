@@ -2,6 +2,7 @@
 // Question Type 3 – Nghe và sắp xếp chữ cái (Spelling)
 
 const QuestionType3 = {
+    autoReload: true,
     currentData: null,
     enCompleted: "",
     onCorrect: null,

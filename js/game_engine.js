@@ -197,7 +197,6 @@ const GameEngine = {
         this.startBattleTurn(this.monster, this.player);
     },
     
-
     showDamage(defender, damage) {
         const battle = document.getElementById('battleview');
         if (!battle) return;
@@ -330,66 +329,66 @@ const GameEngine = {
     /**
      * Tạo quái vật dựa trên bước đi hiện tại từ Database
      */
-async spawnMonster() {
-    // 1. Xác định loại quái dựa trên bước đi (Step)
-    let targetType = 'normal';
-    if (this.currentStep === 5) {
-        targetType = 'elite';
-    } else if (this.currentStep === 10) {
-        targetType = 'boss';
-    }
-
-    try {
-        // 2. Truy vấn lấy danh sách quái vật theo Type từ bảng 'monsters'
-        const { data: monsters, error } = await window.supabase
-            .from('monsters')
-            .select('*')
-            .eq('type', targetType);
-
-        if (error) throw error;
-
-        if (monsters && monsters.length > 0) {
-            // 3. Chọn ngẫu nhiên một con quái trong danh sách trả về
-            const randomMonster = monsters[Math.floor(Math.random() * monsters.length)];
-
-            this.monster = {
-                ...randomMonster,
-                hp: randomMonster.base_hp,
-                max_hp: randomMonster.base_hp,
-                atk: randomMonster.base_atk,
-                state: 'idle',
-                isDead: false,
-                sprite_url: randomMonster.image_url
-            };
-
-            // 4. Cập nhật hình ảnh và kích thước hiển thị
-            const monsterEl = document.getElementById('monster');
-            if (monsterEl) {
-                monsterEl.style.backgroundImage = `url('${this.monster.sprite_url}')`;
-                
-                // Thêm class size dựa trên type
-                let sizeClass = 'size-normal';
-                if (targetType === 'elite') sizeClass = 'size-elite';
-                else if (targetType === 'boss') sizeClass = 'size-boss';
-                
-                monsterEl.className = `sprite ${sizeClass}`;
-                console.log("Monster đã spawn:", this.monster.name, "Size:", sizeClass);
-            }
-        } else {
-            console.error("Không tìm thấy dữ liệu quái vật loại:", targetType);
+    async spawnMonster() {
+        // 1. Xác định loại quái dựa trên bước đi (Step)
+        let targetType = 'normal';
+        if (this.currentStep === 5) {
+            targetType = 'elite';
+        } else if (this.currentStep === 10) {
+            targetType = 'boss';
         }
 
-    } catch (err) {
-        console.error("Lỗi khi spawn monster:", err);
-        // Quái vật dự phòng nếu lỗi
-        this.monster = { 
-            name: "Quái Vật Bóng Tối", 
-            hp: 50, max_hp: 50, atk: 5, 
-            type: "normal", 
-            state: 'idle' 
-        };
-    }
-},
+        try {
+            // 2. Truy vấn lấy danh sách quái vật theo Type từ bảng 'monsters'
+            const { data: monsters, error } = await window.supabase
+                .from('monsters')
+                .select('*')
+                .eq('type', targetType);
+
+            if (error) throw error;
+
+            if (monsters && monsters.length > 0) {
+                // 3. Chọn ngẫu nhiên một con quái trong danh sách trả về
+                const randomMonster = monsters[Math.floor(Math.random() * monsters.length)];
+
+                this.monster = {
+                    ...randomMonster,
+                    hp: randomMonster.base_hp,
+                    max_hp: randomMonster.base_hp,
+                    atk: randomMonster.base_atk,
+                    state: 'idle',
+                    isDead: false,
+                    sprite_url: randomMonster.image_url
+                };
+
+                // 4. Cập nhật hình ảnh và kích thước hiển thị
+                const monsterEl = document.getElementById('monster');
+                if (monsterEl) {
+                    monsterEl.style.backgroundImage = `url('${this.monster.sprite_url}')`;
+                    
+                    // Thêm class size dựa trên type
+                    let sizeClass = 'size-normal';
+                    if (targetType === 'elite') sizeClass = 'size-elite';
+                    else if (targetType === 'boss') sizeClass = 'size-boss';
+                    
+                    monsterEl.className = `sprite ${sizeClass}`;
+                    console.log("Monster đã spawn:", this.monster.name, "Size:", sizeClass);
+                }
+            } else {
+                console.error("Không tìm thấy dữ liệu quái vật loại:", targetType);
+            }
+
+        } catch (err) {
+            console.error("Lỗi khi spawn monster:", err);
+            // Quái vật dự phòng nếu lỗi
+            this.monster = { 
+                name: "Quái Vật Bóng Tối", 
+                hp: 50, max_hp: 50, atk: 5, 
+                type: "normal", 
+                state: 'idle' 
+            };
+        }
+    },
 
     /**
      * Cập nhật toàn bộ các vùng Dashboard và UserUI
@@ -513,8 +512,15 @@ async spawnMonster() {
                 attackerEl.classList.remove('run-back');
                 this.isBattling = false; // <-- reset lại ở đây 
             
+                // Chỉ load câu hỏi mới nếu Hero tấn công và monster còn sống
                 if (attacker === this.player && this.monster.hp > 0) {
-                    //this.nextQuestion();
+                    // Kiểm tra xem QuestionType hiện tại có cần auto-reload không
+                    const currentQ = window.QuestionManager?.currentQuestion;
+                    
+                    // Nếu không có thuộc tính autoReload HOẶC autoReload = true
+                    if (!currentQ || currentQ.autoReload !== false) {
+                        this.nextQuestion();
+                    }
                 }
         
             }, 400);

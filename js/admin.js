@@ -343,7 +343,6 @@ if (saveMonsterBtn) {
                     type: type,
                     image_url: finalUrl,
                     base_hp: 50,
-                    total_frames: 1 // Bạn có thể thêm input để nhập số này
                 }]);
 
             if (error) throw error;
@@ -414,6 +413,7 @@ window.updateAsset = async (id) => {
         name: document.getElementById(`name-${id}`).value,
         base_hp: parseInt(document.getElementById(`hp-${id}`).value),
         base_atk: parseInt(document.getElementById(`atk-${id}`).value),
+        type: document.getElementById(`type-${id}`).value,
     };
 
     const { error } = await supabase.from(currentAssetTab).update(updateData).eq('id', id);

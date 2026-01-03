@@ -139,6 +139,7 @@ function generateGrid(words) {
 }
 
 const QuestionType4 = {
+    autoReload: false,
     currentData: null,
     onCorrect: null,
     onWrong: null,

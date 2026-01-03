@@ -1,6 +1,7 @@
 // js/question/question2.js
 // Question Type 2 – Fill in the missing letter
 window.QuestionType2 = {
+    autoReload: true,
     currentData: null,
     onCorrect: null,
     onWrong: null,

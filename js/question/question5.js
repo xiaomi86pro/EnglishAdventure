@@ -1,6 +1,7 @@
 // js/question/question5.js
 
 const QuestionType5 = {
+    autoReload: false,
     currentData: null,
     onCorrect: null,
     onWrong: null,
