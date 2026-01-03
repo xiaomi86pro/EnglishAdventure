@@ -76,8 +76,10 @@ const QuestionManager = {
         } else if (enemyType === 'elite') {
             await this.loadType(2, enemyType);
         } else if (enemyType === 'boss') {         
-                await this.loadType(5, enemyType);       
-        }
+                await this.loadType(4, enemyType);       
+        } else if (enemyType === 'final boss') {         
+            await this.loadType(5, enemyType);       
+    }
     },
         
     /**
