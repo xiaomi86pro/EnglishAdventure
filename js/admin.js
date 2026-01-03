@@ -436,5 +436,12 @@ document.getElementById('btn-show-monsters')?.addEventListener('click', () => lo
 
 // Load mặc định khi mở trang
 loadAssets('heroes');
-
 startAdminSystem();
+
+// Đảm bảo các Manager được load
+window.addEventListener('DOMContentLoaded', () => {
+    console.log('Admin system loaded');
+    if (window.LocationManager) console.log('✓ LocationManager ready');
+    if (window.StationManager) console.log('✓ StationManager ready');
+    if (window.StepManager) console.log('✓ StepManager ready');
+});

@@ -103,11 +103,30 @@ const GameEngine = {
                 .eq('step_number', this.currentStep)
                 .single();
 
-            if (error) {
-                console.warn('Không tìm thấy step config, dùng random monster');
-                await this.spawnMonsterRandom();
-                return;
-            }
+                if (error || !stepConfig) {
+                    console.error('❌ Không tìm thấy config cho step này! Vui lòng cấu hình trong Admin.');
+                    alert(`Lỗi: Chưa cấu hình Step ${this.currentStep} của chặng "${this.currentStation.name}". Vui lòng vào Admin để cấu hình!`);
+                    
+                    // Spawn monster mặc định để game không bị crash
+                    this.monster = {
+                        name: "??? (Chưa config)",
+                        hp: 50,
+                        max_hp: 50,
+                        atk: 5,
+                        type: "normal",
+                        state: 'idle',
+                        isDead: false,
+                        sprite_url: "https://via.placeholder.com/64",
+                        questionType: 1
+                    };
+                    
+                    const monsterEl = document.getElementById('monster');
+                    if (monsterEl) {
+                        monsterEl.style.backgroundImage = `url('${this.monster.sprite_url}')`;
+                        monsterEl.className = 'sprite size-normal';
+                    }
+                    return;
+                }
 
             // 2. Lấy monster từ config
             const monsterData = stepConfig.monsters;
@@ -153,70 +172,6 @@ const GameEngine = {
     },
 
     /**
-     * Spawn monster ngẫu nhiên (fallback khi không có config)
-     */
-    async spawnMonsterRandom() {
-        // 1. Xác định loại quái dựa trên bước đi (Step)
-        let targetType = 'normal';
-        if (this.currentStep === 5) {
-            targetType = 'elite';
-        } else if (this.currentStep === 10) {
-            targetType = 'boss';
-        }
-
-        try {
-            // 2. Truy vấn lấy danh sách quái vật theo Type từ bảng 'monsters'
-            const { data: monsters, error } = await window.supabase
-                .from('monsters')
-                .select('*')
-                .eq('type', targetType);
-
-            if (error) throw error;
-
-            if (monsters && monsters.length > 0) {
-                // 3. Chọn ngẫu nhiên một con quái trong danh sách trả về
-                const randomMonster = monsters[Math.floor(Math.random() * monsters.length)];
-
-                this.monster = {
-                    ...randomMonster,
-                    hp: randomMonster.base_hp,
-                    max_hp: randomMonster.base_hp,
-                    atk: randomMonster.base_atk,
-                    state: 'idle',
-                    isDead: false,
-                    sprite_url: randomMonster.image_url
-                };
-
-                // 4. Cập nhật hình ảnh và kích thước hiển thị
-                const monsterEl = document.getElementById('monster');
-                if (monsterEl) {
-                    monsterEl.style.backgroundImage = `url('${this.monster.sprite_url}')`;
-                    
-                    // Thêm class size dựa trên type
-                    let sizeClass = 'size-normal';
-                    if (targetType === 'elite') sizeClass = 'size-elite';
-                    else if (targetType === 'boss') sizeClass = 'size-boss';
-                    
-                    monsterEl.className = `sprite ${sizeClass}`;
-                    console.log("Monster đã spawn:", this.monster.name, "Size:", sizeClass);
-                }
-            } else {
-                console.error("Không tìm thấy dữ liệu quái vật loại:", targetType);
-            }
-
-        } catch (err) {
-            console.error("Lỗi khi spawn monster:", err);
-            // Quái vật dự phòng nếu lỗi
-            this.monster = { 
-                name: "Quái Vật Bóng Tối", 
-                hp: 50, max_hp: 50, atk: 5, 
-                type: "normal", 
-                state: 'idle' 
-            };
-        }
-    },
-
-    /**
      * Lưu trạng thái game vào localStorage
      */
     saveGameState() {
@@ -232,9 +187,11 @@ const GameEngine = {
                 atk: this.player.atk,
                 sprite_url: this.player.sprite_url,
                 selected_hero_id: this.player.selected_hero_id,
-                sprite: this.player.avatar_key // Để hiển thị trên menu
+                sprite: this.player.avatar_key
             },
-            currentStage: this.currentStep,
+            currentLocationId: this.currentLocation?.id,  // ← Thêm
+            currentStationId: this.currentStation?.id,    // ← Thêm
+            currentStep: this.currentStep,
             monster: this.monster ? {
                 name: this.monster.name,
                 hp: this.monster.hp,
@@ -257,7 +214,28 @@ const GameEngine = {
         
         // Khôi phục thông tin player
         this.player = savedGame.player;
-        this.currentStep = savedGame.currentStage || 1;
+        this.currentStep = savedGame.currentStep || 1;
+        
+        // ✅ Khôi phục location và station
+        if (savedGame.currentLocationId && savedGame.currentStationId) {
+            const { data: location } = await window.supabase
+                .from('locations')
+                .select('*')
+                .eq('id', savedGame.currentLocationId)
+                .single();
+            
+            const { data: station } = await window.supabase
+                .from('stations')
+                .select('*')
+                .eq('id', savedGame.currentStationId)
+                .single();
+            
+            this.currentLocation = location;
+            this.currentStation = station;
+        } else {
+            // Nếu không có, load location/station đầu tiên
+            await this.loadFirstLocation();
+        }
         
         // Khởi tạo UI
         this.initUI();
@@ -269,23 +247,24 @@ const GameEngine = {
             heroEl.className = 'sprite';
         }
         
-        // Khôi phục monster nếu có
+        // Khôi phục monster
         if (savedGame.monster) {
             this.monster = savedGame.monster;
             const monsterEl = document.getElementById('monster');
             if (monsterEl && this.monster.sprite_url) {
                 monsterEl.style.backgroundImage = `url('${this.monster.sprite_url}')`;
-                monsterEl.className = 'sprite';
+                
+                let sizeClass = 'size-normal';
+                if (this.monster.type === 'elite') sizeClass = 'size-elite';
+                else if (this.monster.type === 'boss') sizeClass = 'size-boss';
+                
+                monsterEl.className = `sprite ${sizeClass}`;
             }
         } else {
-            // Nếu không có monster đã lưu, spawn monster mới
-            await this.spawnMonster();
+            await this.spawnMonsterFromStep();
         }
         
-        // Cập nhật UI
         this.updateAllUI();
-        
-        // Bắt đầu câu hỏi
         this.nextQuestion();
     },
 
@@ -516,7 +495,7 @@ const GameEngine = {
         if (!battleView) return;
     
         // Tạo progress bar chia đoạn
-        const segments = Array.from({ length: this.totalSteps }, (_, i) => {
+        const segments = Array.from({ length: this.totalStepsPerStation }, (_, i) => {
             return `<div id="step-${i+1}" 
                         class="flex-1 h-6 mx-0.5 rounded-md border border-white 
                                 bg-gray-300 transition-colors duration-300"></div>`;
@@ -586,10 +565,16 @@ const GameEngine = {
             userUI.insertBefore(playerCard, userUI.firstChild);
         }
         
-        // 2. Cập nhật thông tin Quái vật (chỉ update monster-info, không đè dashboard)
+        // 2. Cập nhật thông tin Quái vật
         const mInfo = document.getElementById('monster-info');
         if (mInfo && this.monster) {
             mInfo.innerHTML = `
+                <h3 class="text-xl font-black text-red-600 uppercase mb-2">Tiến trình</h3>
+                <div class="bg-white/50 rounded-2xl p-3 border-2 border-purple-200 mb-3">
+                    <p class="text-xs text-purple-600 font-bold">📍 ${this.currentLocation?.name || '...'}</p>
+                    <p class="text-xs text-blue-600">🚉 ${this.currentStation?.name || '...'} (${this.currentStep}/10)</p>
+                </div>
+                
                 <h3 class="text-xl font-black text-red-600 uppercase mb-2">Đối thủ</h3>
                 <div class="bg-white/50 rounded-2xl p-3 border-2 border-red-200">
                     <p class="font-bold text-lg">${this.monster.name}</p>
@@ -602,7 +587,7 @@ const GameEngine = {
         }
     
         // 3. Tô màu cho các step đã hoàn thành
-        for (let i = 1; i <= this.totalSteps; i++) {
+        for (let i = 1; i <= this.totalStepsPerStation; i++) {
             const seg = document.getElementById(`step-${i}`);
             if (!seg) continue;
     

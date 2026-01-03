@@ -130,16 +130,30 @@ const StationManager = {
             description: desc
         };
         
-        let error;
+        let error, newStationId;
+        
         if (id) {
+            // Update
             ({ error } = await window.supabase
                 .from('stations')
                 .update(payload)
                 .eq('id', id));
+            newStationId = id;
         } else {
-            ({ error } = await window.supabase
+            // Insert
+            const { data, error: insertError } = await window.supabase
                 .from('stations')
-                .insert([payload]));
+                .insert([payload])
+                .select()
+                .single();
+            
+            error = insertError;
+            newStationId = data?.id;
+            
+            // ✅ Tự động tạo 10 steps với monster random
+            if (!error && newStationId) {
+                await this.createDefaultSteps(newStationId);
+            }
         }
         
         if (error) {
@@ -149,6 +163,64 @@ const StationManager = {
         
         this.cancelForm();
         this.load();
+    },
+    
+    // ✅ Thêm hàm mới
+    async createDefaultSteps(stationId) {
+        try {
+            // Lấy danh sách monsters
+            const { data: monsters } = await window.supabase
+                .from('monsters')
+                .select('id, type');
+            
+            if (!monsters || monsters.length === 0) {
+                console.warn('Không có monster nào để gán');
+                return;
+            }
+            
+            // Tạo 10 steps
+            const steps = [];
+            for (let i = 1; i <= 10; i++) {
+                let questionType = 1; // Mặc định type 1
+                let targetMonsters = monsters.filter(m => m.type === 'normal');
+                
+                // Step 5 → Elite, Question Type 2
+                if (i === 5) {
+                    targetMonsters = monsters.filter(m => m.type === 'elite');
+                    questionType = 2;
+                }
+                // Step 10 → Boss, Question Type 4
+                else if (i === 10) {
+                    targetMonsters = monsters.filter(m => m.type === 'boss');
+                    questionType = 4;
+                }
+                
+                // Random 1 monster
+                const randomMonster = targetMonsters.length > 0 
+                    ? targetMonsters[Math.floor(Math.random() * targetMonsters.length)]
+                    : monsters[Math.floor(Math.random() * monsters.length)];
+                
+                steps.push({
+                    station_id: stationId,
+                    step_number: i,
+                    monster_id: randomMonster.id,
+                    question_type: questionType
+                });
+            }
+            
+            // Insert tất cả steps
+            const { error } = await window.supabase
+            .from('steps')
+            .insert(steps);
+        
+        if (error) {
+            console.error('Lỗi tạo steps:', error);
+        } else {
+            console.log(`✅ Đã tạo 10 steps cho station ${stationId}`);
+        }
+    } catch (err) {
+        console.error('Lỗi createDefaultSteps:', err);
+    }
     },
     
     async delete(id) {

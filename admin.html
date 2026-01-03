@@ -88,18 +88,17 @@
             <button onclick="switchTab('questions')" id="btn-tab-questions" class="px-8 py-3 rounded-2xl font-black uppercase transition-all tab-inactive">
                 ❓ Test câu hỏi
             </button>
-            <button id="btn-tab-locations" onclick="switchTab('locations')" class="tab-inactive w-full text-left px-4 py-3 rounded-lg transition-colors font-medium">
+            <button id="btn-tab-locations" onclick="switchTab('locations')" class="tab-inactive px-8 py-3 rounded-2xl font-black uppercase transition-all">
                 🗺️ Vùng đất
             </button>
-            <button id="btn-tab-stations" onclick="switchTab('stations')" class="tab-inactive w-full text-left px-4 py-3 rounded-lg transition-colors font-medium">
+            <button id="btn-tab-stations" onclick="switchTab('stations')" class="tab-inactive px-8 py-3 rounded-2xl font-black uppercase transition-all">
                 🚉 Chặng
             </button>
-            <button id="btn-tab-steps" onclick="switchTab('steps')" class="tab-inactive w-full text-left px-4 py-3 rounded-lg transition-colors font-medium">
+            <button id="btn-tab-steps" onclick="switchTab('steps')" class="tab-inactive px-8 py-3 rounded-2xl font-black uppercase transition-all">
                 👣 Cấu hình Step
             </button>
         </div>
-        
-        </div>
+    </div>
 
         <!-- CONTENT: TAB NHẬP TỪ -->
         <div id="tab-vocab" class="space-y-6">
@@ -339,7 +338,7 @@
         </div>
 
         <!-- CONTENT: Tab Steps -->
-        <div id="stab-steps" class="tab-content hidden">
+        <div id="tab-steps" class="tab-content hidden">
             <div class="flex justify-between items-center mb-6">
                 <h2 class="text-2xl font-bold">Cấu hình Steps (Monster spawn)</h2>
                 <div class="flex gap-2">
@@ -356,8 +355,6 @@
             
             <div id="steps-grid" class="grid grid-cols-5 gap-2"></div>
         </div>
-    </div>
-
 
     <script>
             function switchTab(tabName) {
