@@ -19,6 +19,11 @@ const StepManager = {
         this.monsters = monstersRes.data || [];
         this.questionTypes = qTypesRes.data || [];
         
+        console.log('Question Types loaded:', this.questionTypes);
+        if (this.questionTypes.length === 0) {
+            console.error('❌ Không có question types! Vui lòng chạy SQL insert.');
+        }
+
         this.populateFilters();
         this.render([]);
     },
@@ -139,7 +144,33 @@ const StepManager = {
     
     async editStep(stepNumber) {
         if (!this.currentStationId) return;
+
+        // ✅ Fallback nếu không có question types
+        if (!this.questionTypes || this.questionTypes.length === 0) {
+            this.questionTypes = [
+                { id: 1, name: 'Xếp chữ', description: 'Sắp xếp các chữ cái', icon: '🔤' },
+                { id: 2, name: 'Điền từ', description: 'Điền từ vào câu', icon: '✍️' },
+                { id: 3, name: 'Nghe chọn', description: 'Nghe và chọn từ', icon: '🎧' },
+                { id: 4, name: 'Tìm từ', description: 'Tìm từ trong bảng', icon: '🔍' },
+                { id: 5, name: 'Ghép từ', description: 'Ghép chữ cái', icon: '🧩' }
+            ];
+            console.warn('⚠️ Dùng fallback question types');
+        }
+
+        // Load config hiện tại nếu có
+        const { data: existingStep } = await window.supabase
+            .from('steps')
+            .select('*')
+            .eq('station_id', this.currentStationId)
+            .eq('step_number', stepNumber)
+            .single();
+
+            this.selectedMonsterId = existingStep?.monster_id || null;
+            const currentQuestionType = existingStep?.question_type || 1;
         
+        console.log('Editing step:', stepNumber, 'Current Q Type:', currentQuestionType);
+        console.log('Available Q Types:', this.questionTypes);
+            
         // Tạo modal chọn monster
         const modal = document.createElement('div');
         modal.className = 'fixed inset-0 bg-black/50 flex items-center justify-center z-50';
@@ -169,6 +200,12 @@ const StepManager = {
                             <option value="${qt.id}">${qt.icon} ${qt.name} - ${qt.description}</option>
                         `).join('')}
                     </select>
+
+                    <p class="text-xs text-gray-500 mt-1">
+                    Hiện tại: Type ${currentQuestionType} | 
+                    Tổng: ${this.questionTypes.length} loại
+                    </p>
+
                 </div>
                 
                 <div class="flex gap-2">
@@ -188,35 +225,36 @@ const StepManager = {
         this.currentModal = modal;
         this.selectedMonsterId = null;
         
-        // Load config hiện tại nếu có
-        const { data: existingStep } = await window.supabase
-            .from('steps')
-            .select('*')
-            .eq('station_id', this.currentStationId)
-            .eq('step_number', stepNumber)
-            .single();
-        
-        if (existingStep) {
-            this.selectedMonsterId = existingStep.monster_id;
-            document.getElementById('modal-question-type').value = existingStep.question_type;
-            
-            // Highlight monster đã chọn
-            const monsterEl = modal.querySelector(`[data-monster-id="${existingStep.monster_id}"]`);
-            if (monsterEl) monsterEl.classList.add('border-blue-500', 'bg-blue-50');
-        }
-    },
-    
+            if (existingStep) {
+                this.selectedMonsterId = existingStep.monster_id;
+                
+                // ✅ Dùng setTimeout để đảm bảo DOM đã render xong
+                setTimeout(() => {
+                    const selectEl = document.getElementById('modal-question-type');
+                    if (selectEl) {
+                        selectEl.value = existingStep.question_type;
+                    }
+                    
+                    // Highlight monster đã chọn
+                    const monsterEl = modal.querySelector(`[data-monster-id="${existingStep.monster_id}"]`);
+                    if (monsterEl) {
+                        monsterEl.classList.add('border-blue-500', 'bg-blue-50');
+                    }
+                }, 50);
+            }
+    },    
+
     selectMonster(monsterId) {
-        this.selectedMonsterId = monsterId;
-        
-        // Remove highlight cũ
-        document.querySelectorAll('.monster-option').forEach(el => {
-            el.classList.remove('border-blue-500', 'bg-blue-50');
-        });
-        
-        // Highlight monster mới
-        const selected = document.querySelector(`[data-monster-id="${monsterId}"]`);
-        if (selected) selected.classList.add('border-blue-500', 'bg-blue-50');
+            this.selectedMonsterId = monsterId;
+            
+            // Remove highlight cũ
+            document.querySelectorAll('.monster-option').forEach(el => {
+                el.classList.remove('border-blue-500', 'bg-blue-50');
+            });
+            
+            // Highlight monster mới
+            const selected = document.querySelector(`[data-monster-id="${monsterId}"]`);
+            if (selected) selected.classList.add('border-blue-500', 'bg-blue-50');
     },
     
     async saveStepConfig(stepNumber) {
@@ -227,6 +265,18 @@ const StepManager = {
         
         const questionType = parseInt(document.getElementById('modal-question-type').value);
         
+
+        //✅ Debug log
+    console.log('Saving step:', stepNumber);
+    console.log('Monster ID:', this.selectedMonsterId);
+    console.log('Question Type:', questionType);
+    console.log('Select element:', selectEl);
+    console.log('Select value:', selectEl.value);
+
+    if (!questionType || isNaN(questionType)) {
+        alert('Lỗi: Không chọn được loại câu hỏi!');
+        return;
+    }
         const payload = {
             station_id: this.currentStationId,
             step_number: stepNumber,
@@ -235,42 +285,64 @@ const StepManager = {
         };
         
         // Upsert (insert hoặc update)
-        const { error } = await window.supabase
+        // Kiểm tra step đã tồn tại chưa
+        const { data: existing } = await window.supabase
+        .from('steps')
+        .select('id')
+        .eq('station_id', this.currentStationId)
+        .eq('step_number', stepNumber)
+        .single();
+
+        let error;
+        if (existing) {
+        // Update
+        ({ error } = await window.supabase
             .from('steps')
-            .upsert(payload, { onConflict: 'station_id,step_number' });
-        
-        if (error) {
-            alert('Lỗi: ' + error.message);
-            return;
-        }
-        
-        this.closeModal();
-        this.loadSteps();
-    },
-    
-    async deleteStep(stepNumber) {
-        if (!confirm(`Xóa cấu hình Step ${stepNumber}?`)) return;
-        
-        const { error } = await window.supabase
-            .from('steps')
-            .delete()
+            .update({
+                monster_id: this.selectedMonsterId,
+                question_type: questionType
+            })
             .eq('station_id', this.currentStationId)
-            .eq('step_number', stepNumber);
-        
-        if (error) {
-            alert('Lỗi: ' + error.message);
-            return;
+            .eq('step_number', stepNumber));
+        } else {
+        // Insert
+        ({ error } = await window.supabase
+            .from('steps')
+            .insert([payload]));
         }
-        
-        this.loadSteps();
+                
+                if (error) {
+                    alert('Lỗi: ' + error.message);
+                    return;
+                }
+                
+                this.closeModal();
+                this.loadSteps();
     },
-    
+
+    async deleteStep(stepNumber) {
+            if (!confirm(`Xóa cấu hình Step ${stepNumber}?`)) return;
+                
+            const { error } = await window.supabase
+                .from('steps')
+                .delete()
+                .eq('station_id', this.currentStationId)
+                .eq('step_number', stepNumber);
+                
+            if (error) {
+                alert('Lỗi: ' + error.message);
+                return;
+            }
+                
+            this.loadSteps();
+    },
+            
     closeModal() {
-        if (this.currentModal) {
-            this.currentModal.remove();
-            this.currentModal = null;
-        }
-    }
+            if (this.currentModal) {
+                    this.currentModal.remove();
+                    this.currentModal = null;
+            }
+    },
 };
 
 window.StepManager = StepManager;
