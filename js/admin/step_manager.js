@@ -270,8 +270,8 @@ const StepManager = {
     console.log('Saving step:', stepNumber);
     console.log('Monster ID:', this.selectedMonsterId);
     console.log('Question Type:', questionType);
-    console.log('Select element:', selectEl);
-    console.log('Select value:', selectEl.value);
+    //console.log('Select element:', selectEl);
+    //console.log('Select value:', selectEl.value);
 
     if (!questionType || isNaN(questionType)) {
         alert('Lỗi: Không chọn được loại câu hỏi!');
