@@ -88,6 +88,15 @@
             <button onclick="switchTab('questions')" id="btn-tab-questions" class="px-8 py-3 rounded-2xl font-black uppercase transition-all tab-inactive">
                 ❓ Test câu hỏi
             </button>
+            <button id="btn-tab-locations" onclick="switchTab('locations')" class="tab-inactive w-full text-left px-4 py-3 rounded-lg transition-colors font-medium">
+                🗺️ Vùng đất
+            </button>
+            <button id="btn-tab-stations" onclick="switchTab('stations')" class="tab-inactive w-full text-left px-4 py-3 rounded-lg transition-colors font-medium">
+                🚉 Chặng
+            </button>
+            <button id="btn-tab-steps" onclick="switchTab('steps')" class="tab-inactive w-full text-left px-4 py-3 rounded-lg transition-colors font-medium">
+                👣 Cấu hình Step
+            </button>
         </div>
         
         </div>
@@ -251,45 +260,151 @@
                 </div>
             </div>
         </div>
+        
+        <!-- CONTENT: Tab Locations -->
+        <div id="tab-locations" class="tab-content hidden">
+            <div class="flex justify-between items-center mb-6">
+                <h2 class="text-2xl font-bold">Quản lý Vùng đất</h2>
+                <button onclick="LocationManager.showAddForm()" 
+                        class="px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600">
+                    + Thêm vùng mới
+                </button>
+            </div>
+            
+            <div id="location-form" class="hidden mb-6 p-4 bg-blue-50 rounded-lg">
+                <h3 class="font-bold mb-3">Thêm/Sửa Vùng đất</h3>
+                <input type="hidden" id="location-id">
+                <div class="grid grid-cols-2 gap-4 mb-3">
+                    <input type="text" id="location-name" placeholder="Tên vùng (VD: Rừng Xanh)" 
+                        class="px-3 py-2 border rounded">
+                    <input type="number" id="location-order" placeholder="Thứ tự" 
+                        class="px-3 py-2 border rounded">
+                </div>
+                <textarea id="location-desc" placeholder="Mô tả vùng đất" 
+                        class="w-full px-3 py-2 border rounded mb-3" rows="2"></textarea>
+                <input type="text" id="location-image" placeholder="URL ảnh nền" 
+                    class="w-full px-3 py-2 border rounded mb-3">
+                <div class="flex gap-2">
+                    <button onclick="LocationManager.save()" 
+                            class="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600">
+                        Lưu
+                    </button>
+                    <button onclick="LocationManager.cancelForm()" 
+                            class="px-4 py-2 bg-gray-300 rounded hover:bg-gray-400">
+                        Hủy
+                    </button>
+                </div>
+            </div>
+            
+            <div id="locations-list" class="grid grid-cols-1 gap-4"></div>
+        </div>
 
+        <!-- CONTENT: Tab Stations -->
+        <div id="tab-stations" class="tab-content hidden">
+            <div class="flex justify-between items-center mb-6">
+                <h2 class="text-2xl font-bold">Quản lý Chặng</h2>
+                <button onclick="StationManager.showAddForm()" 
+                        class="px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600">
+                    + Thêm chặng mới
+                </button>
+            </div>
+            
+            <div id="station-form" class="hidden mb-6 p-4 bg-blue-50 rounded-lg">
+                <h3 class="font-bold mb-3">Thêm/Sửa Chặng</h3>
+                <input type="hidden" id="station-id">
+                <div class="grid grid-cols-2 gap-4 mb-3">
+                    <select id="station-location" class="px-3 py-2 border rounded">
+                        <option value="">-- Chọn vùng đất --</option>
+                    </select>
+                    <input type="number" id="station-order" placeholder="Thứ tự (1,2,3)" 
+                        class="px-3 py-2 border rounded">
+                </div>
+                <input type="text" id="station-name" placeholder="Tên chặng (VD: Cổng Rừng)" 
+                    class="w-full px-3 py-2 border rounded mb-3">
+                <textarea id="station-desc" placeholder="Mô tả chặng" 
+                        class="w-full px-3 py-2 border rounded mb-3" rows="2"></textarea>
+                <div class="flex gap-2">
+                    <button onclick="StationManager.save()" 
+                            class="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600">
+                        Lưu
+                    </button>
+                    <button onclick="StationManager.cancelForm()" 
+                            class="px-4 py-2 bg-gray-300 rounded hover:bg-gray-400">
+                        Hủy
+                    </button>
+                </div>
+            </div>
+            
+            <div id="stations-list" class="space-y-4"></div>
+        </div>
+
+        <!-- CONTENT: Tab Steps -->
+        <div id="stab-steps" class="tab-content hidden">
+            <div class="flex justify-between items-center mb-6">
+                <h2 class="text-2xl font-bold">Cấu hình Steps (Monster spawn)</h2>
+                <div class="flex gap-2">
+                    <select id="step-filter-location" onchange="StepManager.filterByLocation()" 
+                            class="px-3 py-2 border rounded">
+                        <option value="">-- Tất cả vùng --</option>
+                    </select>
+                    <select id="step-filter-station" onchange="StepManager.loadSteps()" 
+                            class="px-3 py-2 border rounded">
+                        <option value="">-- Tất cả chặng --</option>
+                    </select>
+                </div>
+            </div>
+            
+            <div id="steps-grid" class="grid grid-cols-5 gap-2"></div>
+        </div>
     </div>
 
+
     <script>
-        function switchTab(tabName) {
-            const vocabTab = document.getElementById('tab-vocab');
-            const assetsTab = document.getElementById('tab-assets');
-            const questionsTab = document.getElementById('tab-questions');
-            const btnVocab = document.getElementById('btn-tab-vocab');
-            const btnAssets = document.getElementById('btn-tab-assets');
-            const btnQuestions = document.getElementById('btn-tab-questions');
-
-            // Ẩn tất cả
-            vocabTab.classList.add('hidden');
-            assetsTab.classList.add('hidden');
-            questionsTab.classList.add('hidden');
-            btnVocab.className = btnVocab.className.replace('tab-active', 'tab-inactive');
-            btnAssets.className = btnAssets.className.replace('tab-active', 'tab-inactive');
-            btnQuestions.className = btnQuestions.className.replace('tab-active', 'tab-inactive');
-
-
-
+            function switchTab(tabName) {
+            // Danh sách tất cả các tab
+            const tabs = ['vocab', 'assets', 'questions', 'locations', 'stations', 'steps'];
+            
+            // Ẩn tất cả tab
+            tabs.forEach(tab => {
+                const tabEl = document.getElementById(`tab-${tab}`);
+                const btnEl = document.getElementById(`btn-tab-${tab}`);
+                
+                if (tabEl) tabEl.classList.add('hidden');
+                if (btnEl) btnEl.className = btnEl.className.replace('tab-active', 'tab-inactive');
+            });
+            
             // Hiện tab được chọn
+            const selectedTab = document.getElementById(`tab-${tabName}`);
+            const selectedBtn = document.getElementById(`btn-tab-${tabName}`);
+            
+            if (selectedTab) selectedTab.classList.remove('hidden');
+            if (selectedBtn) selectedBtn.className = selectedBtn.className.replace('tab-inactive', 'tab-active');
+            
+            // Load data tương ứng
             if (tabName === 'vocab') {
-                vocabTab.classList.remove('hidden');
-                btnVocab.className = btnVocab.className.replace('tab-inactive', 'tab-active');
-            } else if (tabName === 'assets') {
-                assetsTab.classList.remove('hidden');
-                btnAssets.className = btnAssets.className.replace('tab-inactive', 'tab-active');
-            } else if (tabName === 'questions') {
-                questionsTab.classList.remove('hidden');
-                btnQuestions.className = btnQuestions.className.replace('tab-inactive', 'tab-active');
+                // Load vocabulary nếu có
             }
-
+            if (tabName === 'assets') {
+                if (window.MonsterManager) MonsterManager.loadMonsters();
+                if (window.HeroManager) HeroManager.loadHeroes();
+            }
+            if (tabName === 'locations') {
+                if (window.LocationManager) LocationManager.load();
+            }
+            if (tabName === 'stations') {
+                if (window.StationManager) StationManager.load();
+            }
+            if (tabName === 'steps') {
+                if (window.StepManager) StepManager.load();
+            }
         }
     </script>
     
     <script type="module" src="./js/admin.js"></script>
     <script type="module" src="./js/question/question_manager.js"></script>
+    <script src="./js/admin/location_manager.js"></script>
+    <script src="./js/admin/station_manager.js"></script>
+    <script src="./js/admin/step_manager.js"></script>
 
 </body>
 </html>
