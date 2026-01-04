@@ -6,6 +6,7 @@ const GameEngine = {
     heroSlashSound: new Audio('../sounds/Slicing_flesh.mp3'),
     monsterPunchSound: new Audio('../sounds/Punch.mp3'),
     healSound: new Audio('../sounds/Heal.mp3'),
+    bossBgm: new Audio('../sounds/Boss_Battle.mp3'),
     player: null,
     monster: null,
     // ✅ Thêm phần mới
@@ -155,6 +156,12 @@ const GameEngine = {
                 monsterEl.className = `sprite ${sizeClass}`;
             }
 
+            if (this.monster.type === 'boss') {
+                this.playBossMusic();
+            } else {
+                this.stopBossMusic(); // Đảm bảo tắt nhạc boss nếu gặp quái thường
+            }
+
             console.log('Spawned monster:', this.monster.name);
         } catch (err) {
             console.error('Lỗi spawn monster:', err);
@@ -203,9 +210,9 @@ const GameEngine = {
                 questionType: this.monster.questionType
             } : null
         };
-        
         localStorage.setItem(`gameState-${this.player.id}`, JSON.stringify(gameState));
         console.log('Game đã được lưu:', gameState);
+        this.stopBossMusic();
     },
 
     /**
@@ -252,6 +259,10 @@ const GameEngine = {
         // Khôi phục monster
         if (savedGame.monster) {
             this.monster = savedGame.monster;
+
+            if (this.monster.type === 'boss') {
+                this.playBossMusic();
+            }
             
             if (!this.monster.questionType) {
                 this.monster.questionType = this.getDefaultQuestionType(this.monster.type);
@@ -452,7 +463,7 @@ const GameEngine = {
     this.isBattling = true;
     const monsterType = this.monster?.type;
     let hpRestore = 0;
-
+    this.stopBossMusic();
     if (monsterType === 'elite') {
         hpRestore = 20;
     } else if (monsterType === 'boss' || monsterType === 'final boss') {
@@ -650,6 +661,28 @@ async checkAndUnlockHero(completedStationId) {
         }
         if (monsterHpText) {
             monsterHpText.innerText = `${Math.ceil(this.monster.hp)}/${this.monster.max_hp}`;
+        }
+    },
+
+    /**
+     * Bật nhạc Boss
+     */
+    playBossMusic() {
+        if (this.bossBgm) {
+            this.bossBgm.loop = true; // Cho nhạc lặp lại
+            this.bossBgm.volume = 0.5; // Chỉnh âm lượng (0.0 đến 1.0)
+            this.bossBgm.currentTime = 0; // Phát từ đầu
+            this.bossBgm.play().catch(e => console.log("Chưa thể phát nhạc do trình duyệt chặn:", e));
+        }
+    },
+
+    /**
+     * Tắt nhạc Boss
+     */
+    stopBossMusic() {
+        if (this.bossBgm) {
+            this.bossBgm.pause();
+            this.bossBgm.currentTime = 0;
         }
     },
 
@@ -928,6 +961,7 @@ async checkAndUnlockHero(completedStationId) {
 
         // 6. Kiểm tra điều kiện kết thúc (Chết)
         if (isPlayer && this.player.hp_current <= 0) {
+            this.stopBossMusic();
             setTimeout(() => {
                 alert("Bạn đã bị đánh bại! Hãy cố gắng ở lần sau.");
                 location.reload();
