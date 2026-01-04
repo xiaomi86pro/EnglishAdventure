@@ -9,18 +9,24 @@ window.QuestionType2 = {
 
     // Hàm đọc từ (Sử dụng logic ưu tiên Internet/Offline đã thống nhất)
     speakWord(text, lang = "en-US") {
-        if (!text) return;
+        if (!text || !window.speechSynthesis) return;
+    
+        // Dừng các âm thanh đang phát để tránh chồng chéo
+        speechSynthesis.cancel();
+    
         const cleanText = text.split('(')[0].trim();
-        const googleUrl = `https://translate.google.com/translate_tts?ie=UTF-8&q=${encodeURIComponent(cleanText)}&tl=${lang.split('-')[0]}&client=tw-ob`;
-        const audio = new Audio(googleUrl);
-        audio.play().catch(() => {
-            if (window.speechSynthesis) {
-                speechSynthesis.cancel();
-                const u = new SpeechSynthesisUtterance(cleanText);
-                u.lang = lang;
-                speechSynthesis.speak(u);
-            }
-        });
+        const u = new SpeechSynthesisUtterance(cleanText);
+        
+        u.lang = lang;
+        u.rate = 0.9; // Tốc độ đọc tự nhiên
+        u.pitch = 1.0;
+    
+        // Ưu tiên chọn giọng đọc nội bộ của hệ thống (Offline)
+        const voices = speechSynthesis.getVoices();
+        const targetVoice = voices.find(v => v.lang.includes(lang.split('-')[0]));
+        if (targetVoice) u.voice = targetVoice;
+    
+        speechSynthesis.speak(u);
     },
 
     async load(enemyType = "elite") {
@@ -55,6 +61,10 @@ window.QuestionType2 = {
 
             this.currentData = { word, missingIndex, displayWord, vietnamese };
             this.renderQuestionUI();
+
+            setTimeout(() => {
+                this.speakWord(this.currentData.word, "en-US");
+            }, 300); // Đợi UI render xong rồi mới đọc
 
         } catch (err) {
             console.error("Lỗi khi load QuestionType2:", err);

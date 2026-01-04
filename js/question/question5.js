@@ -10,6 +10,15 @@ const QuestionType5 = {
     selectedLetters: [],
     completedWords: [],
 
+    speak(text, lang = "en-US", rate = 0.9) {
+        if (!window.speechSynthesis) return;
+        speechSynthesis.cancel();
+        const u = new SpeechSynthesisUtterance(text);
+        u.lang = lang;
+        u.rate = rate;
+        speechSynthesis.speak(u);
+    },
+
     async load(enemyType = "elite") {
         if (!window.supabase) {
             setTimeout(() => this.load(enemyType), 300);
@@ -250,10 +259,10 @@ const QuestionType5 = {
             if (answerEl) answerEl.innerText = word;
 
             this.completedWords.push(foundIndex);
-
+            this.speak(word);    
             // Xóa các chữ cái đã dùng khỏi grid (với animation)
             this.selectedLetters.forEach(item => {
-                item.btn.style.transform = 'scale(0) rotate(360deg)';
+                item.btn.style.trasnsform = 'scale(0) rotate(360deg)';
                 item.btn.style.opacity = '0';
                 setTimeout(() => item.btn.remove(), 400);
             });

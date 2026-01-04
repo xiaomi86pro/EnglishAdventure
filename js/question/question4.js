@@ -136,7 +136,7 @@ function generateGrid(words) {
 
     console.log("Grid placed status:", placed);
     return grid;
-}
+};
 
 const QuestionType4 = {
     autoReload: false,
@@ -146,6 +146,15 @@ const QuestionType4 = {
     attackInterval: null,
     hintCount: 0,
     maxHints: 5,
+
+    speak(text, lang = "en-US", rate = 0.9) {
+        if (!window.speechSynthesis) return;
+        speechSynthesis.cancel();
+        const u = new SpeechSynthesisUtterance(text);
+        u.lang = lang;
+        u.rate = rate;
+        speechSynthesis.speak(u);
+    },
 
     async load(enemyType = "boss") {
         this.hintCount = 0;
@@ -281,11 +290,36 @@ const QuestionType4 = {
 
                 if (foundIndex >= 0) {
                     document.getElementById(`found-${foundIndex}`).innerText = selected[foundIndex].english;
+                    this.speak(word);
                     selectedCells.forEach(c => {
                         c.classList.remove("bg-green-300");
                         c.classList.add("bg-yellow-300"); // đúng thì vàng
+                    });               
+
+                    // ✅ Đếm số từ đã tìm được
+                    const foundWords = selected.filter((w, idx) => {
+                        const el = document.getElementById(`found-${idx}`);
+                        return el && el.innerText !== '';
                     });
+                    
+                    console.log(`Đã tìm được ${foundWords.length}/${selected.length} từ`);
+                    
                     if (this.onCorrect) this.onCorrect();
+
+                    // ✅ Nếu tìm hết tất cả từ, delay rồi load câu hỏi mới
+                    if (foundWords.length === selected.length) {
+                        console.log('✅ Hoàn thành tất cả từ! Đang load câu hỏi mới...');
+                        
+                        setTimeout(() => {
+                            // Kiểm tra monster còn sống không
+                            if (window.GameEngine && window.GameEngine.monster && window.GameEngine.monster.hp > 0) {
+                                console.log('Monster còn sống, load câu hỏi mới');
+                                this.load('boss'); // Load lại câu hỏi mới
+                            } else {
+                                console.log('Monster đã chết, không cần load câu hỏi');
+                            }
+                        }, 1500); // Delay 1.5s để người chơi thấy hoàn thành
+                    }
                 } else {
                     selectedCells.forEach(c => c.classList.remove("bg-green-300"));
                     if (this.onWrong) this.onWrong();

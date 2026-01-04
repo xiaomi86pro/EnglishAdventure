@@ -135,7 +135,7 @@ const QuestionType3 = {
             btn.innerText = item.c.toUpperCase();
 
             btn.onclick = () => {
-                this.speak(item.c, "en-US", 1.2);
+                //this.speak(item.c, "en-US", 1.2);
 
                 const targetChar = cleanWord[this.enCompleted.length];
 

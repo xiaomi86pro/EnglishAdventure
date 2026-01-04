@@ -17,41 +17,25 @@ const QuestionType1 = {
 
     
 
-    speakWord(text, lang = "en-US") {
-        if (!text) return;
-
-        // Ưu tiên 1: Sử dụng Google Translate qua Internet (Cho cả Anh và Việt)
+    speakWord(text, lang = "en-US", rate = 0.9) {
+        if (!window.speechSynthesis || !text) return;
+    
+        // Dừng các âm thanh đang phát để không bị chồng chéo
+        speechSynthesis.cancel(); 
+    
         const cleanText = text.split('(')[0].trim();
-        const googleUrl = `https://translate.google.com/translate_tts?ie=UTF-8&q=${encodeURIComponent(cleanText)}&tl=${lang.split('-')[0]}&client=tw-ob`;
+        const u = new SpeechSynthesisUtterance(cleanText);
         
-        const audio = new Audio(googleUrl);
-        
-        audio.play()
-            .then(() => {
-                console.log(`Đang đọc online (${lang}): ${cleanText}`);
-            })
-            .catch(err => {
-                // Ưu tiên 2: Nếu Internet lỗi hoặc Google chặn, dùng máy tính đọc (Dự phòng)
-                console.warn("Không thể dùng Google TTS, chuyển sang Offline...");
-                this.speakOffline(text, lang);
-            });
-    },
-
-    // Hàm dự phòng khi không có mạng
-    speakOffline(text, lang) {
-        if (!window.speechSynthesis) return;
-        speechSynthesis.cancel();
-
-        const u = new SpeechSynthesisUtterance(text);
         u.lang = lang;
-        u.rate = 0.9;
+        u.rate = rate;
         u.pitch = 1.0;
-
+    
+        // Ưu tiên chọn giọng đọc tiếng Anh chất lượng có sẵn trong hệ thống
         const voices = speechSynthesis.getVoices();
-        const targetVoice = voices.find(v => v.lang.includes(lang.split('-')[0]));
-        if (targetVoice) u.voice = targetVoice;
-
-        speechSynthesis.speak(u);
+        const preferredVoice = voices.find(v => v.lang.includes(lang.split('-')[0]) && v.localService);
+        if (preferredVoice) u.voice = preferredVoice;
+    
+        speechSynthesis.speak(u); 
     },
 
     async load(enemyType = "normal") {

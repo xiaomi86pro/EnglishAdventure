@@ -302,6 +302,7 @@ const GameEngine = {
         }
     },
     
+    
     /**
      * Xử lý khi người chơi trả lời đúng hoàn toàn
      * @param {string} word - Từ tiếng Anh đã hoàn thành để tính damage
