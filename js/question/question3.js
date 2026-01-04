@@ -102,7 +102,7 @@ const QuestionType3 = {
             </div>
         `;
 
-        document.getElementById("replay-btn").onclick = () => this.speak(wordEn);
+        document.getElementById("replay-btn").onclick = () => this.speakLetters(wordEn);
 
         this.setupGame(wordEn);
     },

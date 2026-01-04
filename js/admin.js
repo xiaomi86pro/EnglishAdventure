@@ -106,6 +106,28 @@ async function loadCategories() {
     }
 }
 
+// Load locations vào dropdown monster form
+async function loadLocationsForMonster() {
+    const { data: locations } = await supabase
+        .from('locations')
+        .select('id, name')
+        .order('order_index');
+    
+    const select = document.getElementById('monster-location');
+    if (select && locations) {
+        select.innerHTML = '<option value="">-- Tất cả vùng --</option>' +
+            locations.map(loc => 
+                `<option value="${loc.id}">${loc.name}</option>`
+            ).join('');
+    }
+}
+
+// Gọi khi load trang
+window.addEventListener('DOMContentLoaded', () => {
+    loadStationsForUnlock();  // Đã có
+    loadLocationsForMonster();  // ✅ Thêm dòng này
+});
+
 // Hàm hiển thị dữ liệu vào Grid
 function displayGrid(items) {
     if (!editGrid) return;
@@ -254,13 +276,37 @@ async function startAdminSystem() {
     console.log("Hệ thống quản trị đã sẵn sàng!");
 }
 
+// Load danh sách stations để chọn unlock condition
+async function loadStationsForUnlock() {
+    const { data: stations } = await supabase
+        .from('stations')
+        .select('id, name, order_index, locations(name)')
+        .order('order_index');
+    
+    const select = document.getElementById('hero-unlock-station');
+    if (select && stations) {
+        select.innerHTML = '<option value="">Hero mặc định (không khóa)</option>' +
+            stations.map(st => 
+                `<option value="${st.id}">${st.locations?.name} - Chặng ${st.order_index}: ${st.name}</option>`
+            ).join('');
+    }
+}
+
+// Gọi khi load trang admin
+loadStationsForUnlock();
+
 // Xử lý sự kiện nhấn nút "Lưu Hero"
 const saveHeroBtn = document.getElementById('save-hero-btn');
 if (saveHeroBtn) {
     saveHeroBtn.addEventListener('click', async () => {
         const name = document.getElementById('hero-name').value;
+        const hp = parseInt(document.getElementById('hero-hp').value) || 100;  
+        const atk = parseInt(document.getElementById('hero-atk').value) || 10;  
+        const def = parseInt(document.getElementById('hero-def').value) || 5; 
         const heroFile = document.getElementById('hero-file').files[0];
         const heroUrlInput = document.getElementById('hero-url').value;
+        const isLocked = document.getElementById('hero-locked').checked;  
+        const unlockStationId = document.getElementById('hero-unlock-station').value || null;  
 
         if (!name) return alert("Vui lòng nhập tên Hero!");
 
@@ -280,11 +326,15 @@ if (saveHeroBtn) {
                 .insert([{
                     name: name,
                     image_url: finalUrl,
-                    base_hp: 100, // Bạn có thể thêm input để nhập số này sau 
+                    base_hp: hp, 
+                    base_atk: atk,
+                    base_def: atk,
+                    is_locked: isLocked,  
+                    unlock_station_id: unlockStationId  
                 }]);
 
             if (error) throw error;
-            alert("Lưu Hero thành công!");
+            //alert("Lưu Hero thành công!");
             
         } catch (err) {
             alert("Lỗi: " + err.message);
@@ -321,7 +371,12 @@ const saveMonsterBtn = document.getElementById('save-monster-btn');
 if (saveMonsterBtn) {
     saveMonsterBtn.addEventListener('click', async () => {
         const name = document.getElementById('monster-name').value;
+        const hp = parseInt(document.getElementById('monster-hp').value) || 50;
+        const atk = parseInt(document.getElementById('monster-atk').value) || 5;
+        const def = parseInt(document.getElementById('monster-def').value) || 0;
+        const exp = parseInt(document.getElementById('monster-exp').value) || 10;
         const type = document.getElementById('monster-type').value;
+        const locationId = document.getElementById('monster-location').value || null;
         const monsterFile = document.getElementById('monster-file').files[0];
         const monsterUrlInput = document.getElementById('monster-url').value;
 
@@ -342,11 +397,26 @@ if (saveMonsterBtn) {
                     name: name,
                     type: type,
                     image_url: finalUrl,
-                    base_hp: 50,
+                    base_hp: hp,
+                    base_atk: atk,
+                    base_def: def,
+                    exp_reward: exp,
+                    location_id: locationId
                 }]);
 
             if (error) throw error;
             alert("Lưu Quái vật thành công!");
+            
+            // Reset form
+            document.getElementById('monster-name').value = '';
+            document.getElementById('monster-hp').value = '50';
+            document.getElementById('monster-atk').value = '5';
+            document.getElementById('monster-def').value = '0';
+            document.getElementById('monster-exp').value = '10';
+            document.getElementById('monster-url').value = '';
+            
+            loadMonsters();  // Reload danh sách
+            
         } catch (err) {
             alert("Lỗi: " + err.message);
         } finally {
@@ -356,86 +426,373 @@ if (saveMonsterBtn) {
     });
 } 
 
-let currentAssetTab = 'heroes'; // Mặc định bảng đầu tiên
-
 // Hàm tải và hiển thị danh sách tài nguyên
-async function loadAssets(tableName) {
-    currentAssetTab = tableName;
+// ===== HERO MANAGEMENT =====
+async function loadHeroes() {
     const container = document.getElementById('asset-grid-container');
-    container.innerHTML = '<p class="text-gray-500">Đang tải dữ liệu...</p>';
+    container.innerHTML = '<p class="text-gray-500">Đang tải Heroes...</p>';
 
-    const { data, error } = await supabase.from(tableName).select('*').order('created_at', { ascending: false });
+    // Load heroes kèm thông tin unlock station
+    const { data: heroes, error } = await supabase
+        .from('heroes')
+        .select(`
+            *,
+            stations:unlock_station_id (
+                id,
+                name,
+                order_index,
+                locations (name)
+            )
+        `)
+        .order('created_at', { ascending: false });
 
     if (error) {
         container.innerHTML = `<p class="text-red-500">Lỗi: ${error.message}</p>`;
         return;
     }
 
-    container.innerHTML = ''; // Xóa thông báo loading
+    // Load danh sách stations để cho dropdown
+    const { data: allStations } = await supabase
+        .from('stations')
+        .select('id, name, order_index, locations(name)')
+        .order('order_index');
 
-    data.forEach(item => {
+    container.innerHTML = ''; // Xóa loading
+
+    heroes.forEach(hero => {
         const card = document.createElement('div');
-        card.className = "bg-white p-4 rounded-2xl border-2 border-gray-100 shadow-sm space-y-3";
+        card.className = "bg-white p-4 rounded-2xl border-2 border-blue-200 shadow-sm space-y-3";
+        
+        const unlockInfo = hero.stations 
+            ? `${hero.stations.locations?.name || '?'} - ${hero.stations.name}`
+            : 'Không khóa';
+        
         card.innerHTML = `
-            <div class="flex items-center gap-4">
-                <img src="${item.image_url}" class="w-16 h-16 object-contain bg-gray-50 rounded-lg" alt="${item.name}">
+            <!-- Header với ảnh và thông tin cơ bản -->
+            <div class="flex items-center gap-4 pb-3 border-b border-gray-100">
+                <div class="relative">
+                    <img src="${hero.image_url}" 
+                         class="w-20 h-20 object-contain bg-gray-50 rounded-lg ${hero.is_locked ? 'grayscale' : ''}" 
+                         alt="${hero.name}">
+                    ${hero.is_locked ? '<div class="absolute top-0 right-0 text-2xl">🔒</div>' : ''}
+                </div>
                 <div class="flex-1">
-                    <input type="text" id="name-${item.id}" value="${item.name}" class="font-bold text-gray-700 w-full border-b border-transparent focus:border-blue-400 outline-none">
-                    <p class="text-xs text-gray-400">ID: ${item.id.substring(0,8)}...</p>
+                    <input type="text" 
+                           id="hero-name-${hero.id}" 
+                           value="${hero.name}" 
+                           class="font-bold text-xl text-gray-700 w-full border-b border-transparent focus:border-blue-400 outline-none mb-1">
+                    <p class="text-xs text-gray-400">ID: ${hero.id.substring(0,8)}...</p>
+                    ${hero.is_locked 
+                        ? `<p class="text-xs text-red-500 font-bold mt-1">🔒 Unlock: ${unlockInfo}</p>`
+                        : `<p class="text-xs text-green-500 font-bold mt-1">✅ Hero mặc định</p>`
+                    }
                 </div>
             </div>
-            <div class="grid grid-cols-2 gap-2 text-sm">
+
+            <!-- Chỉ số -->
+            <div class="grid grid-cols-2 gap-3">
                 <div>
-                    <label class="text-xs text-gray-400">HP</label>
-                    <input type="number" id="hp-${item.id}" value="${item.base_hp || 0}" class="w-full p-1 border rounded">
+                    <label class="text-xs text-gray-500 font-bold">❤️ HP</label>
+                    <input type="number" 
+                           id="hero-hp-${hero.id}" 
+                           value="${hero.base_hp || 100}" 
+                           class="w-full p-2 border rounded-lg text-center font-bold text-red-600">
                 </div>
                 <div>
-                    <label class="text-xs text-gray-400">ATK</label>
-                    <input type="number" id="atk-${item.id}" value="${item.base_atk || 0}" class="w-full p-1 border rounded">
+                    <label class="text-xs text-gray-500 font-bold">⚔️ ATK</label>
+                    <input type="number" 
+                           id="hero-atk-${hero.id}" 
+                           value="${hero.base_atk || 10}" 
+                           class="w-full p-2 border rounded-lg text-center font-bold text-orange-600">
                 </div>
                 <div>
-                    <label class="text-xs text-gray-400">Loại (nếu có)</label>
-                    <input type="text" id="type-${item.id}" value="${item.type || ''}" class="w-full p-1 border rounded">
+                    <label class="text-xs text-gray-500 font-bold">🛡️ DEF</label>
+                    <input type="number" 
+                        id="hero-def-${hero.id}" 
+                        value="${hero.base_def || 5}" 
+                        class="w-full p-2 border rounded-lg text-center font-bold text-blue-600">
                 </div>
             </div>
+
+            <!-- Cấu hình khóa -->
+            <div class="bg-blue-50 p-3 rounded-lg space-y-2">
+                <div class="flex items-center gap-2">
+                    <input type="checkbox" 
+                           id="hero-locked-${hero.id}" 
+                           ${hero.is_locked ? 'checked' : ''}
+                           class="w-4 h-4">
+                    <label for="hero-locked-${hero.id}" class="text-sm font-bold">🔒 Khóa hero này</label>
+                </div>
+                
+                <select id="hero-unlock-${hero.id}" 
+                        class="w-full p-2 border rounded-lg text-sm bg-white"
+                        ${!hero.is_locked ? 'disabled' : ''}>
+                    <option value="">-- Chọn chặng để unlock --</option>
+                    ${allStations?.map(st => `
+                        <option value="${st.id}" ${hero.unlock_station_id === st.id ? 'selected' : ''}>
+                            ${st.locations?.name || '?'} - Chặng ${st.order_index}: ${st.name}
+                        </option>
+                    `).join('') || ''}
+                </select>
+            </div>
+
+            <!-- Nút hành động -->
             <div class="flex gap-2 pt-2">
-                <button onclick="updateAsset('${item.id}')" class="flex-1 py-2 bg-green-500 text-white rounded-lg text-sm font-bold hover:bg-green-600">Lưu sửa</button>
-                <button onclick="deleteAsset('${item.id}')" class="py-2 px-3 bg-red-100 text-red-600 rounded-lg text-sm hover:bg-red-200">Xóa</button>
+                <button onclick="updateHero('${hero.id}')" 
+                        class="flex-1 py-2 bg-green-500 text-white rounded-lg font-bold hover:bg-green-600 transition-colors">
+                    💾 Lưu
+                </button>
+                <button onclick="deleteHero('${hero.id}')" 
+                        class="py-2 px-4 bg-red-500 text-white rounded-lg font-bold hover:bg-red-600 transition-colors">
+                    🗑️
+                </button>
             </div>
         `;
+        
+        // Gắn sự kiện checkbox
+        const checkbox = card.querySelector(`#hero-locked-${hero.id}`);
+        const dropdown = card.querySelector(`#hero-unlock-${hero.id}`);
+        checkbox.addEventListener('change', () => {
+            dropdown.disabled = !checkbox.checked;
+            if (!checkbox.checked) dropdown.value = '';
+        });
+        
         container.appendChild(card);
     });
 }
 
-// Hàm cập nhật chỉ số
-window.updateAsset = async (id) => {
-    const updateData = {
-        name: document.getElementById(`name-${id}`).value,
-        base_hp: parseInt(document.getElementById(`hp-${id}`).value),
-        base_atk: parseInt(document.getElementById(`atk-${id}`).value),
-        type: document.getElementById(`type-${id}`).value,
-    };
+// ===== MONSTER MANAGEMENT =====
+async function loadMonsters() {
+    const container = document.getElementById('asset-grid-container');
+    container.innerHTML = '<p class="text-gray-500">Đang tải Monsters...</p>';
 
-    const { error } = await supabase.from(currentAssetTab).update(updateData).eq('id', id);
+    // Load monsters kèm location
+    const { data: monsters, error } = await supabase
+        .from('monsters')
+        .select(`
+            *,
+            locations:location_id (name)
+        `)
+        .order('created_at', { ascending: false });
 
-    if (error) alert("Lỗi cập nhật: " + error.message);
-    else alert("Đã cập nhật chỉ số thành công!");
+    if (error) {
+        container.innerHTML = `<p class="text-red-500">Lỗi: ${error.message}</p>`;
+        return;
+    }
+
+    // Load danh sách locations
+    const { data: allLocations } = await supabase
+        .from('locations')
+        .select('id, name, order_index')
+        .order('order_index');
+
+    container.innerHTML = '';
+
+    monsters.forEach(monster => {
+        const card = document.createElement('div');
+        card.className = "bg-white p-4 rounded-2xl border-2 border-red-200 shadow-sm space-y-3";
+        
+        const typeColors = {
+            'normal': 'bg-gray-100 text-gray-700',
+            'elite': 'bg-yellow-100 text-yellow-700',
+            'boss': 'bg-red-100 text-red-700',
+            'final boss': 'bg-purple-100 text-purple-700'
+        };
+        
+        card.innerHTML = `
+            <!-- Header -->
+            <div class="flex items-center gap-4 pb-3 border-b border-gray-100">
+                <img src="${monster.image_url}" 
+                     class="w-20 h-20 object-contain bg-gray-50 rounded-lg" 
+                     alt="${monster.name}">
+                <div class="flex-1">
+                    <input type="text" 
+                           id="monster-name-${monster.id}" 
+                           value="${monster.name}" 
+                           class="font-bold text-xl text-gray-700 w-full border-b border-transparent focus:border-red-400 outline-none mb-1">
+                    <p class="text-xs text-gray-400">ID: ${monster.id.substring(0,8)}...</p>
+                    <span class="inline-block mt-1 px-2 py-1 rounded text-xs font-bold ${typeColors[monster.type] || typeColors['normal']}">
+                        ${monster.type?.toUpperCase() || 'NORMAL'}
+                    </span>
+                </div>
+            </div>
+
+            <!-- Chỉ số -->
+            <div class="grid grid-cols-3 gap-2">
+                <div>
+                    <label class="text-xs text-gray-500 font-bold">❤️ HP</label>
+                    <input type="number" 
+                           id="monster-hp-${monster.id}" 
+                           value="${monster.base_hp || 50}" 
+                           class="w-full p-2 border rounded-lg text-center font-bold text-red-600">
+                </div>
+                <div>
+                    <label class="text-xs text-gray-500 font-bold">⚔️ ATK</label>
+                    <input type="number" 
+                           id="monster-atk-${monster.id}" 
+                           value="${monster.base_atk || 5}" 
+                           class="w-full p-2 border rounded-lg text-center font-bold text-orange-600">
+                </div>
+                <div>
+                    <label class="text-xs text-gray-500 font-bold">🛡️ DEF</label>
+                    <input type="number" 
+                        id="monster-def-${monster.id}" 
+                        value="${monster.base_def || 0}" 
+                        class="w-full p-2 border rounded-lg text-center font-bold text-blue-600">
+                </div>
+                <div>
+                    <label class="text-xs text-gray-500 font-bold">💰 EXP</label>
+                    <input type="number" 
+                           id="monster-exp-${monster.id}" 
+                           value="${monster.exp_reward || 10}" 
+                           class="w-full p-2 border rounded-lg text-center font-bold text-blue-600">
+                </div>
+            </div>
+
+            <!-- Loại và Vùng -->
+            <div class="grid grid-cols-2 gap-2">
+                <div>
+                    <label class="text-xs text-gray-500 font-bold">Loại</label>
+                    <select id="monster-type-${monster.id}" 
+                            class="w-full p-2 border rounded-lg text-sm bg-white">
+                        <option value="normal" ${monster.type === 'normal' ? 'selected' : ''}>Normal</option>
+                        <option value="elite" ${monster.type === 'elite' ? 'selected' : ''}>Elite</option>
+                        <option value="boss" ${monster.type === 'boss' ? 'selected' : ''}>Boss</option>
+                        <option value="final boss" ${monster.type === 'final boss' ? 'selected' : ''}>Final Boss</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="text-xs text-gray-500 font-bold">Vùng đất</label>
+                    <select id="monster-location-${monster.id}" 
+                            class="w-full p-2 border rounded-lg text-sm bg-white">
+                        <option value="">-- Tất cả vùng --</option>
+                        ${allLocations?.map(loc => `
+                            <option value="${loc.id}" ${monster.location_id === loc.id ? 'selected' : ''}>
+                                ${loc.name}
+                            </option>
+                        `).join('') || ''}
+                    </select>
+                </div>
+            </div>
+
+            <!-- Nút hành động -->
+            <div class="flex gap-2 pt-2">
+                <button onclick="updateMonster('${monster.id}')" 
+                        class="flex-1 py-2 bg-green-500 text-white rounded-lg font-bold hover:bg-green-600 transition-colors">
+                    💾 Lưu
+                </button>
+                <button onclick="deleteMonster('${monster.id}')" 
+                        class="py-2 px-4 bg-red-500 text-white rounded-lg font-bold hover:bg-red-600 transition-colors">
+                    🗑️
+                </button>
+            </div>
+        `;
+        
+        container.appendChild(card);
+    });
+}
+
+// ===== UPDATE HERO =====
+window.updateHero = async (id) => {
+    const name = document.getElementById(`hero-name-${id}`).value;
+    const hp = parseInt(document.getElementById(`hero-hp-${id}`).value);
+    const atk = parseInt(document.getElementById(`hero-atk-${id}`).value);
+    const def = parseInt(document.getElementById(`hero-def-${id}`).value);
+    const isLocked = document.getElementById(`hero-locked-${id}`).checked;
+    const unlockStationId = document.getElementById(`hero-unlock-${id}`).value || null;
+
+    const { error } = await supabase
+        .from('heroes')
+        .update({
+            name,
+            base_hp: hp,
+            base_atk: atk,
+            base_def: def,
+            is_locked: isLocked,
+            unlock_station_id: unlockStationId
+        })
+        .eq('id', id);
+
+    if (error) {
+        alert("Lỗi cập nhật: " + error.message);
+    } else {
+        alert("✅ Đã cập nhật Hero thành công!");
+        loadHeroes();
+    }
 };
 
-// Hàm xóa tài nguyên
-window.deleteAsset = async (id) => {
-    if(!confirm("Bạn có chắc muốn xóa tài nguyên này?")) return;
-    const { error } = await supabase.from(currentAssetTab).delete().eq('id', id);
-    if (error) alert("Lỗi khi xóa: " + error.message);
-    else loadAssets(currentAssetTab);
+// ===== DELETE HERO =====
+window.deleteHero = async (id) => {
+    if (!confirm("Bạn có chắc muốn xóa Hero này?")) return;
+    
+    const { error } = await supabase
+        .from('heroes')
+        .delete()
+        .eq('id', id);
+    
+    if (error) {
+        alert("Lỗi xóa: " + error.message);
+    } else {
+        alert("✅ Đã xóa Hero!");
+        loadHeroes();
+    }
 };
 
-// Sự kiện bấm nút chuyển Tab
-document.getElementById('btn-show-heroes')?.addEventListener('click', () => loadAssets('heroes'));
-document.getElementById('btn-show-monsters')?.addEventListener('click', () => loadAssets('monsters'));
+// ===== UPDATE MONSTER =====
+window.updateMonster = async (id) => {
+    const name = document.getElementById(`monster-name-${id}`).value;
+    const hp = parseInt(document.getElementById(`monster-hp-${id}`).value);
+    const atk = parseInt(document.getElementById(`monster-atk-${id}`).value);
+    const def = parseInt(document.getElementById(`monster-def-${id}`).value);
+    const exp = parseInt(document.getElementById(`monster-exp-${id}`).value);
+    const type = document.getElementById(`monster-type-${id}`).value;
+    const locationId = document.getElementById(`monster-location-${id}`).value || null;
+
+    const { error } = await supabase
+        .from('monsters')
+        .update({
+            name,
+            base_hp: hp,
+            base_atk: atk,
+            base_def: def,
+            exp_reward: exp,
+            type,
+            location_id: locationId
+        })
+        .eq('id', id);
+
+    if (error) {
+        alert("Lỗi cập nhật: " + error.message);
+    } else {
+        alert("✅ Đã cập nhật Monster thành công!");
+        loadMonsters();
+    }
+};
+
+// ===== DELETE MONSTER =====
+window.deleteMonster = async (id) => {
+    if (!confirm("Bạn có chắc muốn xóa Monster này?")) return;
+    
+    const { error } = await supabase
+        .from('monsters')
+        .delete()
+        .eq('id', id);
+    
+    if (error) {
+        alert("Lỗi xóa: " + error.message);
+    } else {
+        alert("✅ Đã xóa Monster!");
+        loadMonsters();
+    }
+};
+
+// Sửa sự kiện bấm nút chuyển Tab
+document.getElementById('btn-show-heroes')?.addEventListener('click', () => loadHeroes());
+document.getElementById('btn-show-monsters')?.addEventListener('click', () => loadMonsters());
 
 // Load mặc định khi mở trang
-loadAssets('heroes');
+loadHeroes();
+
 startAdminSystem();
 
 // Đảm bảo các Manager được load

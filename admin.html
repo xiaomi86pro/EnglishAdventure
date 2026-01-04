@@ -165,6 +165,27 @@
                         </h3>
                         <div class="space-y-4">
                             <input type="text" id="hero-name" placeholder="Tên Hero..." class="w-full p-3 rounded-xl border-2 border-gray-100 outline-none focus:border-blue-400">
+                            <div class="grid grid-cols-3 gap-2">
+                                <div>
+                                    <label class="text-xs text-gray-500 font-bold block mb-1">❤️ HP</label>
+                                    <input type="number" id="hero-hp" value="100" 
+                                           class="w-full p-2 border rounded-lg text-center">
+                                </div>
+                                <div>
+                                    <label class="text-xs text-gray-500 font-bold block mb-1">⚔️ ATK</label>
+                                    <input type="number" id="hero-atk" value="10" 
+                                           class="w-full p-2 border rounded-lg text-center">
+                                </div>
+                                <div>
+                                    <label class="text-xs text-gray-500 font-bold block mb-1">🛡️ DEF</label>
+                                    <input type="number" id="hero-def" value="5" 
+                                           class="w-full p-2 border rounded-lg text-center">
+                                </div>
+                            </div>
+                            <div class="flex items-center gap-2">
+                                <input type="checkbox" id="hero-locked" class="w-5 h-5">
+                                <label for="hero-locked" class="font-bold text-sm">🔒 Khóa hero này</label>
+                            </div>
                             <input type="file" id="hero-file" class="w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100">
                             <input type="text" id="hero-url" placeholder="Hoặc dán URL ảnh sprite..." class="w-full p-3 rounded-xl border-2 border-gray-100 outline-none focus:border-blue-400">
                             <button id="save-hero-btn" class="w-full py-3 bg-blue-500 text-white rounded-xl font-bold hover:bg-blue-600 transition-colors shadow-lg shadow-blue-100">Lưu Hero</button>
@@ -179,11 +200,36 @@
                         </h3>
                         <div class="space-y-4">
                             <input type="text" id="monster-name" placeholder="Tên quái vật..." class="w-full p-3 rounded-xl border-2 border-gray-100 outline-none focus:border-red-400">
+                            <div class="grid grid-cols-4 gap-2">
+                                <div>
+                                    <label class="text-xs text-gray-500 font-bold block mb-1">❤️ HP</label>
+                                    <input type="number" id="monster-hp" value="50" 
+                                           class="w-full p-2 border rounded-lg text-center">
+                                </div>
+                                <div>
+                                    <label class="text-xs text-gray-500 font-bold block mb-1">⚔️ ATK</label>
+                                    <input type="number" id="monster-atk" value="5" 
+                                           class="w-full p-2 border rounded-lg text-center">
+                                </div>
+                                <div>
+                                    <label class="text-xs text-gray-500 font-bold block mb-1">🛡️ DEF</label>
+                                    <input type="number" id="monster-def" value="0" 
+                                           class="w-full p-2 border rounded-lg text-center">
+                                </div>
+                                <div>
+                                    <label class="text-xs text-gray-500 font-bold block mb-1">💰 EXP</label>
+                                    <input type="number" id="monster-exp" value="10" 
+                                           class="w-full p-2 border rounded-lg text-center">
+                                </div>
+                            </div>
                             <select id="monster-type" class="w-full p-3 rounded-xl border-2 border-gray-100 outline-none focus:border-red-400 bg-white">
                                 <option value="normal">Quái thường</option>
                                 <option value="elite">Elite</option>
                                 <option value="boss">Boss</option>
                                 <option value="final boss">Final Boss</option>
+                            </select>
+                            <select id="monster-location" class="w-full p-3 rounded-xl border-2 border-gray-100 outline-none focus:border-red-400 bg-white">
+                                <option value="">-- Tất cả vùng --</option>
                             </select>
                             <input type="file" id="monster-file" class="w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-red-50 file:text-red-700 hover:file:bg-red-100">
                             <input type="text" id="monster-url" placeholder="Hoặc dán URL ảnh sprite..." class="w-full p-3 rounded-xl border-2 border-gray-100 outline-none focus:border-red-400">

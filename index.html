@@ -89,6 +89,33 @@
             perspective: 1000px;
         }
 
+        /* Hiệu ứng hồi máu */
+        @keyframes floatUpHeal {
+            0%   { opacity: 1; transform: translate(-50%, 0) scale(1); }
+            50%  { opacity: 1; transform: translate(-50%, -30px) scale(1.2); }
+            100% { opacity: 0; transform: translate(-50%, -60px) scale(0.8); }
+        }
+
+        @keyframes healParticle {
+            0% { 
+                opacity: 1; 
+                transform: translate(-50%, -50%) translate(0, 0) scale(1); 
+            }
+            100% { 
+                opacity: 0; 
+                transform: translate(-50%, -50%) translate(var(--heal-tx), var(--heal-ty)) scale(0.3); 
+            }
+        }
+
+        .heal-popup {
+            user-select: none;
+        }    
+
+        @keyframes fadeOut {
+            from { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+            to { opacity: 0; transform: translate(-50%, -50%) scale(0.8); }
+        }
+       
         @keyframes shake-logic {
             10%, 90% { transform: translate3d(-2px, 0, 0); }
             20%, 80% { transform: translate3d(4px, 0, 0); }

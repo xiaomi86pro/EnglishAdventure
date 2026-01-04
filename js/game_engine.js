@@ -5,6 +5,7 @@ const GameEngine = {
     isBattling: false,
     heroSlashSound: new Audio('../sounds/Slicing_flesh.mp3'),
     monsterPunchSound: new Audio('../sounds/Punch.mp3'),
+    healSound: new Audio('../sounds/Heal.mp3'),
     player: null,
     monster: null,
     // ✅ Thêm phần mới
@@ -198,7 +199,8 @@ const GameEngine = {
                 max_hp: this.monster.max_hp,
                 atk: this.monster.atk,
                 type: this.monster.type,
-                sprite_url: this.monster.sprite_url
+                sprite_url: this.monster.sprite_url,
+                questionType: this.monster.questionType
             } : null
         };
         
@@ -250,6 +252,10 @@ const GameEngine = {
         // Khôi phục monster
         if (savedGame.monster) {
             this.monster = savedGame.monster;
+            
+            if (!this.monster.questionType) {
+                this.monster.questionType = this.getDefaultQuestionType(this.monster.type);
+            }
             const monsterEl = document.getElementById('monster');
             if (monsterEl && this.monster.sprite_url) {
                 monsterEl.style.backgroundImage = `url('${this.monster.sprite_url}')`;
@@ -367,12 +373,99 @@ const GameEngine = {
         setTimeout(() => dmgEl.remove(), 1500);
     },
     
+    /**
+ * Hiển thị hiệu ứng hồi máu
+ */
+    showHealEffect(healAmount) {
+        const battle = document.getElementById('battleview');
+        const heroEl = document.getElementById('hero');
+        if (!battle || !heroEl) return;
+
+        // Tính tọa độ hero
+        const rect = heroEl.getBoundingClientRect();
+        const bvRect = battle.getBoundingClientRect();
+        const centerX = rect.left - bvRect.left + rect.width / 2;
+        const centerY = rect.top - bvRect.top + rect.height / 2;
+
+        // Tạo số +HP màu xanh
+        const healEl = document.createElement('div');
+        healEl.className = 'heal-popup';
+        healEl.innerText = `+${healAmount} HP`;
+        healEl.style.left = centerX + 'px';
+        healEl.style.top = centerY + 'px';
+        healEl.style.position = 'absolute';
+        healEl.style.transform = 'translate(-50%, 0)';
+        healEl.style.fontSize = '32px';
+        healEl.style.fontWeight = '900';
+        healEl.style.color = '#22c55e';
+        healEl.style.textShadow = '0 0 8px #fff, 0 0 12px #22c55e';
+        healEl.style.animation = 'floatUpHeal 1.5s ease-out forwards';
+        healEl.style.pointerEvents = 'none';
+        healEl.style.zIndex = '50';
+
+        battle.appendChild(healEl);
+
+        // Hiệu ứng ánh sáng xanh quanh hero
+        heroEl.style.boxShadow = '0 0 30px #22c55e, 0 0 50px #22c55e';
+        setTimeout(() => {
+            heroEl.style.boxShadow = '';
+        }, 1000);
+
+        // Tạo các particle hồi máu xung quanh hero
+        for (let i = 0; i < 8; i++) {
+            const particle = document.createElement('div');
+            particle.innerText = '💚';
+            particle.style.position = 'absolute';
+            particle.style.left = centerX + 'px';
+            particle.style.top = centerY + 'px';
+            particle.style.fontSize = '20px';
+            particle.style.pointerEvents = 'none';
+            particle.style.zIndex = '45';
+            
+            const angle = (Math.PI * 2 / 8) * i;
+            const distance = 60;
+            const tx = Math.cos(angle) * distance;
+            const ty = Math.sin(angle) * distance;
+            
+            particle.style.animation = 'healParticle 1s ease-out forwards';
+            particle.style.setProperty('--heal-tx', `${tx}px`);
+            particle.style.setProperty('--heal-ty', `${ty}px`);
+            
+            battle.appendChild(particle);
+            setTimeout(() => particle.remove(), 1000);
+        }
+
+        // Xóa số +HP sau animation
+        setTimeout(() => healEl.remove(), 1500);
+    },
+
    /**
      * Xử lý khi quái vật bị tiêu diệt
      */
    handleMonsterDefeat() {
     this.isBattling = true;
+    const monsterType = this.monster?.type;
+    let hpRestore = 0;
+
+    if (monsterType === 'elite') {
+        hpRestore = 20;
+    } else if (monsterType === 'boss' || monsterType === 'final boss') {
+        hpRestore = 50;
+    }
     
+    if (hpRestore > 0) {
+        const oldHp = this.player.hp_current;
+        this.player.hp_current = Math.min(this.player.max_hp, this.player.hp_current + hpRestore);
+        const actualRestore = this.player.hp_current - oldHp;
+        
+        // Hiển thị thông báo hồi HP
+        if (actualRestore > 0) {
+            this.showHealEffect(actualRestore);
+        }
+        
+        this.updateAllUI();
+    }
+
     setTimeout(async () => {
         this.currentStep++;
         
@@ -390,10 +483,68 @@ const GameEngine = {
     },
 
     /**
+ * Kiểm tra và mở khóa hero nếu hoàn thành station điều kiện
+ */
+async checkAndUnlockHero(completedStationId) {
+    try {
+        // Tìm hero bị khóa bởi station này
+        const { data: lockedHeroes } = await window.supabase
+            .from('heroes')
+            .select('id, name, is_locked, unlock_station_id')
+            .eq('unlock_station_id', completedStationId)
+            .eq('is_locked', true);
+        
+        if (!lockedHeroes || lockedHeroes.length === 0) {
+            return; // Không có hero nào cần unlock
+        }
+        
+        // Unlock tất cả heroes
+        for (const hero of lockedHeroes) {
+            const { error } = await window.supabase
+                .from('heroes')
+                .update({ is_locked: false })
+                .eq('id', hero.id);
+            
+            if (!error) {
+                // Hiển thị thông báo unlock
+                this.showUnlockNotification(hero.name);
+            }
+        }
+    } catch (err) {
+        console.error('Lỗi check unlock hero:', err);
+    }
+},
+
+    /**
+     * Hiển thị thông báo mở khóa hero
+     */
+    showUnlockNotification(heroName) {
+        const notification = document.createElement('div');
+        notification.className = 'fixed top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 z-50 bg-gradient-to-r from-yellow-400 to-orange-500 text-white p-8 rounded-3xl shadow-2xl border-4 border-white animate-bounce';
+        notification.innerHTML = `
+            <div class="text-center">
+                <div class="text-6xl mb-4">🎉</div>
+                <h2 class="text-3xl font-black mb-2">HERO MỚI!</h2>
+                <p class="text-xl font-bold">${heroName} đã được mở khóa!</p>
+                <p class="text-sm mt-2 opacity-80">Bạn có thể chọn hero này ở lần chơi tiếp theo</p>
+            </div>
+        `;
+        
+        document.body.appendChild(notification);
+        
+        // Tự động ẩn sau 4 giây
+        setTimeout(() => {
+            notification.style.animation = 'fadeOut 0.5s ease-out';
+            setTimeout(() => notification.remove(), 500);
+        }, 4000);
+    },
+    /**
      * Load station tiếp theo
      */
     async loadNextStation() {
         try {
+            await this.checkAndUnlockHero(this.currentStation.id);
+
             // Lấy station tiếp theo
             const { data: nextStation, error } = await window.supabase
                 .from('stations')
@@ -711,6 +862,8 @@ const GameEngine = {
      * Xử lý gây sát thương, hiệu ứng rung và văng sao
      */
     applyDamage(attacker, defender) {
+        const isPlayer = (defender === this.player) || (defender.id === this.player.id);
+
         // 1. Kiểm tra an toàn: Nếu đối tượng không tồn tại hoặc đã hết máu thì thoát
         const currentHp = (defender === this.player) ? this.player.hp_current : defender.hp;
         if (currentHp <= 0) return;
@@ -759,12 +912,12 @@ const GameEngine = {
         this.updateBattleStatus();
 
         // 6. Kiểm tra điều kiện kết thúc (Chết)
-        if (defender === this.player && this.player.hp_current <= 0) {
+        if (isPlayer && this.player.hp_current <= 0) {
             setTimeout(() => {
                 alert("Bạn đã bị đánh bại! Hãy cố gắng ở lần sau.");
                 location.reload();
             }, 500);
-        } else if (defender === this.monster && this.monster.hp <= 0) {
+        } else if (!isPlayer && this.monster.hp <= 0) { // !isPlayer nghĩa là Monster
             this.monster.isDead = true;
             this.handleMonsterDefeat();
         }

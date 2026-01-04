@@ -289,26 +289,61 @@ loadHeroList: async function() {
     
     heroListContainer.innerHTML = "<p class='text-sm text-gray-400'>Đang tìm hiệp sĩ...</p>";
 
-    const { data: heroes, error } = await supabase.from('heroes').select('*');
+    // ✅ Join với stations để lấy tên chặng unlock
+    const { data: heroes, error } = await supabase
+        .from('heroes')
+        .select('*, stations(name, order_index, locations(name))');
 
     if (error || !heroes) {
         heroListContainer.innerHTML = "<p class='text-red-500 text-xs'>Lỗi tải Hero</p>";
         return;
     }
 
-    heroListContainer.innerHTML = heroes.map(hero => `
-        <div onclick="AuthComponent.pickHero('${hero.id}')" 
-             id="hero-card-${hero.id}"
-             class="hero-pick-card p-2 bg-white rounded-xl border-2 border-transparent cursor-pointer hover:border-purple-400 transition-all flex flex-col items-center w-20">
-            <img src="${hero.image_url}" class="w-12 h-12 object-contain">
-            <span class="text-[10px] font-bold text-gray-600 mt-1">${hero.name}</span>
-        </div>
-    `).join('');
+    heroListContainer.innerHTML = heroes.map(hero => {
+        const isLocked = hero.is_locked;
+        const unlockInfo = hero.stations 
+            ? `Cần: ${hero.stations.locations?.name} - ${hero.stations.name}`
+            : 'Chưa thiết lập';
+        
+        return `
+            <div onclick="${isLocked ? '' : `AuthComponent.pickHero('${hero.id}')`}" 
+                 id="hero-card-${hero.id}"
+                 class="hero-pick-card relative p-2 bg-white rounded-xl border-2 border-transparent ${isLocked ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer hover:border-purple-400'} transition-all flex flex-col items-center w-20">
+                
+                ${isLocked ? `
+                    <div class="absolute inset-0 bg-black/60 rounded-xl flex items-center justify-center z-10">
+                        <span class="text-3xl">🔒</span>
+                    </div>
+                    <div class="absolute -top-2 -right-2 bg-red-500 text-white text-xs px-2 py-1 rounded-full z-20">
+                        Khóa
+                    </div>
+                ` : ''}
+                
+                <img src="${hero.image_url}" class="w-12 h-12 object-contain ${isLocked ? 'grayscale' : ''}">
+                <span class="text-[10px] font-bold text-gray-600 mt-1 text-center">${hero.name}</span>
+                
+                ${isLocked ? `
+                    <span class="text-[8px] text-red-500 mt-1 text-center leading-tight">${unlockInfo}</span>
+                ` : ''}
+            </div>
+        `;
+    }).join('');
 },
 
 // Hàm khi người dùng nhấn chọn 1 Hero cụ thể
 selectedHeroId: null,
-pickHero: function(heroId) {
+pickHero: async function(heroId) {
+    const { data: hero } = await window.supabase
+        .from('heroes')
+        .select('is_locked')
+        .eq('id', heroId)
+        .single();
+    
+    if (hero?.is_locked) {
+        alert('Hero này đang bị khóa! Hãy hoàn thành nhiệm vụ để mở khóa.');
+        return;
+    }
+
     document.querySelectorAll('.hero-pick-card').forEach(c => c.classList.remove('border-purple-500', 'bg-purple-50'));
     const heroCard = document.getElementById(`hero-card-${heroId}`);
     if (heroCard) {
