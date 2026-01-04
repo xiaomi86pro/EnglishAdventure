@@ -374,8 +374,8 @@ const GameEngine = {
     },
     
     /**
- * Hiển thị hiệu ứng hồi máu
- */
+     * Hiển thị hiệu ứng hồi máu
+     */
     showHealEffect(healAmount) {
         const battle = document.getElementById('battleview');
         const heroEl = document.getElementById('hero');
@@ -410,6 +410,11 @@ const GameEngine = {
         setTimeout(() => {
             heroEl.style.boxShadow = '';
         }, 1000);
+
+        if (this.healSound) {
+            this.healSound.currentTime = 0;
+            this.healSound.play().catch(e => console.log('Audio blocked:', e));
+        }
 
         // Tạo các particle hồi máu xung quanh hero
         for (let i = 0; i < 8; i++) {
@@ -461,6 +466,15 @@ const GameEngine = {
         // Hiển thị thông báo hồi HP
         if (actualRestore > 0) {
             this.showHealEffect(actualRestore);
+            const toast = document.createElement('div');
+            toast.className = 'fixed top-20 left-1/2 transform -translate-x-1/2 bg-green-500 text-white px-6 py-3 rounded-full font-bold shadow-lg z-50 animate-bounce';
+            toast.innerText = `💚 Hồi ${actualRestore} HP từ ${monsterType}!`;
+            document.body.appendChild(toast);
+            
+            setTimeout(() => {
+                toast.style.animation = 'fadeOut 0.5s ease-out';
+                setTimeout(() => toast.remove(), 500);
+            }, 2000);
         }
         
         this.updateAllUI();

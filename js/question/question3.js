@@ -83,6 +83,7 @@ const QuestionType3 = {
         if (!area || !this.currentData) return;
 
         const wordEn = String(this.currentData.english_word || "").trim();
+        const wordVi = String(this.currentData.vietnamese_translation || "").trim();
 
         area.innerHTML = `
             <div class="flex flex-col w-full h-full p-6 bg-slate-800 rounded-3xl items-center justify-center gap-6 relative overflow-hidden">
@@ -97,12 +98,23 @@ const QuestionType3 = {
                 <div class="text-white/50 text-sm uppercase tracking-widest mb-2 font-bold">Listen and Type</div>
 
                 <div id="en-slots" class="flex flex-wrap justify-center items-center gap-3 min-h-[70px] w-full border-b-4 border-dashed border-slate-600 pb-4"></div>
-                
+                <div class="text-yellow-400 text-xl font-medium italic mt-2">
+                    ${wordVi}
+                </div>
                 <div id="en-letters" class="flex flex-wrap justify-center gap-3 w-full mt-6"></div>
             </div>
         `;
 
-        document.getElementById("replay-btn").onclick = () => this.speakLetters(wordEn);
+        document.getElementById("replay-btn").onclick = async () => {
+            // 1. Phát âm toàn bộ từ trước
+            this.speak(wordEn); 
+            
+            // 2. Chờ một khoảng ngắn (ví dụ 1.2 giây) để từ đọc xong
+            await new Promise(resolve => setTimeout(resolve, 1200)); 
+            
+            // 3. Sau đó mới phát âm từng chữ cái
+            this.speakLetters(wordEn); 
+        };
 
         this.setupGame(wordEn);
     },
