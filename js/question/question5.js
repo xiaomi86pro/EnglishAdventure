@@ -53,7 +53,7 @@ const QuestionType5 = {
         }
     },
 
-    renderQuestionUI() {
+    renderQuestionUI(keepTimer = false) {
         const area = document.getElementById("questionarea");
         if (!area || !this.currentData) return;
 
@@ -122,6 +122,10 @@ const QuestionType5 = {
 
         this.positionLetters();
         this.attachEventHandlers();
+
+        if (!keepTimer) {
+            this.startMonsterAttackTimer();
+        }
     },
 
     positionLetters() {
@@ -242,6 +246,40 @@ const QuestionType5 = {
         }
     },
 
+    /**
+     * Load 5 từ mới (giữ nguyên timer)
+     */
+    async loadNewRound() {
+        if (!window.supabase) return;
+
+        try {
+            // Lấy 100 từ random
+            const { data, error } = await window.supabase
+                .from("vocabulary")
+                .select("english_word, vietnamese_translation")
+                .limit(100);
+
+            if (error) throw error;
+
+            // Chọn 5 từ ngẫu nhiên (khác với round trước)
+            const shuffled = data.sort(() => Math.random() - 0.5);
+            const selected = shuffled.slice(0, 5).map(item => ({
+                english: item.english_word.trim().toUpperCase(),
+                vietnamese: item.vietnamese_translation.trim()
+            }));
+
+            this.currentData = { words: selected };
+            this.completedWords = [];
+            this.selectedLetters = [];
+            
+            // ✅ KHÔNG reset timer, giữ nguyên countdown đang chạy
+            this.renderQuestionUI(true); // true = giữ timer
+
+        } catch (err) {
+            console.error("QuestionType5 loadNewRound error:", err);
+        }
+    },
+
     submitWord() {
         if (this.selectedLetters.length === 0) return;
 
@@ -278,12 +316,21 @@ const QuestionType5 = {
                 this.onCorrect();
             }
 
-            // Kiểm tra hoàn thành
+            // Kiểm tra hoàn thành 5 từ
             if (this.completedWords.length === words.length) {
-                this.stopMonsterAttackTimer();
-                setTimeout(() => {
-                    alert("Hoàn thành! Tất cả từ đã được ghép đúng!");
-                }, 300);
+                // ✅ Kiểm tra boss còn sống không
+                if (window.GameEngine && window.GameEngine.monster && window.GameEngine.monster.hp > 0) {
+                    // Boss còn sống → Load 5 từ mới
+                    setTimeout(() => {
+                        this.loadNewRound();
+                    }, 500);
+                } else {
+                    // Boss chết rồi → Dừng
+                    this.stopMonsterAttackTimer();
+                    setTimeout(() => {
+                        alert("🎉 Hoàn thành! Boss đã bị đánh bại!");
+                    }, 300);
+                }
             }
         } else {
             // ❌ SAI - Làm chữ rung rồi đẩy xuống vị trí cũ (KHÔNG XÓA)
@@ -301,10 +348,18 @@ const QuestionType5 = {
     },
 
     startMonsterAttackTimer() {
+        if (this.monsterAttackTimer) {
+            clearInterval(this.monsterAttackTimer);
+            this.monsterAttackTimer = null;
+        }
         this.monsterAttackCountdown = 10;
         this.updateCountdownDisplay();
 
         this.monsterAttackTimer = setInterval(() => {
+            if (window.GameEngine?.monster?.hp <= 0) {
+                this.stopMonsterAttackTimer();
+                return;
+            }
             this.monsterAttackCountdown--;
             this.updateCountdownDisplay();
 
@@ -362,12 +417,16 @@ const QuestionType5 = {
     },
 
     destroy() {
-        this.stopMonsterAttackTimer();
+        if (this.monsterAttackTimer) {
+            clearInterval(this.monsterAttackTimer);
+            this.monsterAttackTimer = null;
+        }
         const area = document.getElementById("questionarea");
         if (area) area.innerHTML = "";
         this.currentData = null;
         this.selectedLetters = [];
         this.completedWords = [];
+        this.monsterAttackCountdown = 10; // ✅ Reset countdown
     }
 };
 

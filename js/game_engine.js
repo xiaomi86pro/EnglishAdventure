@@ -291,7 +291,13 @@ const GameEngine = {
     async nextQuestion() {
         const questionArea = document.getElementById('questionarea');
         const questionType = this.monster?.questionType || 1;
-    
+        
+        if (window.QuestionManager?.currentQuestion) {
+            if (typeof window.QuestionManager.currentQuestion.destroy === 'function') {
+                window.QuestionManager.currentQuestion.destroy();
+            }
+        }
+
         // Hiện loading
         if (questionArea && !questionArea.innerHTML.includes('Đang chuẩn bị')) {
             questionArea.innerHTML = `
@@ -464,6 +470,15 @@ const GameEngine = {
     const monsterType = this.monster?.type;
     let hpRestore = 0;
     this.stopBossMusic();
+
+    if (window.QuestionManager?.currentQuestion) {
+        const currentQ = window.QuestionManager.currentQuestion;
+        if (currentQ.monsterAttackTimer) {
+            clearInterval(currentQ.monsterAttackTimer);
+            currentQ.monsterAttackTimer = null;
+        }
+    }
+
     if (monsterType === 'elite') {
         hpRestore = 20;
     } else if (monsterType === 'boss' || monsterType === 'final boss') {
@@ -809,7 +824,23 @@ async checkAndUnlockHero(completedStationId) {
         if (userUI) {
             // Xóa nút cũ nếu có
             const oldExitBtn = document.getElementById('exit-menu-btn');
+            const oldKillBtn = document.getElementById('kill-monster-btn');
+
             if (oldExitBtn) oldExitBtn.remove();
+            if (oldKillBtn) oldKillBtn.remove();
+
+            const killBtn = document.createElement('button');
+            killBtn.id = 'kill-monster-btn';
+            killBtn.className = 'w-full mb-2 p-3 rounded-2xl bg-purple-500 hover:bg-purple-600 text-white font-bold transition-all shadow-md';
+            killBtn.innerHTML = '💀 Kill Monster (Test)';
+            killBtn.onclick = () => {
+                if (this.monster && this.monster.hp > 0) {
+                    this.monster.hp = 0;
+                    this.updateBattleStatus();
+                    this.handleMonsterDefeat();
+                }
+            };
+            userUI.appendChild(killBtn);
             
             // Tạo nút mới
             const exitBtn = document.createElement('button');
@@ -996,6 +1027,17 @@ async checkAndUnlockHero(completedStationId) {
     showMainMenu() {
         // Dừng game
         this.isBattling = false;
+
+        if (window.QuestionManager?.currentQuestion) {
+            const currentQ = window.QuestionManager.currentQuestion;
+            if (currentQ.monsterAttackTimer) {
+                clearInterval(currentQ.monsterAttackTimer);
+                currentQ.monsterAttackTimer = null;
+            }
+            if (typeof currentQ.destroy === 'function') {
+                currentQ.destroy();
+            }
+        }
         
         // Xóa hoàn toàn nội dung các vùng
         const questionArea = document.getElementById('questionarea');

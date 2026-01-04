@@ -207,7 +207,7 @@ const QuestionType1 = {
         
         // Nếu là tiếng Việt, tách tiền tố và phần cần trộn
         if (lang === "vi") {
-            const prefixes = ["cây","đồ","khăn","màu","quả","con","cái","hình","bức","sân","người","có","đàn","bức","xe","quả","chiếc"];
+            const prefixes = ["chim","cây","khăn","màu","quả","con","cái","hình","bức","sân","người","có","đàn","bức","xe","quả","chiếc"];
             let prefix = "";
             let remaining = word;
             

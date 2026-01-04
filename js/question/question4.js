@@ -190,7 +190,7 @@ const QuestionType4 = {
         if (this.attackInterval) clearInterval(this.attackInterval);
         this.attackInterval = setInterval(() => {
             if (window.GameEngine && window.GameEngine.player) {
-                window.GameEngine.player.hp_current = Math.max(0, window.GameEngine.player.hp_current - 10);
+                window.GameEngine.player.hp_current = Math.max(0, window.GameEngine.player.hp_current - 5);
                 window.GameEngine.updateAllUI();
                 if (typeof window.GameEngine.showDamage === 'function') {
                     window.GameEngine.showDamage(window.GameEngine.player, 10);
