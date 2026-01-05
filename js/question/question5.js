@@ -9,6 +9,9 @@ const QuestionType5 = {
     monsterAttackCountdown: 10,
     selectedLetters: [],
     completedWords: [],
+    hintCount: 0,
+    maxHints: 3,
+
 
     speak(text, lang = "en-US", rate = 0.9) {
         if (!window.speechSynthesis) return;
@@ -20,12 +23,16 @@ const QuestionType5 = {
     },
 
     async load(enemyType = "elite") {
+    
         if (!window.supabase) {
             setTimeout(() => this.load(enemyType), 300);
             return;
         }
 
         try {
+            this.hintCount = 0;
+            this.maxHints = 3;
+
             // Lấy 100 từ random
             const { data, error } = await window.supabase
                 .from("vocabulary")
@@ -56,13 +63,13 @@ const QuestionType5 = {
     renderQuestionUI(keepTimer = false) {
         const area = document.getElementById("questionarea");
         if (!area || !this.currentData) return;
-
+        
         const { words } = this.currentData;
-
         // Tạo danh sách tất cả các chữ cái từ 5 từ tiếng Anh
         let allLetters = [];
         words.forEach(w => {
-            allLetters.push(...w.english.split(''));
+            const lettersNoSpace = w.english.replace(/\s+/g, ''); // bỏ tất cả space
+            allLetters.push(...lettersNoSpace.split(''));
         });
         
         // Trộn ngẫu nhiên
@@ -102,6 +109,9 @@ const QuestionType5 = {
                         <button id="clear-btn" class="px-6 py-3 bg-gray-400 hover:bg-gray-500 text-white font-black rounded-xl">
                             ✗ Xóa
                         </button>
+                        <button id="btn-hint" class="px-4 py-3 bg-yellow-400 hover:bg-yellow-500 text-black font-black rounded-xl">
+                            💡 Hint (<span id="hint-counter">${this.hintCount}</span>/<span id="hint-max">${this.maxHints}</span>)
+                        </button>
                     </div>
 
                     <!-- Grid chữ cái (có thể click để chọn) -->
@@ -119,12 +129,112 @@ const QuestionType5 = {
                 </div>
             </div>
         `;
-
         this.positionLetters();
         this.attachEventHandlers();
-
+        const btnHint = document.getElementById('btn-hint');
+        if (btnHint) {
+            btnHint.onclick = () => this.useHint();
+        }
         if (!keepTimer) {
             this.startMonsterAttackTimer();
+        }
+    },
+
+    useHint() {
+        // Kiểm tra dữ liệu
+        if (!this.currentData || !Array.isArray(this.currentData.words)) {
+            console.warn("No words available for hint.");
+            return;
+        }
+    
+        // Kiểm tra số lần dùng
+        if (this.hintCount >= this.maxHints) {
+            if (typeof showToast === 'function') {
+                showToast("⚠️ Bạn đã dùng hết Hint!");
+            } else {
+                alert("Bạn đã dùng hết Hint!");
+            }
+            return;
+        }
+    
+        const words = this.currentData.words;
+    
+        // Tìm index của một từ chưa giải (ô answer-{idx} trống và chưa nằm trong completedWords)
+        let unsolvedIndex = -1;
+        for (let i = 0; i < words.length; i++) {
+            if (this.completedWords.includes(i)) continue;
+    
+            const ansEl = document.getElementById(`answer-${i}`);
+            const ansText = ansEl ? ansEl.innerText.trim() : "";
+            if (!ansText) {
+                unsolvedIndex = i;
+                break;
+            }
+        }
+    
+        if (unsolvedIndex === -1) {
+            if (typeof showToast === 'function') {
+                showToast("✅ Bạn đã giải hết rồi!");
+            } else {
+                alert("Bạn đã giải hết rồi!");
+            }
+            return;
+        }
+    
+        const wordObj = words[unsolvedIndex];
+        if (!wordObj || !wordObj.english) return;
+    
+        const english = wordObj.english; // ví dụ "ICE CREAM"
+        // Tạo hint: bỏ 2 ký tự cuối tính theo ký tự không phải space,
+        // nhưng giữ nguyên vị trí space trong hiển thị và thêm ?? đỏ
+        const chars = english.split(''); // giữ spaces
+        // Tìm các vị trí của ký tự không phải space
+        const nonSpaceIndices = [];
+        chars.forEach((ch, idx) => { if (ch !== ' ') nonSpaceIndices.push(idx); });
+    
+        let hintHtml = '';
+        if (nonSpaceIndices.length <= 2) {
+            // Nếu <=2 ký tự thực tế thì hiển thị toàn bộ (không thêm ??)
+            hintHtml = english;
+        } else {
+            // Số ký tự thực tế cần giữ = totalNonSpace - 2
+            const keepCount = nonSpaceIndices.length - 2;
+            // Xây dựng hiển thị: duyệt chars, đếm non-space đã hiển thị
+            let shownNonSpace = 0;
+            for (let i = 0; i < chars.length; i++) {
+                const ch = chars[i];
+                if (ch === ' ') {
+                    hintHtml += ' ';
+                } else {
+                    if (shownNonSpace < keepCount) {
+                        hintHtml += ch;
+                        shownNonSpace++;
+                    } else {
+                        // bỏ phần còn lại (2 ký tự cuối) — không thêm ký tự ở đây
+                        // (chúng ta sẽ thêm '??' đỏ một lần ở cuối)
+                    }
+                }
+            }
+            // Thêm 2 dấu hỏi đỏ
+            hintHtml += `<span class="hint-missing">??</span>`;
+        }
+    
+        // Đưa hint lên ô đáp án tương ứng
+        const answerEl = document.getElementById(`answer-${unsolvedIndex}`);
+        if (answerEl) {
+            answerEl.innerHTML = hintHtml;
+        }
+    
+        // Tăng bộ đếm hint và cập nhật UI nút
+        this.hintCount++;
+        const hintCounterEl = document.getElementById('hint-counter');
+        if (hintCounterEl) hintCounterEl.innerText = this.hintCount;
+    
+        // Thông báo ngắn
+        if (typeof showToast === 'function') {
+            showToast(`💡 Hint đã dùng (${this.hintCount}/${this.maxHints})`);
+        } else {
+            console.log(`Hint used ${this.hintCount}/${this.maxHints}`);
         }
     },
 
@@ -282,43 +392,52 @@ const QuestionType5 = {
 
     submitWord() {
         if (this.selectedLetters.length === 0) return;
-
+    
+        // Chuỗi người chơi ghép (không có space)
         const word = this.selectedLetters.map(item => item.letter).join('');
         const { words } = this.currentData;
-
-        // Tìm từ khớp
-        const foundIndex = words.findIndex((w, idx) => 
-            w.english === word && !this.completedWords.includes(idx)
-        );
-
+    
+        // So sánh bằng phiên bản không có space của từ mục tiêu
+        const foundIndex = words.findIndex((w, idx) => {
+            const targetNormalized = w.english.replace(/\s+/g, ''); // bỏ space
+            return targetNormalized === word && !this.completedWords.includes(idx);
+        });
+    
         if (foundIndex >= 0) {
-            // ✅ ĐÚNG - Xóa chữ khỏi grid vĩnh viễn
+            const w = words[foundIndex]; // Lấy object từ đúng index
+    
+            // ✅ Hiển thị đáp án với space (theo yêu cầu)
             const answerEl = document.getElementById(`answer-${foundIndex}`);
-            if (answerEl) answerEl.innerText = word;
-
+            if (answerEl) answerEl.innerText = w.english; // dùng w.english để hiển thị có space
+    
+            // Đánh dấu đã hoàn thành
             this.completedWords.push(foundIndex);
-            this.speak(word);    
+    
+            // Phát âm
+            this.speak(w.english);
+    
             // Xóa các chữ cái đã dùng khỏi grid (với animation)
             this.selectedLetters.forEach(item => {
-                item.btn.style.trasnsform = 'scale(0) rotate(360deg)';
+                // sửa lỗi gõ sai transform
+                item.btn.style.transform = 'scale(0) rotate(360deg)';
                 item.btn.style.opacity = '0';
                 setTimeout(() => item.btn.remove(), 400);
             });
-            
+    
+            // Reset selection và UI
             this.selectedLetters = [];
             this.updateCurrentWord();
-
+    
             // Reset timer quái tấn công
             this.resetMonsterAttackTimer();
-
-            // Gọi callback tấn công
+    
+            // Gọi callback tấn công nếu có
             if (typeof this.onCorrect === 'function') {
                 this.onCorrect();
             }
-
+    
             // Kiểm tra hoàn thành 5 từ
             if (this.completedWords.length === words.length) {
-                // ✅ Kiểm tra boss còn sống không
                 if (window.GameEngine && window.GameEngine.monster && window.GameEngine.monster.hp > 0) {
                     // Boss còn sống → Load 5 từ mới
                     setTimeout(() => {
@@ -333,16 +452,16 @@ const QuestionType5 = {
                 }
             }
         } else {
-            // ❌ SAI - Làm chữ rung rồi đẩy xuống vị trí cũ (KHÔNG XÓA)
+            // ❌ SAI - Hiệu ứng rung rồi đẩy chữ về vị trí cũ
             const currentWordArea = document.getElementById('current-word');
             if (currentWordArea) {
                 currentWordArea.classList.add('animate-shake');
                 setTimeout(() => currentWordArea.classList.remove('animate-shake'), 500);
             }
-
-            // Đợi 300ms rồi cho chữ nhảy xuống (clearWord sẽ đẩy về vị trí cũ)
+    
+            // Đợi 50ms rồi cho chữ nhảy xuống (clearWord sẽ đẩy về vị trí cũ)
             setTimeout(() => {
-                this.clearWord(); // clearWord đã có logic đẩy chữ về vị trí cũ
+                this.clearWord();
             }, 50);
         }
     },

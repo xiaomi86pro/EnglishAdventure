@@ -67,8 +67,8 @@ window.QuestionType2 = {
                 this.speakWord(this.currentData.word, "en-US");
             }, 300); // Đợi UI render xong rồi mới đọc
 
-            this.useHint();
-            
+            this.useHint(null, false,false);
+
         } catch (err) {
             console.error("Lỗi khi load QuestionType2:", err);
         }
@@ -87,8 +87,9 @@ window.QuestionType2 = {
                 </div>
 
                 <button id="hint-btn" class="absolute top-0 right-0 w-12 h-12 flex items-center justify-center bg-white border-2 border-yellow-400 text-2xl rounded-2xl shadow-sm hover:bg-yellow-50 transition-all transform active:scale-90">
-                    💡
+                💡
                 </button>
+
 
                 <div id="preview-area" class="opacity-0 h-24 flex flex-col items-center justify-center transition-all duration-300 pointer-events-none">
                     <h2 class="text-4xl font-black text-blue-400 uppercase tracking-widest">${this.currentData.word}</h2>
@@ -135,36 +136,59 @@ window.QuestionType2 = {
         }
     },
 
-    useHint(btn) {
-        if (this.hintUsed || !this.currentData) return;
-        this.hintUsed = true;
-    
-        // Trừ máu Hero
-        if (window.GameEngine && window.GameEngine.player) {
+    /**
+     * useHint(btn, takeDamage = true, markUsed = true)
+     * - btn: nút hint (nếu có) để disable sau khi dùng
+     * - takeDamage: nếu true thì trừ 5 HP (khi người chơi bấm)
+     * - markUsed: nếu true thì đánh dấu this.hintUsed = true và disable nút; 
+     *             nếu false (gọi tự động khi load) thì chỉ hiển thị chữ, không khóa nút
+     */
+    useHint(btn, takeDamage = true, markUsed = true) {
+        if (!this.currentData) return;
+
+        // Nếu đã dùng và đang gọi từ nút thì không cho dùng nữa
+        if (this.hintUsed && markUsed) return;
+
+        // Nếu markUsed === true thì đánh dấu đã dùng (khi người chơi bấm)
+        if (markUsed) this.hintUsed = true;
+
+        // Trừ máu Hero chỉ khi takeDamage === true
+        if (takeDamage && window.GameEngine && window.GameEngine.player) {
             window.GameEngine.player.hp_current = Math.max(0, window.GameEngine.player.hp_current - 5);
             window.GameEngine.updateAllUI();
             if (typeof window.GameEngine.showDamage === 'function') {
                 window.GameEngine.showDamage(window.GameEngine.player, 5);
             }
         }
-    
+
         // Hiển thị từ tiếng Anh trong vùng hint
         const hintDiv = document.getElementById("hint-word");
         if (hintDiv) {
             hintDiv.innerText = this.currentData.word;
             hintDiv.classList.remove("opacity-0");
             hintDiv.classList.add("opacity-100");
-    
+
             // Sau 1.5s thì mờ đi
             setTimeout(() => {
                 hintDiv.classList.remove("opacity-100");
                 hintDiv.classList.add("opacity-0");
             }, 1500);
         }
-    
-        // Disable nút hint
-        btn.classList.add("opacity-50", "cursor-not-allowed");
-        btn.disabled = true;
+
+        // Nếu gọi từ nút (markUsed true và btn tồn tại) thì disable nút
+        if (markUsed) {
+            if (btn) {
+                btn.classList.add("opacity-50", "cursor-not-allowed");
+                btn.disabled = true;
+            } else {
+                // nếu không có btn nhưng markUsed true (hiếm), vẫn disable nút UI nếu tồn tại
+                const hintBtn = document.getElementById("hint-btn");
+                if (hintBtn) {
+                    hintBtn.classList.add("opacity-50", "cursor-not-allowed");
+                    hintBtn.disabled = true;
+                }
+            }
+        }
     },
 
     checkAnswer() {

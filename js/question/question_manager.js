@@ -26,9 +26,7 @@ const QuestionManager = {
             console.error(`Lỗi load QuestionType${typeNumber}:`, error);
             return null;
         }
-    },
-
-   
+    },  
     /**
      * Hàm chung để load QuestionType theo số
      */
