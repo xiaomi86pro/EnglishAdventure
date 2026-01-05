@@ -122,6 +122,8 @@ const GameEngine = {
                         sprite_url: "https://via.placeholder.com/64",
                         questionType: 1
                     };
+                    // ngay sau this.monster = { ... }
+                    console.log('[DEBUG] spawnMonsterFromStep -> stepConfig.question_type =', stepConfig.question_type, '=> this.monster.questionType =', this.monster.questionType);
                     
                     const monsterEl = document.getElementById('monster');
                     if (monsterEl) {
@@ -303,7 +305,9 @@ const GameEngine = {
         // Load question theo questionType
         if (window.QuestionManager) {
             try {
+                console.log('[DEBUG] nextQuestion -> questionType used =', questionType, 'monster.type =', this.monster?.type);
                 await window.QuestionManager.loadType(questionType, this.monster.type);
+                console.log('[DEBUG] nextQuestion -> using questionType =', questionType, 'monster.type =', this.monster?.type);
             } catch (error) {
                 console.error("Lỗi load question:", error);
                 setTimeout(() => this.nextQuestion(), 500);
@@ -353,6 +357,99 @@ const GameEngine = {
         this.startBattleTurn(this.monster, this.player);
     },
     
+    /**
+ * Thực hiện 1 round battle dựa trên số đòn hero/monster
+ * correctCount: số đòn hero tấn công
+ * wrongCount: số đòn monster tấn công
+ */
+async processBattleRound(correctCount = 0, wrongCount = 0) {
+    try {
+        console.log('[GameEngine] processBattleRound start', { correctCount, wrongCount });
+        if (!this.player || !this.monster) return;
+        if (this.isBattling) {
+            console.log('[GameEngine] already battling, skip');
+            return;
+        }
+        this.isBattling = true;
+
+        const heroAtk = Number(this.player.atk || 5);
+        const monsterAtk = Number(this.monster.atk || 5);
+
+        const doAttack = (attacker, defender, damage, sound) => {
+            try { if (sound) { sound.currentTime = 0; sound.play().catch(()=>{}); } } catch(e){}
+            const targetEl = (defender === this.player) ? document.getElementById('hero') : document.getElementById('monster');
+            if (targetEl) { targetEl.classList.add('hit-flash'); setTimeout(()=>targetEl.classList.remove('hit-flash'), 300); }
+
+            if (defender === this.player) {
+                this.player.hp_current = Math.max(0, (this.player.hp_current || this.player.max_hp) - damage);
+            } else {
+                this.monster.hp = Math.max(0, (this.monster.hp || this.monster.max_hp) - damage);
+            }
+
+            this.showDamage(defender, damage);
+            this.updateBattleStatus();
+            console.log('[GameEngine] attack applied', { attacker: attacker === this.player ? 'hero' : 'monster', defender: defender === this.player ? 'hero' : 'monster', damage });
+        };
+
+        // Hero attacks
+        for (let i = 0; i < correctCount; i++) {
+            if (this.monster.hp <= 0) break;
+            doAttack(this.player, this.monster, heroAtk, this.heroSlashSound);
+            await new Promise(r => setTimeout(r, 600));
+        }
+// Nếu monster chết
+if (this.monster.hp <= 0) {
+    console.log('[GameEngine] monster died');
+    // Log rõ ràng rằng round kết thúc do quái chết
+    console.log('[GameEngine] round finished, monster died — delegating to handleMonsterDefeat');
+
+    // Đảm bảo reset isBattling trước khi gọi handleMonsterDefeat nếu cần
+    // (handleMonsterDefeat sẽ tự lo progression và spawn quái mới)
+    this.isBattling = false;
+
+    try {
+        await new Promise(r => setTimeout(r, 300));
+        // Gọi handler tiêu diệt quái
+        this.handleMonsterDefeat();
+    } catch (err) {
+        console.error('[GameEngine] error while handling monster defeat', err);
+    }
+    return;
+}
+
+        // Monster attacks
+        for (let j = 0; j < wrongCount; j++) {
+            if ((this.player.hp_current || 0) <= 0) break;
+            doAttack(this.monster, this.player, monsterAtk, this.monsterPunchSound);
+            await new Promise(r => setTimeout(r, 600));
+        }
+
+        // Kiểm tra hero chết
+        if ((this.player.hp_current || 0) <= 0) {
+            console.log('[GameEngine] hero died - implement defeat flow if needed');
+            this.isBattling = false;
+            return;
+        }
+
+        this.updateBattleStatus();
+
+        // Delay nhỏ trước khi load câu hỏi tiếp — chỉ load nếu quái vẫn còn sống
+setTimeout(() => {
+    this.isBattling = false;
+    if (this.monster && (this.monster.hp > 0)) {
+        console.log('[GameEngine] round finished, monster still alive — calling nextQuestion');
+        this.nextQuestion();
+    } else {
+        console.log('[GameEngine] round finished, monster dead or missing — skipping nextQuestion (handleMonsterDefeat will handle progression)');
+    }
+}, 700);
+
+    } catch (err) {
+        console.error('[GameEngine] processBattleRound error', err);
+        this.isBattling = false;
+    }
+},
+
     showDamage(defender, damage) {
         const battle = document.getElementById('battleview');
         if (!battle) return;

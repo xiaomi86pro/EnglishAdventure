@@ -194,19 +194,35 @@ window.QuestionType2 = {
     checkAnswer() {
         const input = document.getElementById("answer-input");
         if (!input || !this.currentData) return;
-
+    
+        // 1) Log input trước khi xử lý
+        console.log('[QuestionType2] checkAnswer called, inputValue =', input.value);
+    
         const answer = input.value.toLowerCase().trim();
         const correctChar = this.currentData.word[this.currentData.missingIndex].toLowerCase();
-
-        if (answer === correctChar) {
+    
+        // 2) Log kết quả so sánh
+        const isCorrect = (answer === correctChar);
+        console.log('[QuestionType2] evaluated isCorrect =', isCorrect, { answer, correctChar });
+    
+        if (isCorrect) {
             // Hiệu ứng đúng
             input.classList.remove("border-blue-400");
             input.classList.add("border-green-500", "bg-green-50");
             
             this.speakWord(this.currentData.word, "en-US");
             this.speakWord(this.currentData.vietnamese, "vi-VN");
-
-            if (this.onCorrect) setTimeout(() => this.onCorrect(), 800);
+    
+            // 3) Log trước khi gọi callback onCorrect
+            console.log('[QuestionType2] will call onCorrect, onCorrect exists =', typeof this.onCorrect === 'function');
+            if (this.onCorrect) setTimeout(() => {
+                try {
+                    this.onCorrect();
+                    console.log('[QuestionType2] onCorrect called successfully');
+                } catch (err) {
+                    console.error('[QuestionType2] onCorrect threw', err);
+                }
+            }, 800);
         } else {
             // Hiệu ứng sai
             input.classList.add("animate-shake", "border-red-500", "text-red-500");
@@ -215,7 +231,16 @@ window.QuestionType2 = {
                 input.value = "";
             }, 500);
             
-            if (this.onWrong) this.onWrong();
+            // 3b) Log trước khi gọi callback onWrong
+            console.log('[QuestionType2] will call onWrong, onWrong exists =', typeof this.onWrong === 'function');
+            if (this.onWrong) {
+                try {
+                    this.onWrong();
+                    console.log('[QuestionType2] onWrong called successfully');
+                } catch (err) {
+                    console.error('[QuestionType2] onWrong threw', err);
+                }
+            }
         }
     }
 };
