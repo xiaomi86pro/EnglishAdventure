@@ -48,7 +48,14 @@ const QuestionType6 = {
                     }
                 }
                 const removedPos = [pos1, pos2].sort((a,b) => a-b);
-                const removed = removedPos.map(p => chars[p]).join('');
+                const removed = removedPos
+    .map(p => chars[p])
+    .join('')
+    .replace(/_/g, '')          // loại underscore nếu vô tình có
+    .replace(/^["']+|["']+$/g, '') // loại quotes
+    .replace(/\s+/g, '')       // loại khoảng trắng
+    .trim()
+    .toUpperCase();
                 const displayChars = chars.slice();
                 removedPos.forEach(p => displayChars[p] = '_');
                 const display = displayChars.join('');
@@ -75,67 +82,100 @@ const QuestionType6 = {
     },
 
     // --- CẬP NHẬT GIAO DIỆN TẠI ĐÂY ---
+   // Thay thế toàn bộ renderQuestionUI() bằng đoạn này
     renderQuestionUI() {
         const area = document.getElementById("questionarea");
         if (!area || !this.currentData) return;
 
-        const items = this.currentData.items;
+        const items = this.currentData.items || [];
+
+        // Tạo 2 mảng đã shuffle (bạn đã có logic shuffle trước, giữ nguyên ý tưởng)
         const leftList = items.map(it => ({ id: it.id, text: it.display }));
         const rightList = items.map(it => ({ id: it.id, text: it.removed }));
-        
+
         const shuffledLeft = leftList.sort(() => Math.random() - 0.5);
         const shuffledRight = rightList.sort(() => Math.random() - 0.5);
 
         area.innerHTML = `
-        <div class="w-full h-full p-4">
-            <div class="flex items-center justify-between mb-2">
-                <h3 class="text-xl font-black text-purple-600">Ghép từ hoàn chỉnh</h3>
-                <div class="flex gap-3">
-                    <button id="check-btn" class="px-4 py-2 bg-blue-500 text-white rounded-lg font-bold disabled:opacity-50 transition-all hover:bg-blue-600 shadow-md" disabled>Kiểm tra</button>
-                    <button id="reload-btn" class="px-4 py-2 bg-gray-200 text-black rounded-lg hover:bg-gray-300 transition-all">Làm lại</button>
-                </div>
-            </div>
-
-            <div id="match-area" class="relative mt-4">
-                <!-- Grid 2 cột: mỗi hàng = 1 từ khuyết (trái) + 1 đoạn chữ (phải) -->
-                <div id="match-grid" class="grid gap-6 w-full max-w-4xl mx-auto" style="grid-template-columns: 1fr 1fr;">
-                    ${(() => {
-                        const maxLen = Math.max(shuffledLeft.length, shuffledRight.length);
-                        let rows = '';
-                        for (let i = 0; i < maxLen; i++) {
-                            const left = shuffledLeft[i];
-                            const right = shuffledRight[i];
-                            rows += `
-                            <!-- Row ${i+1} -->
-                            <div class="group-word relative">
-                                <p class="text-green-600 font-bold text-sm mb-1 ml-1 uppercase tracking-wide">
-                                    ${left ? this.getVietnameseById(left.id) : ''}
-                                </p>
-                                <div id="word-${left ? left.id : 'empty-'+i}" data-id="${left ? left.id : ''}"
-                                    class="word-item h-[72px] flex items-center justify-center bg-white border-2 border-blue-200 rounded-xl cursor-pointer select-none transition-all hover:border-blue-400 shadow-sm ${left ? '' : 'opacity-40 pointer-events-none'}">
-                                    <p class="text-2xl font-black tracking-wider text-gray-700">${left ? this.escapeHtml(left.text) : ''}</p>
-                                </div>
-                            </div>
-
-                            <div class="relative flex items-center justify-center">
-                                <div id="cut-${right ? right.id : 'empty-'+i}" data-id="${right ? right.id : ''}"
-                                    class="cut-item h-[72px] flex items-center justify-center bg-white border-2 border-purple-200 rounded-xl cursor-pointer select-none transition-all hover:border-purple-400 shadow-sm ${right ? '' : 'opacity-40 pointer-events-none'}">
-                                    <span class="text-2xl font-black text-purple-600 tracking-wider">${right ? this.escapeHtml(right.text) : ''}</span>
-                                </div>
-                            </div>
-                            `;
-                        }
-                        return rows;
-                    })()}
-                </div>
-
-                <svg id="match-svg" class="absolute inset-0 pointer-events-none" style="width:100%;height:100%; z-index: 0;"></svg>
+    <div class="w-full h-full p-4">
+        <div class="flex items-center justify-between mb-2">
+            <h3 class="text-xl font-black text-purple-600">Ghép từ hoàn chỉnh</h3>
+            <div class="flex gap-3">
+                <button id="check-btn" class="px-4 py-2 bg-blue-500 text-white rounded-lg font-bold disabled:opacity-50 transition-all hover:bg-blue-600 shadow-md" disabled>Kiểm tra</button>
+                <button id="reload-btn" class="px-4 py-2 bg-gray-200 text-black rounded-lg hover:bg-gray-300 transition-all">Làm lại</button>
             </div>
         </div>
-    `;
 
+        <div id="match-area" class="relative mt-4">
+            <div id="match-grid" class="grid gap-6 w-full max-w-4xl mx-auto" style="grid-template-columns: 1fr 1fr;">
+                ${(() => {
+                    const maxLen = Math.max(shuffledLeft.length, shuffledRight.length);
+                    let rows = '';
+                    for (let i = 0; i < maxLen; i++) {
+                        const left = shuffledLeft[i];
+                        const right = shuffledRight[i];
+
+                        rows += `
+                        <!-- Row ${i+1} -->
+                        <div class="group-word relative">
+                            <p class="text-green-600 font-bold text-sm mb-1 ml-1 uppercase tracking-wide">
+                                ${left ? this.getVietnameseById(left.id) : ''}
+                            </p>
+                            <div id="word-${left ? left.id : 'empty-'+i}" data-id="${left ? left.id : ''}"
+                                class="word-item h-[72px] flex items-center justify-center bg-white border-2 border-blue-200 rounded-xl cursor-pointer select-none transition-all hover:border-blue-400 shadow-sm ${left ? '' : 'opacity-40 pointer-events-none'}">
+                                <p class="text-2xl font-mono font-black tracking-wider text-gray-700">${left ? this.escapeHtml(left.text) : ''}</p>
+                            </div>
+                        </div>
+
+                        <div class="relative flex items-center justify-center">
+                            <div id="cut-${right ? right.id : 'empty-'+i}" data-id="${right ? right.id : ''}"
+                                class="cut-item h-[72px] flex items-center justify-center bg-purple-50 border-2 border-purple-200 rounded-xl cursor-pointer select-none transition-all hover:border-purple-400 shadow-sm ${right ? '' : 'opacity-40 pointer-events-none'}">
+                                <span class="text-2xl font-mono font-black text-purple-700 tracking-wider">
+                                    ${ right ? this.escapeHtml(this.getCutMaskedById(right.id) || right.text) : '' }
+                                </span>
+                            </div>
+                        </div>
+                        `;
+                    }
+                    return rows;
+                })()}
+            </div>
+
+            <svg id="match-svg" class="absolute inset-0 pointer-events-none" style="width:100%;height:100%; z-index: 0;"></svg>
+        </div>
+    </div>
+`;
+
+        // Gắn sự kiện sau khi render
         this.attachEventHandlers();
+
+        // Vẽ đường ngay sau khi DOM đã có
+        // dùng setTimeout 0 để đảm bảo layout đã ổn
+        setTimeout(() => {
+            if (typeof this.drawAllLines === 'function') this.drawAllLines();
+        }, 0);
+
+        // Đăng ký resize để cập nhật đường khi thay đổi kích thước
+        if (!this._q6_resize_bound) {
+            this._q6_resize_bound = () => {
+                if (typeof this.drawAllLines === 'function') this.drawAllLines();
+            };
+            window.addEventListener('resize', this._q6_resize_bound);
+        }
     },
+
+    getCutMaskedById(id) {
+        const it = this.currentData?.items?.find(x => x.id === id);
+        if (!it) return "";
+        const chars = String(it.english || "").split('');
+        const removedPos = Array.isArray(it.removedPos) ? it.removedPos : [];
+    
+        // Hiển thị ký tự ở removedPos, '_' ở các vị trí khác
+        const masked = chars.map((ch, idx) => removedPos.includes(idx) ? ch : '_');
+        return masked.join('');
+    },
+    
+    
 
     getVietnameseById(id) {
         const it = this.currentData.items.find(x => x.id === id);
