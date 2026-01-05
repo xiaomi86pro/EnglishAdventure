@@ -7,6 +7,7 @@ const GameEngine = {
     monsterPunchSound: new Audio('../sounds/Punch.mp3'),
     healSound: new Audio('../sounds/Heal.mp3'),
     bossBgm: new Audio('../sounds/Boss_Battle.mp3'),
+    fbossBgm: new Audio('../sounds/Final_Boss.mp3'),
     player: null,
     monster: null,
     // ✅ Thêm phần mới
@@ -158,6 +159,8 @@ const GameEngine = {
 
             if (this.monster.type === 'boss') {
                 this.playBossMusic();
+            } else if (this.monster.type === 'final boss') {
+                this.playFinalBossMusic();
             } else {
                 this.stopBossMusic(); // Đảm bảo tắt nhạc boss nếu gặp quái thường
             }
@@ -690,7 +693,18 @@ async checkAndUnlockHero(completedStationId) {
             this.bossBgm.play().catch(e => console.log("Chưa thể phát nhạc do trình duyệt chặn:", e));
         }
     },
-
+    /**
+     * Bật nhạc Final Boss
+     */
+    playFinalBossMusic() {
+        this.stopBossMusic(); // Tắt các nhạc khác trước
+        if (this.fbossBgm) {
+            this.fbossBgm.loop = true;
+            this.fbossBgm.volume = 0.6; // Final boss có thể to hơn một chút cho kịch tính
+            this.fbossBgm.currentTime = 0;
+            this.fbossBgm.play().catch(e => console.log("Chưa thể phát nhạc Final Boss:", e));
+        }
+    },
     /**
      * Tắt nhạc Boss
      */
@@ -698,6 +712,10 @@ async checkAndUnlockHero(completedStationId) {
         if (this.bossBgm) {
             this.bossBgm.pause();
             this.bossBgm.currentTime = 0;
+        }
+        if (this.fbossBgm) {
+            this.fbossBgm.pause();
+            this.fbossBgm.currentTime = 0;
         }
     },
 
@@ -955,11 +973,18 @@ async checkAndUnlockHero(completedStationId) {
             // Nếu defender là người chơi, dùng hp_current
             this.player.hp_current -= damage;
             if (this.player.hp_current < 0) this.player.hp_current = 0;
-        } else {
+
+            if (this.player.hp_current === 0) { 
+                const deathSound = new Audio('../sounds/Game_Over.mp3'); 
+                deathSound.play(); 
+                alert("💀 Hero đã gục ngã!"); 
+                this.showMainMenu(); // hoặc logic bạn muốn khi Hero thua }
+            } 
+            else {
             // Nếu defender là quái vật, dùng hp
             defender.hp -= damage;
             if (defender.hp < 0) defender.hp = 0;
-        }
+            }
 
         // 4. Xử lý hiệu ứng hình ảnh (Rung và Sao)
         const defenderEl = (defender === this.player) ? document.getElementById('hero') : document.getElementById('monster');
@@ -1001,8 +1026,8 @@ async checkAndUnlockHero(completedStationId) {
             this.monster.isDead = true;
             this.handleMonsterDefeat();
         }
+        }
     },
-
         // Load trạng thái game từ localStorage
         loadGameState() {
             const saved = localStorage.getItem('gameState');

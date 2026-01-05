@@ -30,6 +30,7 @@ window.QuestionType2 = {
     },
 
     async load(enemyType = "elite") {
+        
         try {
             this.hintUsed = false;
             if (!window.supabase) return;
@@ -66,6 +67,8 @@ window.QuestionType2 = {
                 this.speakWord(this.currentData.word, "en-US");
             }, 300); // Đợi UI render xong rồi mới đọc
 
+            this.useHint();
+            
         } catch (err) {
             console.error("Lỗi khi load QuestionType2:", err);
         }

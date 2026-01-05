@@ -193,7 +193,7 @@ const QuestionType4 = {
                 window.GameEngine.player.hp_current = Math.max(0, window.GameEngine.player.hp_current - 5);
                 window.GameEngine.updateAllUI();
                 if (typeof window.GameEngine.showDamage === 'function') {
-                    window.GameEngine.showDamage(window.GameEngine.player, 10);
+                    window.GameEngine.showDamage(window.GameEngine.player, 5);
                 }
             }
         }, 10000);

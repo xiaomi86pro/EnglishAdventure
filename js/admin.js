@@ -73,20 +73,35 @@ uploadBtn.addEventListener('click', async () => {
             }
 
             statusDiv.innerText = `Hoàn thành!
-- Thành công: ${successCount}
-- Trùng (bỏ qua): ${duplicateCount}
-- Lỗi khác: ${errorCount}
-${logMessages.join('\n')}`;
+            - Thành công: ${successCount}
+            - Trùng (bỏ qua): ${duplicateCount}
+            - Lỗi khác: ${errorCount}
+            ${logMessages.join('\n')}`;
 
-            // Load lại categories sau khi upload thành công
-            await loadCategories();
+                        // Load lại categories sau khi upload thành công
+                        await loadCategories();
 
-        } catch (err) {
-            statusDiv.innerText = "Lỗi hệ thống: " + err.message;
-        }
-    };
-    reader.readAsArrayBuffer(file);
-});
+                    } catch (err) {
+                        statusDiv.innerText = "Lỗi hệ thống: " + err.message;
+                    }
+                };
+                reader.readAsArrayBuffer(file);
+            });
+
+            function showToast(message, duration = 3000) {
+            const toast = document.getElementById("toast");
+            if (!toast) return;
+
+            toast.innerText = message;
+            toast.classList.remove("hidden");
+            toast.classList.add("show");
+
+            // Sau duration ms thì ẩn đi
+            setTimeout(() => {
+                toast.classList.remove("show");
+                toast.classList.add("hidden");
+            }, duration);
+            }
 
 // Hàm lấy danh sách Category để bỏ vào Dropdown
 async function loadCategories() {
@@ -235,9 +250,9 @@ window.deleteRow = async (id) => {
         .eq('id', id);
 
     if (error) {
-        alert("Lỗi khi xóa: " + error.message);
+        showToast("Lỗi khi xóa: " + error.message);
     } else {
-        alert("Đã xóa thành công!");
+        showToast("Đã xóa thành công!");
         performSearch(); // Tải lại danh sách sau khi xóa
     }
 };
@@ -258,9 +273,9 @@ window.saveRow = async (id) => {
         .eq('id', id);
 
     if (error) {
-        alert("Lỗi khi lưu: " + error.message);
+        showToast("Lỗi khi lưu: " + error.message);
     } else {
-        alert("Đã lưu thành công!");
+        showToast("Đã lưu thành công!");
         performSearch(); // Cập nhật lại bảng sau khi lưu
     }
 };
@@ -308,7 +323,7 @@ if (saveHeroBtn) {
         const isLocked = document.getElementById('hero-locked').checked;  
         const unlockStationId = document.getElementById('hero-unlock-station').value || null;  
 
-        if (!name) return alert("Vui lòng nhập tên Hero!");
+        if (!name) return showToast("Vui lòng nhập tên Hero!");
 
         try {
             saveHeroBtn.innerText = "Đang xử lý...";
@@ -334,10 +349,10 @@ if (saveHeroBtn) {
                 }]);
 
             if (error) throw error;
-            //alert("Lưu Hero thành công!");
+            //showToast("Lưu Hero thành công!");
             
         } catch (err) {
-            alert("Lỗi: " + err.message);
+            showToast("Lỗi: " + err.message);
         } finally {
             saveHeroBtn.innerText = "Lưu Hero";
             saveHeroBtn.disabled = false;
@@ -380,7 +395,7 @@ if (saveMonsterBtn) {
         const monsterFile = document.getElementById('monster-file').files[0];
         const monsterUrlInput = document.getElementById('monster-url').value;
 
-        if (!name) return alert("Vui lòng nhập tên Quái vật!");
+        if (!name) return showToast("Vui lòng nhập tên Quái vật!");
 
         try {
             saveMonsterBtn.innerText = "Đang lưu...";
@@ -405,7 +420,7 @@ if (saveMonsterBtn) {
                 }]);
 
             if (error) throw error;
-            alert("Lưu Quái vật thành công!");
+            showToast("Lưu Quái vật thành công!");
             
             // Reset form
             document.getElementById('monster-name').value = '';
@@ -418,7 +433,7 @@ if (saveMonsterBtn) {
             loadMonsters();  // Reload danh sách
             
         } catch (err) {
-            alert("Lỗi: " + err.message);
+            showToast("Lỗi: " + err.message);
         } finally {
             saveMonsterBtn.innerText = "Lưu Quái vật";
             saveMonsterBtn.disabled = false;
@@ -714,9 +729,9 @@ window.updateHero = async (id) => {
         .eq('id', id);
 
     if (error) {
-        alert("Lỗi cập nhật: " + error.message);
+        showToast("Lỗi cập nhật: " + error.message);
     } else {
-        alert("✅ Đã cập nhật Hero thành công!");
+        showToast("✅ Đã cập nhật Hero thành công!");
         loadHeroes();
     }
 };
@@ -731,9 +746,9 @@ window.deleteHero = async (id) => {
         .eq('id', id);
     
     if (error) {
-        alert("Lỗi xóa: " + error.message);
+        showToast("Lỗi xóa: " + error.message);
     } else {
-        alert("✅ Đã xóa Hero!");
+        showToast("✅ Đã xóa Hero!");
         loadHeroes();
     }
 };
@@ -762,9 +777,9 @@ window.updateMonster = async (id) => {
         .eq('id', id);
 
     if (error) {
-        alert("Lỗi cập nhật: " + error.message);
+        showToast("Lỗi cập nhật: " + error.message);
     } else {
-        alert("✅ Đã cập nhật Monster thành công!");
+        showToast("✅ Đã cập nhật Monster thành công!");
         loadMonsters();
     }
 };
@@ -779,9 +794,9 @@ window.deleteMonster = async (id) => {
         .eq('id', id);
     
     if (error) {
-        alert("Lỗi xóa: " + error.message);
+        showToast("Lỗi xóa: " + error.message);
     } else {
-        alert("✅ Đã xóa Monster!");
+        showToast("✅ Đã xóa Monster!");
         loadMonsters();
     }
 };

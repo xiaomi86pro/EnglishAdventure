@@ -368,6 +368,9 @@ startGame: async function() {
         return;
     }
 
+    const introSound = new Audio('../sounds/Start_Game.mp3'); 
+    introSound.currentTime = 0; introSound.play();
+
     const supabase = window.supabase;
     const btnStart = document.getElementById('btn-start');
     btnStart.innerText = "Đang chuẩn bị...";

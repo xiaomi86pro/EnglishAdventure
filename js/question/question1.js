@@ -196,105 +196,95 @@ const QuestionType1 = {
     },
 
     animateLetters(word, lang) {
-        const lettersContainer = document.getElementById(`${lang}-letters`);
-        const slotsContainer = document.getElementById(`${lang}-slots`);
-        if (!lettersContainer || !slotsContainer) return;
+    const lettersContainer = document.getElementById(`${lang}-letters`);
+    const slotsContainer = document.getElementById(`${lang}-slots`);
+    if (!lettersContainer || !slotsContainer) return;
+
+    lettersContainer.innerHTML = "";
+    slotsContainer.innerHTML = "";
+
+    let cleanLetters = word.split("").filter(c => c !== " ");
     
-        lettersContainer.innerHTML = "";
-        slotsContainer.innerHTML = "";
-    
-        let cleanLetters = word.split("").filter(c => c !== " ");
+    // ✅ Nếu là tiếng Việt, tách từ cuối để trộn
+    if (lang === "vi") {
+        const words = word.trim().split(/\s+/); // Tách thành mảng các từ
         
-        // Nếu là tiếng Việt, tách tiền tố và phần cần trộn
-        if (lang === "vi") {
-            const prefixes = ["chim","cây","khăn","màu","quả","con","cái","hình","bức","sân","người","có","đàn","bức","xe","quả","chiếc"];
-            let prefix = "";
-            let remaining = word;
+        if (words.length > 1) {
+            // Có từ 2 từ trở lên → Khóa các từ phía trước, chỉ trộn từ cuối
+            const lockedPart = words.slice(0, -1).join(" "); // Tất cả từ trừ từ cuối
+            const shufflePart = words[words.length - 1];     // Từ cuối cùng
             
-            // Tìm tiền tố phù hợp (không phân biệt hoa thường)
-            for (let p of prefixes) {
-                if (word.toLowerCase().startsWith(p)) {
-                    prefix = word.substring(0, p.length);
-                    remaining = word.substring(p.length).trim();
-                    break;
-                }
-            }
-            
-            // Nếu có tiền tố, hiển thị tiền tố trước
-            if (prefix) {
-                // Cập nhật tiến độ: báo cho game biết là phần "màu/quả..." đã được điền rồi
-                this.viCompleted = prefix.replace(/\s+/g, "");
-                // Hiển thị tiền tố cố định
-                prefix.split("").forEach(char => {
+            // Hiển thị phần khóa
+            lockedPart.split("").forEach(char => {
+                if (char === " ") {
+                    // Khoảng trắng
+                    const spaceBox = document.createElement("div");
+                    spaceBox.className = "space-box h-12";
+                    slotsContainer.appendChild(spaceBox);
+                } else {
+                    // Chữ cái khóa
                     const fixedLetter = document.createElement("div");
                     fixedLetter.className = `w-12 h-12 text-white rounded-xl border-2 border-white flex items-center justify-center text-2xl font-black bg-green-500`;
                     fixedLetter.innerText = char.toUpperCase();
                     slotsContainer.appendChild(fixedLetter);
-                });
-                
-                // Thêm khoảng trắng
-                const spaceBox = document.createElement("div");
-                spaceBox.className = "space-box h-12";
-                slotsContainer.appendChild(spaceBox);
-                
-                // Chỉ trộn phần còn lại
-                cleanLetters = remaining.split("").filter(c => c !== " ");
-            }
+                }
+            });
+            
+            // Thêm khoảng trắng giữa phần khóa và phần trộn
+            const spaceBox = document.createElement("div");
+            spaceBox.className = "space-box h-12";
+            slotsContainer.appendChild(spaceBox);
+            
+            // Chỉ trộn từ cuối cùng
+            cleanLetters = shufflePart.split("").filter(c => c !== " ");
         }
-    
-        const shuffled = cleanLetters.map((c, i) => ({ c, i }))
-            .sort(() => Math.random() - 0.5);
-    
-        shuffled.forEach((item, index) => {
-            const btn = document.createElement("div");
-            btn.className = `w-12 h-12 bg-white border-2 border-gray-400 rounded-xl shadow-[4px_4px_0px_#ccc] flex items-center justify-center text-2xl font-bold cursor-pointer hover:bg-yellow-50 transform transition-all opacity-0 letter-fall`;
-            btn.style.animationDelay = `${index * 0.1}s`;
-            btn.innerText = item.c.toUpperCase();
-    
-            btn.onclick = () => {
-                const currentStr = lang === "en" ? this.enCompleted : this.viCompleted;
-    
-                // tìm vị trí ký tự tiếp theo trong từ gốc
-                let actualIdx = 0, cleanCount = 0;
-                while (actualIdx < word.length) {
-                    if (word[actualIdx] !== " ") {
-                        if (cleanCount === currentStr.length) break;
-                        cleanCount++;
-                    }
-                    actualIdx++;
-                }
-                const targetChar = word[actualIdx];
-    
-                if (item.c.toLowerCase() === targetChar.toLowerCase()) {
-                    if (lang === "en") this.enCompleted += item.c;
-                    else this.viCompleted += item.c;
-    
-                    const finalLetter = document.createElement("div");
-                    finalLetter.className = `w-12 h-12 text-white rounded-xl border-2 border-white flex items-center justify-center text-2xl font-black ${lang === "en" ? "bg-blue-500" : "bg-green-500"}`;
-                    finalLetter.innerText = item.c.toUpperCase();
-                    slotsContainer.appendChild(finalLetter);
-    
-                    // thêm khoảng trắng nếu có
-                    let nextIdx = actualIdx + 1;
-                    while (nextIdx < word.length && word[nextIdx] === " ") {
-                        const spaceBox = document.createElement("div");
-                        spaceBox.className = "space-box h-12";
-                        slotsContainer.appendChild(spaceBox);
-                        nextIdx++;
-                    }
-    
-                    btn.style.visibility = "hidden";
-                    this.checkProgress();
-                } else {
-                    btn.classList.add("bg-red-100", "border-red-400");
-                    setTimeout(() => btn.classList.remove("bg-red-100", "border-red-400"), 500);
-                    if (typeof this.onWrong === "function") this.onWrong();
-                }
-            };
-    
-            lettersContainer.appendChild(btn);
-        });
-    },
+        // Nếu chỉ có 1 từ → Trộn toàn bộ (giữ nguyên logic cũ)
+    }
+
+    const shuffled = cleanLetters.map((c, i) => ({ c, i }))
+        .sort(() => Math.random() - 0.5);
+
+    shuffled.forEach((item, index) => {
+        const btn = document.createElement("div");
+        btn.className = `w-12 h-12 bg-white border-2 border-gray-400 rounded-xl shadow-[4px_4px_0px_#ccc] flex items-center justify-center text-2xl font-bold cursor-pointer hover:bg-yellow-50 transform transition-all opacity-0 letter-fall`;
+        btn.style.animationDelay = `${index * 0.1}s`;
+        btn.innerText = item.c.toUpperCase();
+
+        btn.onclick = () => {
+            const currentStr = lang === "en" ? this.enCompleted : this.viCompleted;
+        
+            // ✅ Không cần kiểm tra thứ tự, chỉ cần ký tự có trong từ gốc
+            const remainingChars = word.replace(/\s+/g, '').toLowerCase().split('');
+            const usedChars = currentStr.toLowerCase().split('');
+            
+            // Đếm số lần ký tự này xuất hiện trong từ gốc
+            const charCount = remainingChars.filter(c => c === item.c.toLowerCase()).length;
+            // Đếm số lần đã dùng
+            const usedCount = usedChars.filter(c => c === item.c.toLowerCase()).length;
+            
+            // Nếu còn có thể dùng ký tự này
+            if (usedCount < charCount) {
+                if (lang === "en") this.enCompleted += item.c;
+                else this.viCompleted += item.c;
+        
+                const finalLetter = document.createElement("div");
+                finalLetter.className = `w-12 h-12 text-white rounded-xl border-2 border-white flex items-center justify-center text-2xl font-black ${lang === "en" ? "bg-blue-500" : "bg-green-500"}`;
+                finalLetter.innerText = item.c.toUpperCase();
+                slotsContainer.appendChild(finalLetter);
+        
+                btn.style.visibility = "hidden";
+                this.checkProgress();
+            } else {
+                // Ký tự này đã dùng hết hoặc không có trong từ
+                btn.classList.add("bg-red-100", "border-red-400");
+                setTimeout(() => btn.classList.remove("bg-red-100", "border-red-400"), 500);
+                if (typeof this.onWrong === "function") this.onWrong();
+            }
+        };
+
+        lettersContainer.appendChild(btn);
+    });
+},
 
     checkProgress() {
         if (!this.currentData) return;
