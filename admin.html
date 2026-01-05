@@ -94,6 +94,29 @@
         margin-left: 6px;
         }
 
+        .word-item, .cut-item {
+        width: 180px;       /* cùng chiều rộng */
+        height: 100px;      /* cùng chiều cao */
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 12px;
+        box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+        transition: all 0.3s ease;
+        }
+        .word-item {
+        background-color: #fff;
+        border: 2px solid #3b82f6; /* xanh */
+        }
+        .cut-item {
+        background-color: #f3e8ff; /* tím nhạt */
+        border: 2px solid #a855f7; /* tím */
+        }
+        .word-item.selected, .cut-item.selected {
+        background-color: #1e3a8a;
+        color: #fff;
+        }
+
         /* Style cho nút Lưu và Xóa */
         .btn-save { background-color: #22c55e; color: white; padding: 6px 12px; rounded: 8px; font-weight: bold; border-radius: 8px; }
         .btn-delete { background-color: #ef4444; color: white; padding: 6px 12px; rounded: 8px; font-weight: bold; border-radius: 8px; margin-left: 4px; }
@@ -326,11 +349,33 @@
                 <h3 class="text-xl font-bold text-purple-600 mb-6 uppercase">Test câu hỏi</h3>
                 
                 <div class="flex gap-4 mb-4">
-                    <button onclick="QuestionManager.startQuestion('normal')" class="px-6 py-2 bg-green-500 text-white rounded-xl font-bold">Test Normal</button>
-                    <button onclick="QuestionManager.startQuestion('elite')" class="px-6 py-2 bg-yellow-500 text-white rounded-xl font-bold">Test Elite</button>
-                    <button onclick="QuestionManager.startQuestion('boss')" class="px-6 py-2 bg-red-500 text-white rounded-xl font-bold">Test Boss</button>
-                    <button onclick="QuestionManager.startQuestion('final boss')" class="px-6 py-2 bg-red-500 text-white rounded-xl font-bold">Test Final Boss</button>
+                    <button onclick="testQuestion(1)" class="px-6 py-2 bg-blue-500 text-white rounded-xl font-bold">
+                        Test Q1: Xếp chữ
+                    </button>
+                    <button onclick="testQuestion(2)" class="px-6 py-2 bg-green-500 text-white rounded-xl font-bold">
+                        Test Q2: Điền từ
+                    </button>
+                    <button onclick="testQuestion(3)" class="px-6 py-2 bg-purple-500 text-white rounded-xl font-bold">
+                        Test Q3: Nghe chọn
+                    </button>
+                    <button onclick="testQuestion(4)" class="px-6 py-2 bg-yellow-500 text-white rounded-xl font-bold">
+                        Test Q4: Tìm từ
+                    </button>
+                    <button onclick="testQuestion(5)" class="px-6 py-2 bg-red-500 text-white rounded-xl font-bold">
+                        Test Q5: Ghép từ
+                    </button>
+                    <button onclick="testQuestion(6)" class="px-6 py-2 bg-red-500 text-white rounded-xl font-bold">
+                        Test Q6: Nối chữ
+                    </button>
                 </div>
+                
+                <script>
+                async function testQuestion(typeNumber) {
+                    if (window.QuestionManager) {
+                        await window.QuestionManager.loadType(typeNumber);
+                    }
+                }
+                </script>
 
                 <div id="questionarea" class="p-6 border-2 border-dashed rounded-xl bg-gray-50 min-h-[200px]">
                     <p class="text-gray-400 italic">Câu hỏi sẽ hiển thị tại đây...</p>

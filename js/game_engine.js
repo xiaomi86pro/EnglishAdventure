@@ -171,17 +171,6 @@ const GameEngine = {
             await this.spawnMonsterRandom();
         }
     },
-
-    /**
-     * Lấy question type mặc định theo loại monster
-     */
-    getDefaultQuestionType(monsterType) {
-        if (monsterType === 'normal') return 1;
-        if (monsterType === 'elite') return 2;
-        if (monsterType === 'boss') return 4;
-        return 1;
-    },
-
     /**
      * Lưu trạng thái game vào localStorage
      */

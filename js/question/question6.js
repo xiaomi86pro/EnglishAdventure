@@ -111,19 +111,21 @@ const QuestionType6 = {
                     <!-- Left column: words (missing) -->
                     <div id="col-words" class="w-1/2 space-y-3">
                         ${shuffledLeft.map((w, idx) => `
-                            <div id="word-${w.id}" data-id="${w.id}" class="word-item p-3 rounded-lg bg-white border-2 border-gray-200 text-left cursor-pointer select-none">
-                                <div class="text-sm text-gray-400">${this.getVietnameseById(w.id)}</div>
-                                <div class="text-2xl font-black text-blue-700 mt-1">${this.escapeHtml(w.text)}</div>
-                            </div>
+                        <div id="word-${w.id}" data-id="${w.id}" 
+                             class="word-item p-4 bg-white border-2 border-blue-200 cursor-pointer select-none">
+                             <p class="text-green-600 font-bold text-sm mb-1">${this.getVietnameseById(w.id)}</p>
+                             <p class="text-2xl font-black tracking-wider">${this.escapeHtml(w.text)}</p>
+                        </div>
                         `).join('')}
                     </div>
 
                     <!-- Right column: cuts -->
                     <div id="col-cuts" class="w-1/2 space-y-3">
                         ${shuffledRight.map((c, idx) => `
-                            <div id="cut-${c.id}" data-id="${c.id}" class="cut-item p-3 rounded-lg bg-white border-2 border-gray-200 text-center cursor-pointer select-none">
-                                <div class="text-2xl font-black text-purple-700">${this.escapeHtml(c.text)}</div>
-                            </div>
+                        <div id="cut-${c.id}" data-id="${c.id}" 
+                             class="cut-item p-3 bg-purple-100 border-2 border-purple-300 text-center cursor-pointer select-none rounded-xl">
+                             <span class="text-2xl font-black text-purple-700">${this.escapeHtml(c.text)}</span>
+                        </div>
                         `).join('')}
                     </div>
 
@@ -292,80 +294,164 @@ const QuestionType6 = {
             line.setAttribute("y1", y1);
             line.setAttribute("x2", x2);
             line.setAttribute("y2", y2);
-            line.setAttribute("stroke", "#9CA3AF"); // gray-400
-            line.setAttribute("stroke-width", "4");
+            line.setAttribute("stroke", "#cbd5e1"); // gray-300
+            line.setAttribute("stroke-width", "6");
+            line.setAttribute("opacity", "0.8");
             line.setAttribute("stroke-linecap", "round");
             svg.appendChild(line);
         });
     },
 
     // Kiểm tra các cặp đã nối
-    checkPairs() {
-        if (!this.pairs || this.pairs.length === 0) return;
+    // Thay thế toàn bộ hàm checkPairs() bằng đoạn này
+checkPairs() {
+    if (!this.pairs || this.pairs.length === 0) return;
 
-        const items = this.currentData.items;
-        let correctCount = 0;
-        let wrongCount = 0;
+    const items = this.currentData.items;
+    const svg = document.getElementById('match-svg');
+    const matchArea = document.getElementById('match-area');
+    if (!matchArea) return;
 
-        // Kiểm tra từng pair
-        this.pairs.forEach(p => {
-            const item = items.find(it => it.id === p.wordId);
-            if (!item) {
-                p.correct = false;
-                wrongCount++;
-                return;
+    // đảm bảo matchArea có position relative để đặt clone absolute
+    const prevPos = window.getComputedStyle(matchArea).position;
+    if (prevPos === 'static') matchArea.style.position = 'relative';
+
+    // xử lý từng pair tuần tự (để animation không chồng nhau quá)
+    this.pairs.forEach((p, index) => {
+        const cutEl = document.getElementById(`cut-${p.cutId}`);
+        const wordEl = document.getElementById(`word-${p.wordId}`);
+        const lineEl = document.getElementById(p.lineId);
+        const item = items.find(it => it.id === p.wordId);
+
+        // Nếu không tìm thấy phần tử, đánh dấu sai
+        if (!cutEl || !wordEl) {
+            p.correct = false;
+        } else {
+            // Quy tắc đúng: id giống nhau (nếu bạn dùng logic khác, thay ở đây)
+            p.correct = (p.cutId === p.wordId);
+        }
+
+        if (p.correct) {
+            // 1) Xóa line ngay lập tức
+            if (lineEl) lineEl.remove();
+
+            // 2) Tạo clone của cut và word, đặt absolute tại vị trí hiện tại
+            const parentRect = matchArea.getBoundingClientRect();
+            const cRect = cutEl.getBoundingClientRect();
+            const wRect = wordEl.getBoundingClientRect();
+
+            const cloneCut = cutEl.cloneNode(true);
+            const cloneWord = wordEl.cloneNode(true);
+
+            // style clone
+            [cloneCut, cloneWord].forEach(cl => {
+                cl.style.position = 'absolute';
+                cl.style.margin = '0';
+                cl.style.left = '0';
+                cl.style.top = '0';
+                cl.style.transform = 'none';
+                cl.style.transition = 'transform 600ms ease, opacity 600ms ease';
+                cl.style.zIndex = 100 + index; // tránh chồng nhau
+            });
+
+            // set vị trí tương đối tới matchArea
+            cloneCut.style.left = (cRect.left - parentRect.left) + 'px';
+            cloneCut.style.top = (cRect.top - parentRect.top) + 'px';
+            cloneCut.style.width = cRect.width + 'px';
+            cloneCut.style.height = cRect.height + 'px';
+
+            cloneWord.style.left = (wRect.left - parentRect.left) + 'px';
+            cloneWord.style.top = (wRect.top - parentRect.top) + 'px';
+            cloneWord.style.width = wRect.width + 'px';
+            cloneWord.style.height = wRect.height + 'px';
+
+            // 3) append clones
+            matchArea.appendChild(cloneCut);
+            matchArea.appendChild(cloneWord);
+
+            // 4) Ẩn ô gốc (để không thấy chồng)
+            cutEl.style.visibility = 'hidden';
+            wordEl.style.visibility = 'hidden';
+
+            // 5) Tính vị trí center cho cặp này (để clone bay vào)
+            const centerX = (parentRect.width / 2) - (cRect.width / 2);
+            // để các cặp không chồng hoàn toàn, offset theo index
+            const offsetY = -20 + (index * 6); // nhẹ, tránh chồng hoàn toàn
+            const centerY = (parentRect.height / 2) - (cRect.height / 2) + offsetY;
+
+            // 6) Force layout rồi animate
+            requestAnimationFrame(() => {
+                cloneCut.style.transform = `translate(${centerX - (cRect.left - parentRect.left)}px, ${centerY - (cRect.top - parentRect.top)}px) scale(1)`;
+                cloneWord.style.transform = `translate(${centerX - (wRect.left - parentRect.left)}px, ${centerY - (wRect.top - parentRect.top)}px) scale(1)`;
+                cloneCut.style.opacity = '1';
+                cloneWord.style.opacity = '1';
+            });
+
+            // 7) Sau animation, tạo merged card và dọn dẹp clones + ô gốc
+            setTimeout(() => {
+                // tạo merged card ở center
+                const merged = document.createElement('div');
+                merged.className = 'p-4 bg-green-500 text-white rounded-xl text-2xl font-black flex items-center justify-center';
+                merged.style.position = 'absolute';
+                merged.style.left = `${centerX}px`;
+                merged.style.top = `${centerY}px`;
+                merged.style.zIndex = 200 + index;
+                merged.style.padding = '12px 20px';
+                merged.innerText = item ? item.english : '';
+
+                matchArea.appendChild(merged);
+
+                // xóa clones
+                cloneCut.remove();
+                cloneWord.remove();
+
+                // xóa ô gốc hoàn toàn để không thể chọn lại
+                if (cutEl) cutEl.remove();
+                if (wordEl) wordEl.remove();
+
+                // gọi callback đúng 1 lần cho mỗi cặp
+                if (typeof this.onCorrect === 'function') this.onCorrect();
+            }, 650); // nhỏ hơn transition để animation mượt
+        } else {
+            // Sai: đổi màu ô và line đứt đoạn
+            if (cutEl) {
+                cutEl.classList.add('bg-red-500', 'text-white');
             }
-            // So sánh removed string
-            if (p.cutId === p.wordId) {
-                // Nếu cutId === wordId (chúng ta dùng id giống nhau khi tạo), thì đúng
-                p.correct = true;
-                correctCount++;
-            } else {
-                // Trong cấu trúc mình dùng id giống nhau cho cut và word (cut-{id}, word-{id})
-                // Nếu người chơi ghép cutId với wordId khác => sai
-                p.correct = false;
-                wrongCount++;
+            if (wordEl) {
+                wordEl.classList.add('bg-red-500', 'text-white');
             }
-        });
+            if (lineEl) {
+                lineEl.setAttribute('stroke', '#DC2626');
+                lineEl.setAttribute('stroke-dasharray', '8 4');
+                lineEl.setAttribute('stroke-width', '6');
+            }
 
-        // Cập nhật UI: nếu đúng -> chạy vào giữa, xanh; sai -> đỏ và đường đứt
-        const svg = document.getElementById('match-svg');
-        this.pairs.forEach(p => {
-            const cutEl = document.getElementById(`cut-${p.cutId}`);
-            const wordEl = document.getElementById(`word-${p.wordId}`);
-            const lineEl = document.getElementById(p.lineId);
+            // Gọi onWrong 1 lần cho cặp sai
+            if (typeof this.onWrong === 'function') this.onWrong();
 
-            if (p.correct) {
-                // animation: chuyển 2 ô vào giữa (center) và đổi màu xanh
+            // Sau 1.5s, fade out line đỏ và reset ô để người chơi có thể thử lại
+            setTimeout(() => {
+                if (lineEl) {
+                    // fade out bằng giảm opacity rồi remove
+                    lineEl.style.transition = 'opacity 400ms ease';
+                    lineEl.style.opacity = '0';
+                    setTimeout(() => { if (lineEl) lineEl.remove(); }, 420);
+                }
+                // reset ô về trạng thái ban đầu (nếu vẫn tồn tại)
                 if (cutEl) {
-                    cutEl.classList.add('bg-green-500','text-white');
-                    cutEl.style.transition = 'transform 0.5s ease, opacity 0.5s';
+                    cutEl.classList.remove('bg-red-500', 'text-white');
                 }
                 if (wordEl) {
-                    wordEl.classList.add('bg-green-500','text-white');
-                    wordEl.style.transition = 'transform 0.5s ease, opacity 0.5s';
+                    wordEl.classList.remove('bg-red-500', 'text-white');
                 }
-                if (lineEl) {
-                    lineEl.setAttribute('stroke', '#16A34A'); // green-600
-                }
-                // Gọi onCorrect 1 lần cho mỗi từ đúng
-                if (typeof this.onCorrect === 'function') this.onCorrect();
-            } else {
-                // sai: đỏ và đường đứt đoạn
-                if (cutEl) cutEl.classList.add('bg-red-500','text-white');
-                if (wordEl) wordEl.classList.add('bg-red-500','text-white');
-                if (lineEl) {
-                    lineEl.setAttribute('stroke', '#DC2626'); // red-600
-                    lineEl.setAttribute('stroke-dasharray', '6 6');
-                }
-                if (typeof this.onWrong === 'function') this.onWrong();
-            }
-        });
+            }, 1500);
+        }
+    });
 
-        // Disable nút check sau khi kiểm tra
-        const checkBtn = document.getElementById('check-btn');
-        if (checkBtn) checkBtn.disabled = true;
-    },
+    // Sau khi xử lý tất cả pairs, disable nút check
+    const checkBtn = document.getElementById('check-btn');
+    if (checkBtn) checkBtn.disabled = true;
+},
 
     destroy() {
         const area = document.getElementById("questionarea");
