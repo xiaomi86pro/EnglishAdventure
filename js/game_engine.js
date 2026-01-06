@@ -285,14 +285,15 @@ const GameEngine = {
     async nextQuestion() {
         const questionArea = document.getElementById('questionarea');
         const questionType = this.monster?.questionType || 1;
-        
+    
+        // Dọn question cũ
         if (window.QuestionManager?.currentQuestion) {
             if (typeof window.QuestionManager.currentQuestion.destroy === 'function') {
                 window.QuestionManager.currentQuestion.destroy();
             }
         }
-
-        // Hiện loading
+    
+        // Hiển thị loading nhanh
         if (questionArea && !questionArea.innerHTML.includes('Đang chuẩn bị')) {
             questionArea.innerHTML = `
                 <div class="flex flex-col items-center justify-center gap-4">
@@ -302,12 +303,39 @@ const GameEngine = {
             `;
         }
     
+        // Inject preloaded data (nếu có) vào QuestionManager trước khi load
+        try {
+            if (window.QuestionManager && window.QuestionManager.nextPreloadedData) {
+                console.log('[GameEngine] injecting nextPreloadedData into QuestionManager for immediate use');
+                // leave it on QuestionManager; loadType will transfer it into the QuestionType
+                // (we keep it here so QuestionManager can decide how to use it)
+            } else {
+                console.log('[GameEngine] no preloaded data available for nextQuestion');
+            }
+        } catch (e) {
+            console.warn('[GameEngine] prefetch check failed', e);
+        }
+    
         // Load question theo questionType
         if (window.QuestionManager) {
             try {
                 console.log('[DEBUG] nextQuestion -> questionType used =', questionType, 'monster.type =', this.monster?.type);
-                await window.QuestionManager.loadType(questionType, this.monster.type);
+                await window.QuestionManager.loadType(questionType, this.monster?.type);
                 console.log('[DEBUG] nextQuestion -> using questionType =', questionType, 'monster.type =', this.monster?.type);
+    
+                // Sau khi load xong, kích hoạt prefetch cho câu tiếp theo (non-blocking)
+                try {
+                    if (typeof window.QuestionManager.prefetchNext === 'function') {
+                        window.QuestionManager.prefetchNext();
+                        console.log('[GameEngine] triggered QuestionManager.prefetchNext()');
+                    } else {
+                        // nếu không có hàm prefetchNext, QuestionManager.loadType sẽ tự prefetch; log để debug
+                        console.log('[GameEngine] QuestionManager.prefetchNext not found; relying on QuestionManager.loadType prefetch');
+                    }
+                } catch (e) {
+                    console.warn('[GameEngine] error triggering prefetchNext', e);
+                }
+    
             } catch (error) {
                 console.error("Lỗi load question:", error);
                 setTimeout(() => this.nextQuestion(), 500);
@@ -357,13 +385,12 @@ const GameEngine = {
         this.startBattleTurn(this.monster, this.player);
     },
     
-    /**
+/**
  * Thực hiện 1 round battle dựa trên số đòn hero/monster
  * correctCount: số đòn hero tấn công
  * wrongCount: số đòn monster tấn công
  */
-async processBattleRound(correctCount = 0, wrongCount = 0) {
-    try {
+    async processBattleRound(correctCount = 0, wrongCount = 0, advanceNext = true) {    try {
         console.log('[GameEngine] processBattleRound start', { correctCount, wrongCount });
         if (!this.player || !this.monster) return;
         if (this.isBattling) {
@@ -395,7 +422,7 @@ async processBattleRound(correctCount = 0, wrongCount = 0) {
         for (let i = 0; i < correctCount; i++) {
             if (this.monster.hp <= 0) break;
             doAttack(this.player, this.monster, heroAtk, this.heroSlashSound);
-            await new Promise(r => setTimeout(r, 600));
+            await new Promise(r => setTimeout(r, 200));
         }
 // Nếu monster chết
 if (this.monster.hp <= 0) {
@@ -408,7 +435,7 @@ if (this.monster.hp <= 0) {
     this.isBattling = false;
 
     try {
-        await new Promise(r => setTimeout(r, 300));
+        await new Promise(r => setTimeout(r, 200));
         // Gọi handler tiêu diệt quái
         this.handleMonsterDefeat();
     } catch (err) {
@@ -421,7 +448,7 @@ if (this.monster.hp <= 0) {
         for (let j = 0; j < wrongCount; j++) {
             if ((this.player.hp_current || 0) <= 0) break;
             doAttack(this.monster, this.player, monsterAtk, this.monsterPunchSound);
-            await new Promise(r => setTimeout(r, 600));
+            await new Promise(r => setTimeout(r, 200));
         }
 
         // Kiểm tra hero chết
@@ -434,15 +461,20 @@ if (this.monster.hp <= 0) {
         this.updateBattleStatus();
 
         // Delay nhỏ trước khi load câu hỏi tiếp — chỉ load nếu quái vẫn còn sống
-setTimeout(() => {
-    this.isBattling = false;
-    if (this.monster && (this.monster.hp > 0)) {
-        console.log('[GameEngine] round finished, monster still alive — calling nextQuestion');
-        this.nextQuestion();
-    } else {
-        console.log('[GameEngine] round finished, monster dead or missing — skipping nextQuestion (handleMonsterDefeat will handle progression)');
-    }
-}, 700);
+        setTimeout(() => {
+            this.isBattling = false;
+            // Chỉ load câu hỏi tiếp nếu caller muốn advanceNext === true
+            if (advanceNext) {
+                if (this.monster && (this.monster.hp > 0)) {
+                    console.log('[GameEngine] round finished, monster still alive — calling nextQuestion (advanceNext=true)');
+                    this.nextQuestion();
+                } else {
+                    console.log('[GameEngine] round finished, monster dead or missing — skipping nextQuestion (handleMonsterDefeat will handle progression)');
+                }
+            } else {
+                console.log('[GameEngine] round finished, advanceNext=false — keeping current question');
+            }
+        }, 700);
 
     } catch (err) {
         console.error('[GameEngine] processBattleRound error', err);

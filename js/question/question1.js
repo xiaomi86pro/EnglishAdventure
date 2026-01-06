@@ -15,8 +15,6 @@ const QuestionType1 = {
     onCorrect: null,
     onWrong: null,
 
-    
-
     speakWord(text, lang = "en-US", rate = 0.9) {
         if (!window.speechSynthesis || !text) return;
     
@@ -40,38 +38,61 @@ const QuestionType1 = {
 
     async load(enemyType = "normal") {
         try {
-            if (!window.supabase) {
-                setTimeout(() => this.load(enemyType), 300);
+            // Reset trạng thái trước khi load câu mới
+            this._submitted = false;
+            this.enCompleted = "";
+            this.viCompleted = "";
+            this._enExpected = undefined;
+            this._viExpected = undefined;
+            this.hintUsed = false;
+    
+            // 1) Lấy dữ liệu ưu tiên: this._preloadedData -> window.VOCAB_CACHE -> supabase
+            let selected = null;
+    
+            if (this._preloadedData) {
+                selected = this._preloadedData;
+                this._preloadedData = null; // dùng xong clear
+                console.log('[QuestionType1] using _preloadedData');
+            } else if (window.VOCAB_CACHE && window.VOCAB_CACHE.length) {
+                selected = window.VOCAB_CACHE[Math.floor(Math.random() * window.VOCAB_CACHE.length)];
+                console.log('[QuestionType1] using VOCAB_CACHE');
+            } else if (window.supabase) {
+                // Fallback: fetch từ supabase (như cũ)
+                const { data, error } = await window.supabase
+                    .from("vocabulary")
+                    .select("english_word, vietnamese_translation");
+                if (error) throw error;
+                if (data && data.length) {
+                    // lưu vào cache để lần sau dùng nhanh
+                    window.VOCAB_CACHE = data;
+                    selected = data[Math.floor(Math.random() * data.length)];
+                    console.log('[QuestionType1] fetched from supabase and cached');
+                }
+            } else {
+                console.warn('[QuestionType1] No data source available (preloaded, cache, or supabase)');
+            }
+    
+            if (!selected) {
+                console.error('[QuestionType1] No vocabulary selected for load');
                 return;
             }
-
-            const { data, error } = await window.supabase
-                .from("vocabulary")
-                .select("english_word, vietnamese_translation");
-
-            if (error) throw error;
-            if (!data || data.length === 0) throw new Error("Vocabulary trống");
-
-            let valid = data.filter(v => v?.english_word && v?.vietnamese_translation);
-
-            if (enemyType === "normal") {
-                valid = valid.filter(v => v.english_word.trim().length <= 5);
-            } else {
-                valid = valid.filter(v => v.english_word.trim().length > 5);
-            }
-
-            if (valid.length === 0) valid = data;
-
-            this.currentData = valid[Math.floor(Math.random() * valid.length)];
+    
+            // 2) Chuẩn bị dữ liệu và trạng thái
+            this.currentData = selected;
             this.enCompleted = "";
             this.viCompleted = "";
             this.hintUsed = false;
-
+    
+            // 3) Render UI và phát âm (không block)
             this.renderQuestionUI();
-            this.speakWord(this.currentData.english_word);
-
+    
+            // Phát âm sau khi UI render để ưu tiên hiển thị
+            setTimeout(() => {
+                try { this.speakWord(this.currentData.english_word, "en-US"); } catch(e){ console.warn(e); }
+            }, 150);
+    
         } catch (err) {
-            console.error("QuestionType1:", err);
+            console.error("QuestionType1.load error:", err);
         }
     },
 
@@ -196,109 +217,139 @@ const QuestionType1 = {
     },
 
     animateLetters(word, lang) {
-    const lettersContainer = document.getElementById(`${lang}-letters`);
-    const slotsContainer = document.getElementById(`${lang}-slots`);
-    if (!lettersContainer || !slotsContainer) return;
-
-    lettersContainer.innerHTML = "";
-    slotsContainer.innerHTML = "";
-
-    let cleanLetters = word.split("").filter(c => c !== " ");
+        const lettersContainer = document.getElementById(`${lang}-letters`);
+        const slotsContainer = document.getElementById(`${lang}-slots`);
+        if (!lettersContainer || !slotsContainer) return;
     
-    // ✅ Nếu là tiếng Việt, tách từ cuối để trộn
-    if (lang === "vi") {
-        const words = word.trim().split(/\s+/); // Tách thành mảng các từ
+        lettersContainer.innerHTML = "";
+        slotsContainer.innerHTML = "";
+    
+        let cleanLetters = word.split("").filter(c => c !== " ");
+    
+        if (lang === "vi") {
+            const words = word.trim().split(/\s+/);
+            if (words.length > 1) {
+                const lockedPart = words.slice(0, -1).join(" ");
+                const shufflePart = words[words.length - 1];
         
-        if (words.length > 1) {
-            // Có từ 2 từ trở lên → Khóa các từ phía trước, chỉ trộn từ cuối
-            const lockedPart = words.slice(0, -1).join(" "); // Tất cả từ trừ từ cuối
-            const shufflePart = words[words.length - 1];     // Từ cuối cùng
-            
-            // Hiển thị phần khóa
-            lockedPart.split("").forEach(char => {
-                if (char === " ") {
-                    // Khoảng trắng
-                    const spaceBox = document.createElement("div");
-                    spaceBox.className = "space-box h-12";
-                    slotsContainer.appendChild(spaceBox);
-                } else {
-                    // Chữ cái khóa
-                    const fixedLetter = document.createElement("div");
-                    fixedLetter.className = `w-12 h-12 text-white rounded-xl border-2 border-white flex items-center justify-center text-2xl font-black bg-green-500`;
-                    fixedLetter.innerText = char.toUpperCase();
-                    slotsContainer.appendChild(fixedLetter);
-                }
-            });
-            
-            // Thêm khoảng trắng giữa phần khóa và phần trộn
-            const spaceBox = document.createElement("div");
-            spaceBox.className = "space-box h-12";
-            slotsContainer.appendChild(spaceBox);
-            
-            // Chỉ trộn từ cuối cùng
-            cleanLetters = shufflePart.split("").filter(c => c !== " ");
-        }
-        // Nếu chỉ có 1 từ → Trộn toàn bộ (giữ nguyên logic cũ)
-    }
-
-    const shuffled = cleanLetters.map((c, i) => ({ c, i }))
-        .sort(() => Math.random() - 0.5);
-
-    shuffled.forEach((item, index) => {
-        const btn = document.createElement("div");
-        btn.className = `w-12 h-12 bg-white border-2 border-gray-400 rounded-xl shadow-[4px_4px_0px_#ccc] flex items-center justify-center text-2xl font-bold cursor-pointer hover:bg-yellow-50 transform transition-all opacity-0 letter-fall`;
-        btn.style.animationDelay = `${index * 0.1}s`;
-        btn.innerText = item.c.toUpperCase();
-
-        btn.onclick = () => {
-            const currentStr = lang === "en" ? this.enCompleted : this.viCompleted;
+                // Hiển thị phần khóa như trước
+                lockedPart.split("").forEach(char => {
+                    if (char === " ") {
+                        const spaceBox = document.createElement("div");
+                        spaceBox.className = "space-box h-12";
+                        slotsContainer.appendChild(spaceBox);
+                    } else {
+                        const fixedLetter = document.createElement("div");
+                        fixedLetter.className = `w-12 h-12 text-white rounded-xl border-2 border-white flex items-center justify-center text-2xl font-black bg-green-500`;
+                        fixedLetter.innerText = char.toUpperCase();
+                        slotsContainer.appendChild(fixedLetter);
+                    }
+                });
         
-            // ✅ Không cần kiểm tra thứ tự, chỉ cần ký tự có trong từ gốc
-            const remainingChars = word.replace(/\s+/g, '').toLowerCase().split('');
-            const usedChars = currentStr.toLowerCase().split('');
-            
-            // Đếm số lần ký tự này xuất hiện trong từ gốc
-            const charCount = remainingChars.filter(c => c === item.c.toLowerCase()).length;
-            // Đếm số lần đã dùng
-            const usedCount = usedChars.filter(c => c === item.c.toLowerCase()).length;
-            
-            // Nếu còn có thể dùng ký tự này
-            if (usedCount < charCount) {
-                if (lang === "en") this.enCompleted += item.c;
-                else this.viCompleted += item.c;
+                const spaceBox = document.createElement("div");
+                spaceBox.className = "space-box h-12";
+                slotsContainer.appendChild(spaceBox);
         
-                const finalLetter = document.createElement("div");
-                finalLetter.className = `w-12 h-12 text-white rounded-xl border-2 border-white flex items-center justify-center text-2xl font-black ${lang === "en" ? "bg-blue-500" : "bg-green-500"}`;
-                finalLetter.innerText = item.c.toUpperCase();
-                slotsContainer.appendChild(finalLetter);
+                // Chỉ trộn phần cuối
+                cleanLetters = shufflePart.split("").filter(c => c !== " ");
         
-                btn.style.visibility = "hidden";
-                this.checkProgress();
+                // Gán kỳ vọng cho phần VI (chỉ phần trộn)
+                this._viExpected = shufflePart.replace(/\s+/g, '').toLowerCase();
             } else {
-                // Ký tự này đã dùng hết hoặc không có trong từ
-                btn.classList.add("bg-red-100", "border-red-400");
-                setTimeout(() => btn.classList.remove("bg-red-100", "border-red-400"), 500);
-                if (typeof this.onWrong === "function") this.onWrong();
+                // Nếu chỉ 1 từ → kỳ vọng là toàn bộ từ
+                this._viExpected = word.replace(/\s+/g, '').toLowerCase();
             }
-        };
+        } else {
+            // Nếu là EN, kỳ vọng là toàn bộ từ (không space)
+            this._enExpected = word.replace(/\s+/g, '').toLowerCase();
+        }
+    
+        const shuffled = cleanLetters.map((c, i) => ({ c, i }))
+            .sort(() => Math.random() - 0.5);
+    
+        shuffled.forEach((item, index) => {
+            const btn = document.createElement("div");
+            btn.className = `w-12 h-12 bg-white border-2 border-gray-400 rounded-xl shadow-[4px_4px_0px_#ccc] flex items-center justify-center text-2xl font-bold cursor-pointer hover:bg-yellow-50 transform transition-all opacity-0 letter-fall`;
+            btn.style.animationDelay = `${index * 0.1}s`;
+            btn.innerText = item.c.toUpperCase();
+            btn.disabled = false;
+            btn.style.pointerEvents = 'auto';
+            btn.style.visibility = 'visible';
 
-        lettersContainer.appendChild(btn);
-    });
-},
+            btn.onclick = () => {
+                // Nếu đã hoàn tất hoặc đã disable, ignore
+                if (this._submitted || btn.disabled) {
+                    console.log('[QuestionType1] click ignored, submitted or disabled');
+                    return;
+                }
+            
+                const currentStr = lang === "en" ? this.enCompleted : this.viCompleted;
+            
+                // Kỳ vọng tương ứng (nếu đã set trong animateLetters)
+                const expectedEn = this._enExpected || (this.currentData?.english_word || "").replace(/\s+/g, '').toLowerCase();
+                const expectedVi = this._viExpected || (this.currentData?.vietnamese_translation || "").replace(/\s+/g, '').toLowerCase();
+            
+                const expected = (lang === "en") ? expectedEn : expectedVi;
+            
+                // Ký tự tiếp theo cần điền (theo thứ tự trong phần kỳ vọng)
+                const nextIndex = currentStr.length;
+                const expectedChar = expected[nextIndex];
+            
+                // So sánh ký tự bấm với ký tự cần điền (theo thứ tự)
+                if (item.c.toLowerCase() === expectedChar) {
+                    if (lang === "en") this.enCompleted += item.c;
+                    else this.viCompleted += item.c;
+            
+                    const finalLetter = document.createElement("div");
+                    finalLetter.className = `w-12 h-12 text-white rounded-xl border-2 border-white flex items-center justify-center text-2xl font-black ${lang === "en" ? "bg-blue-500" : "bg-green-500"}`;
+                    finalLetter.innerText = item.c.toUpperCase();
+                    slotsContainer.appendChild(finalLetter);
+            
+                    btn.style.visibility = "hidden";
+                    btn.disabled = true;
+                    this.checkProgress();
+                } else {
+                    // Sai thứ tự -> gọi onWrong và hiệu ứng
+                    btn.classList.add("bg-red-100", "border-red-400");
+                    setTimeout(() => btn.classList.remove("bg-red-100", "border-red-400"), 500);
+                    console.log('[QuestionType1] wrong letter clicked', { clicked: item.c, expected: expectedChar, lang });
+                    if (typeof this.onWrong === "function") this.onWrong();
+                }
+            };
+    
+            lettersContainer.appendChild(btn);
+        });
+    },
 
     checkProgress() {
         if (!this.currentData) return;
-        const wordEn = this.currentData.english_word;
-        const wordVi = this.currentData.vietnamese_translation;
-
-        const cleanEn = wordEn.replace(/\s+/g, "").toLowerCase();
-        const cleanVi = wordVi.replace(/\s+/g, "").toLowerCase();
-
-        if (this.enCompleted.toLowerCase() === cleanEn &&
-            this.viCompleted.toLowerCase() === cleanVi) {
+        const wordEn = this.currentData.english_word || "";
+        const wordVi = this.currentData.vietnamese_translation || "";
+    
+        // Kỳ vọng đã được set trong animateLetters
+        const expectedEn = this._enExpected || wordEn.replace(/\s+/g, '').toLowerCase();
+        const expectedVi = this._viExpected || wordVi.replace(/\s+/g, '').toLowerCase();
+    
+        const enDone = (this.enCompleted || "").toLowerCase();
+        const viDone = (this.viCompleted || "").toLowerCase();
+    
+        if (enDone === expectedEn && viDone === expectedVi) {
+            console.log('[QuestionType1] completed both EN and VI', { en: enDone, vi: viDone });
+    
+            // Disable tất cả nút chữ để tránh spam
+            const allBtns = document.querySelectorAll('#en-letters .w-12, #vi-letters .w-12');
+            allBtns.forEach(b => { try { b.disabled = true; b.style.pointerEvents = 'none'; } catch(e){} });
+    
+            this._submitted = true;
+    
             this.speakWord(wordEn, "en-US");
             this.speakWord(wordVi, "vi-VN");
-            if (typeof this.onCorrect === "function") this.onCorrect();
+            if (typeof this.onCorrect === "function") {
+                console.log('[QuestionType1] calling onCorrect');
+                this.onCorrect();
+            } else {
+                console.warn('[QuestionType1] onCorrect not defined');
+            }
         }
     },
 
@@ -308,6 +359,14 @@ const QuestionType1 = {
         this.currentData = null;
         this.enCompleted = "";
         this.viCompleted = "";
+        this._submitted = false;
+        this._enExpected = undefined;
+        this._viExpected = undefined;
+    
+        // Bật lại mọi nút (nếu có)
+        document.querySelectorAll('#en-letters .w-12, #vi-letters .w-12').forEach(b => {
+            try { b.disabled = false; b.style.pointerEvents = 'auto'; b.style.visibility = 'visible'; } catch(e){}
+        });
     },
 };
 
