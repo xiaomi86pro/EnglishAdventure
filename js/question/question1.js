@@ -112,7 +112,6 @@ const QuestionType1 = {
     
             // Gán expected (animateLetters cũng sẽ set phần vi nếu có khóa)
             this._enExpected = en.replace(/\s+/g, '').toLowerCase();
-            // _viExpected có thể được set trong animateLetters nếu có phần khóa; set fallback ở đây
             this._viExpected = vi.replace(/\s+/g, '').toLowerCase();
     
             // 3) Render UI và phát âm (không block)
@@ -329,7 +328,14 @@ const QuestionType1 = {
             
                 // Ký tự tiếp theo cần điền (theo thứ tự trong phần kỳ vọng)
                 const nextIndex = currentStr.length;
-                const expectedChar = expected[nextIndex];
+                const expectedChar = (nextIndex < (expected || '').length) ? expected[nextIndex] : null;
+if (!expectedChar) {
+    console.warn('[QuestionType1] expectedChar missing', { expected, nextIndex });
+    // xử lý an toàn: treat as wrong
+    if (typeof this.onWrong === "function") this.onWrong();
+    return;
+}
+
             
                 // So sánh ký tự bấm với ký tự cần điền (theo thứ tự)
                 if (item.c.toLowerCase() === expectedChar) {

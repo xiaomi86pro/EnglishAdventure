@@ -178,6 +178,7 @@ const QuestionType3 = {
         if (area) area.innerHTML = "";
         this.currentData = null;
         this.enCompleted = "";
+        try { speechSynthesis.cancel(); } catch(e){}
     }
 };
 

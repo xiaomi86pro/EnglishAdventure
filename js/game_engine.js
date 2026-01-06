@@ -403,19 +403,49 @@ const GameEngine = {
         const monsterAtk = Number(this.monster.atk || 5);
 
         const doAttack = (attacker, defender, damage, sound) => {
-            try { if (sound) { sound.currentTime = 0; sound.play().catch(()=>{}); } } catch(e){}
-            const targetEl = (defender === this.player) ? document.getElementById('hero') : document.getElementById('monster');
-            if (targetEl) { targetEl.classList.add('hit-flash'); setTimeout(()=>targetEl.classList.remove('hit-flash'), 300); }
-
-            if (defender === this.player) {
-                this.player.hp_current = Math.max(0, (this.player.hp_current || this.player.max_hp) - damage);
-            } else {
-                this.monster.hp = Math.max(0, (this.monster.hp || this.monster.max_hp) - damage);
+            try {
+                // play sound if available
+                if (sound) {
+                    try { sound.currentTime = 0; sound.play().catch(()=>{}); } catch(e){}
+                }
+        
+                // xác định element attacker và defender
+                const attackerEl = (attacker === this.player) ? document.getElementById('hero') : document.getElementById('monster');
+                const defenderEl = (defender === this.player) ? document.getElementById('hero') : document.getElementById('monster');
+        
+                // visual: lunge attacker forward then flash defender
+                if (attackerEl) {
+                    // reset animation if đang có để có thể replay
+                    attackerEl.classList.remove('attack-lunge');
+                    // force reflow để restart animation
+                    void attackerEl.offsetWidth;
+                    attackerEl.classList.add('attack-lunge');
+                    // remove class sau animation kết thúc (thời lượng match CSS)
+                    setTimeout(() => {
+                        try { attackerEl.classList.remove('attack-lunge'); } catch(e){}
+                    }, 300); // khớp với CSS duration
+                }
+        
+                if (defenderEl) {
+                    defenderEl.classList.add('hit-flash');
+                    setTimeout(() => {
+                        try { defenderEl.classList.remove('hit-flash'); } catch(e){}
+                    }, 300);
+                }
+        
+                // apply damage
+                if (defender === this.player) {
+                    this.player.hp_current = Math.max(0, (this.player.hp_current || this.player.max_hp) - damage);
+                } else {
+                    this.monster.hp = Math.max(0, (this.monster.hp || this.monster.max_hp) - damage);
+                }
+        
+                this.showDamage(defender, damage);
+                this.updateBattleStatus();
+                if (window.CONFIG?.debug) console.log('[GameEngine] attack applied', { attacker: attacker === this.player ? 'hero' : 'monster', defender: defender === this.player ? 'hero' : 'monster', damage });
+            } catch (e) {
+                console.warn('[GameEngine] doAttack error', e);
             }
-
-            this.showDamage(defender, damage);
-            this.updateBattleStatus();
-            console.log('[GameEngine] attack applied', { attacker: attacker === this.player ? 'hero' : 'monster', defender: defender === this.player ? 'hero' : 'monster', damage });
         };
 
         // Hero attacks
@@ -453,8 +483,24 @@ if (this.monster.hp <= 0) {
 
         // Kiểm tra hero chết
         if ((this.player.hp_current || 0) <= 0) {
-            console.log('[GameEngine] hero died - implement defeat flow if needed');
+            console.log('[GameEngine] hero died - invoking handleHeroDefeat');
+            // đảm bảo trạng thái trận đấu reset để tránh retry loops
             this.isBattling = false;
+        
+            // dọn timers trong QuestionManager nếu có
+            try {
+                if (window.QuestionManager?.currentQuestion?.monsterAttackTimer) {
+                    clearInterval(window.QuestionManager.currentQuestion.monsterAttackTimer);
+                    window.QuestionManager.currentQuestion.monsterAttackTimer = null;
+                }
+            } catch(e){ console.warn('[GameEngine] cleanup error', e); }
+        
+            // gọi handler xử lý thất bại (await để đảm bảo flow đồng bộ)
+            try {
+                await this.handleHeroDefeat();
+            } catch (err) {
+                console.error('[GameEngine] handleHeroDefeat error', err);
+            }
             return;
         }
 
@@ -627,7 +673,7 @@ if (this.monster.hp <= 0) {
         
         this.updateAllUI();
     }
-
+      
     setTimeout(async () => {
         this.currentStep++;
         
@@ -643,6 +689,65 @@ if (this.monster.hp <= 0) {
         this.nextQuestion();
     }, 1500);
     },
+
+
+/**
+ * Xử lý khi hero bị hạ gục
+ * Hiển thị thông báo rồi tự chuyển về menu chính sau delay
+ */
+async handleHeroDefeat() {
+    try {
+        // Dừng nhạc trận đấu
+        try { this.stopBossMusic(); } catch(e){}
+
+        // Đánh dấu trạng thái
+        this.isBattling = false;
+
+        // Dọn timers nếu có
+        try {
+            if (window.QuestionManager?.currentQuestion?.monsterAttackTimer) {
+                clearInterval(window.QuestionManager.currentQuestion.monsterAttackTimer);
+                window.QuestionManager.currentQuestion.monsterAttackTimer = null;
+            }
+        } catch(e){}
+
+        // Hiệu ứng chết cho hero
+        const heroEl = document.getElementById('hero');
+        if (heroEl) heroEl.classList.add('hero-dead');
+
+        // Hiển thị thông báo defeat đơn giản
+        const modal = document.createElement('div');
+        modal.className = 'fixed inset-0 z-60 flex items-center justify-center bg-black/60';
+        modal.innerHTML = `
+            <div class="bg-white rounded-2xl p-8 text-center max-w-md w-full">
+                <h2 class="text-3xl font-bold text-red-600 mb-4">Bạn đã thua</h2>
+                <p class="mb-2">Hero đã bị hạ gục.</p>
+            </div>
+        `;
+        document.body.appendChild(modal);
+
+        // Delay trước khi về menu (2.5s)
+        await new Promise(res => setTimeout(res, 1000));
+
+        // Nếu modal vẫn còn, remove và chuyển về menu
+        if (document.body.contains(modal)) modal.remove();
+
+        // Reset hero visual nếu cần
+        if (heroEl) heroEl.classList.remove('hero-dead');
+
+        // Chuyển về menu chính
+        if (typeof this.showMainMenu === 'function') {
+            this.showMainMenu();
+        } else {
+            // fallback: reload trang
+            location.reload();
+        }
+    } catch (err) {
+        console.error('[GameEngine] handleHeroDefeat error', err);
+        // fallback an toàn
+        try { location.reload(); } catch(e){}
+    }
+},
 
     /**
  * Kiểm tra và mở khóa hero nếu hoàn thành station điều kiện
