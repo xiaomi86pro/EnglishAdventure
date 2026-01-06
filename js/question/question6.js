@@ -102,7 +102,6 @@ const QuestionType6 = {
             <h3 class="text-xl font-black text-purple-600">Ghép từ hoàn chỉnh</h3>
             <div class="flex gap-3">
                 <button id="check-btn" class="px-4 py-2 bg-blue-500 text-white rounded-lg font-bold disabled:opacity-50 transition-all hover:bg-blue-600 shadow-md" disabled>Kiểm tra</button>
-                <button id="reload-btn" class="px-4 py-2 bg-gray-200 text-black rounded-lg hover:bg-gray-300 transition-all">Làm lại</button>
             </div>
         </div>
 
@@ -130,7 +129,7 @@ const QuestionType6 = {
                         <div class="relative flex items-center justify-center">
                             <div id="cut-${right ? right.id : 'empty-'+i}" data-id="${right ? right.id : ''}"
                                 class="cut-item h-[72px] flex items-center justify-center bg-purple-50 border-2 border-purple-200 rounded-xl cursor-pointer select-none transition-all hover:border-purple-400 shadow-sm ${right ? '' : 'opacity-40 pointer-events-none'}">
-                                <span class="text-2xl font-mono font-black text-purple-700 tracking-wider">
+                                <span class="text-2xl font-mono font-black text-yeallow-700 tracking-wider">
                                     ${ right ? this.escapeHtml(this.getCutMaskedById(right.id) || right.text) : '' }
                                 </span>
                             </div>
@@ -437,94 +436,118 @@ const QuestionType6 = {
         const items = this.currentData.items;
         const matchArea = document.getElementById('match-area');
         if (!matchArea) return;
-
+    
         const prevPos = window.getComputedStyle(matchArea).position;
         if (prevPos === 'static') matchArea.style.position = 'relative';
-
-        this.pairs.forEach((p, index) => {
-            const cutEl = document.getElementById(`cut-${p.cutId}`);
-            const wordEl = document.getElementById(`word-${p.wordId}`);
-            const lineEl = document.getElementById(p.lineId);
-            
-            p.correct = (cutEl && wordEl && p.cutId === p.wordId);
-
-            if (p.correct) {
-                if (lineEl) lineEl.remove();
-
-                const parentRect = matchArea.getBoundingClientRect();
-                const cRect = cutEl.getBoundingClientRect();
-                const wRect = wordEl.getBoundingClientRect();
-
-                const cloneCut = cutEl.cloneNode(true);
-                cloneCut.style.position = 'absolute';
-                cloneCut.style.left = (cRect.left - parentRect.left) + 'px';
-                cloneCut.style.top = (cRect.top - parentRect.top) + 'px';
-                cloneCut.style.width = cRect.width + 'px';
-                cloneCut.style.height = cRect.height + 'px';
-                cloneCut.style.margin = '0';
-                cloneCut.style.transition = 'all 0.6s cubic-bezier(0.22, 1, 0.36, 1)';
-                cloneCut.style.zIndex = '50';
-                cloneCut.style.backgroundColor = '#22c55e';
-                cloneCut.style.color = '#ffffff';
-                cloneCut.style.borderColor = '#22c55e';
-                // Ẩn nội dung tiếng Việt nếu clone từ ô word (trong trường hợp logic khác, ở đây clone cut chỉ có tiếng Anh)
-
-                matchArea.appendChild(cloneCut);
-                cutEl.style.visibility = 'hidden';
-
-                const destX = wRect.left - parentRect.left + (wRect.width - cRect.width)/2;
-                const destY = wRect.top - parentRect.top + (wRect.height - cRect.height)/2;
-
-                requestAnimationFrame(() => {
-                    cloneCut.style.transform = `translate(${destX - (cRect.left - parentRect.left)}px, ${destY - (cRect.top - parentRect.top)}px) scale(0.5)`;
-                    cloneCut.style.opacity = '0';
-                });
-
-                setTimeout(() => {
-                    if (wordEl) {
-                        wordEl.classList.remove('bg-white', 'border-blue-200');
-                        wordEl.classList.add('bg-green-100', 'border-green-500', 'merged');
-                        
-                        const engText = wordEl.querySelector('p:last-child');
-                        if (engText) {
-                            engText.innerText = this.getEnglishById(p.wordId);
-                            engText.classList.add('text-green-700');
-                            engText.classList.remove('text-gray-700');
+    
+        // Tạo mảng snapshot để tránh removePair làm shift index trong loop
+        const pairsSnapshot = this.pairs.slice();
+        let correctCount = 0;
+    
+        // Xử lý từng cặp (vẫn cho animation riêng từng cặp)
+        const processPromises = pairsSnapshot.map((p, index) => {
+            return new Promise(resolve => {
+                const cutEl = document.getElementById(`cut-${p.cutId}`);
+                const wordEl = document.getElementById(`word-${p.wordId}`);
+                const lineEl = document.getElementById(p.lineId);
+    
+                const isCorrect = (p.cutId === p.wordId);
+                p.correct = isCorrect;
+    
+                if (isCorrect) {
+                    correctCount++;
+                    // animation hợp nhất giống cũ
+                    if (lineEl) lineEl.remove();
+    
+                    const parentRect = matchArea.getBoundingClientRect();
+                    const cRect = cutEl.getBoundingClientRect();
+                    const wRect = wordEl.getBoundingClientRect();
+    
+                    const cloneCut = cutEl.cloneNode(true);
+                    cloneCut.style.position = 'absolute';
+                    cloneCut.style.left = (cRect.left - parentRect.left) + 'px';
+                    cloneCut.style.top = (cRect.top - parentRect.top) + 'px';
+                    cloneCut.style.width = cRect.width + 'px';
+                    cloneCut.style.height = cRect.height + 'px';
+                    cloneCut.style.margin = '0';
+                    cloneCut.style.transition = 'all 0.6s cubic-bezier(0.22, 1, 0.36, 1)';
+                    cloneCut.style.zIndex = '50';
+                    cloneCut.style.backgroundColor = '#22c55e';
+                    cloneCut.style.color = '#ffffff';
+                    cloneCut.style.borderColor = '#22c55e';
+    
+                    matchArea.appendChild(cloneCut);
+                    cutEl.style.visibility = 'hidden';
+    
+                    const destX = wRect.left - parentRect.left + (wRect.width - cRect.width)/2;
+                    const destY = wRect.top - parentRect.top + (wRect.height - cRect.height)/2;
+    
+                    requestAnimationFrame(() => {
+                        cloneCut.style.transform = `translate(${destX - (cRect.left - parentRect.left)}px, ${destY - (cRect.top - parentRect.top)}px) scale(0.5)`;
+                        cloneCut.style.opacity = '0';
+                    });
+    
+                    setTimeout(() => {
+                        if (wordEl) {
+                            wordEl.classList.remove('bg-white', 'border-blue-200');
+                            wordEl.classList.add('bg-green-100', 'border-green-500', 'merged');
+    
+                            const engText = wordEl.querySelector('p:last-child');
+                            if (engText) {
+                                engText.innerText = this.getEnglishById(p.wordId);
+                                engText.classList.add('text-green-700');
+                                engText.classList.remove('text-gray-700');
+                            }
                         }
-                    }
-                    cloneCut.remove();
-                    if (typeof this.onCorrect === 'function') this.onCorrect();
-                }, 600);
-
-            } else {
-                if (lineEl) {
-                    lineEl.setAttribute('stroke', '#ef4444');
-                    lineEl.setAttribute('stroke-dasharray', '8 4');
-                    lineEl.setAttribute('stroke-width', '3');
-                }
-
-                if (cutEl) cutEl.classList.add('!border-red-500', 'bg-red-50');
-                if (wordEl) wordEl.classList.add('!border-red-500', 'bg-red-50');
-
-                if (typeof this.onWrong === 'function') this.onWrong();
-
-                setTimeout(() => {
+                        cloneCut.remove();
+                        resolve({ index, correct: true });
+                    }, 600);
+    
+                } else {
+                    // Sai: đổi màu, rung, đổi line
                     if (lineEl) {
-                        lineEl.style.transition = 'opacity 0.5s';
-                        lineEl.style.opacity = '0';
-                        setTimeout(() => lineEl.remove(), 500);
+                        lineEl.setAttribute('stroke', '#ef4444');
+                        lineEl.setAttribute('stroke-dasharray', '8 4');
+                        lineEl.setAttribute('stroke-width', '3');
                     }
-                    // Xóa cặp sai khỏi bộ nhớ để người dùng nối lại
-                    this.removePair(index); 
-
-                    if (cutEl) cutEl.classList.remove('!border-red-500', 'bg-red-50');
-                    if (wordEl) wordEl.classList.remove('!border-red-500', 'bg-red-50');
-                }, 1500);
+    
+                    if (cutEl) cutEl.classList.add('!border-red-500', 'bg-red-50');
+                    if (wordEl) wordEl.classList.add('!border-red-500', 'bg-red-50');
+    
+                    if (typeof this.onWrong === 'function') this.onWrong();
+    
+                    setTimeout(() => {
+                        if (lineEl) {
+                            lineEl.style.transition = 'opacity 0.5s';
+                            lineEl.style.opacity = '0';
+                            setTimeout(() => lineEl.remove(), 500);
+                        }
+                        // Xóa cặp sai khỏi bộ nhớ để người dùng nối lại
+                        // Lưu ý: removePair sẽ xóa line và splice mảng pairs
+                        const realIndex = this.pairs.findIndex(pp => pp.lineId === p.lineId);
+                        if (realIndex !== -1) this.removePair(realIndex);
+    
+                        if (cutEl) cutEl.classList.remove('!border-red-500', 'bg-red-50');
+                        if (wordEl) wordEl.classList.remove('!border-red-500', 'bg-red-50');
+    
+                        resolve({ index, correct: false });
+                    }, 1500);
+                }
+            });
+        });
+    
+        // Sau khi tất cả cặp đã xử lý xong
+        Promise.all(processPromises).then(results => {
+            // disable nút check
+            const checkBtn = document.getElementById('check-btn');
+            if (checkBtn) checkBtn.disabled = true;
+    
+            // Gọi onCorrect một lần với tổng số đòn
+            if (correctCount > 0 && typeof this.onCorrect === 'function') {
+                // gọi onCorrect với số đòn hero tấn công
+                this.onCorrect(correctCount);
             }
         });
-        
-        const checkBtn = document.getElementById('check-btn');
-        if (checkBtn) checkBtn.disabled = true;
     },
 
     destroy() {

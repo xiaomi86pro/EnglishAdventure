@@ -345,39 +345,67 @@ const GameEngine = {
     
     
     /**
-     * Xử lý khi người chơi trả lời đúng hoàn toàn
-     * @param {string} word - Từ tiếng Anh đã hoàn thành để tính damage
-     */
-    handleCorrect() {
-        if (this.isBattling) return;
-        this.startBattleTurn(this.player, this.monster);
-        
-         // 👉 Thêm câu trả lời ngay khi đúng
+ * Xử lý khi người chơi trả lời đúng
+ * @param {number} hits - số đòn hero sẽ tấn công (mặc định 1)
+ */
+async handleCorrect(hits = 1) {
+    try {
+      // Nếu đang trong battle thì không xử lý thêm
+      if (this.isBattling) {
+        if (window.CONFIG?.debug) console.log('[GameEngine] handleCorrect ignored, already battling');
+        return;
+      }
+  
+      // Chuẩn hóa số đòn
+      const heroHits = Math.max(1, Number(hits) || 1);
+      if (window.CONFIG?.debug) console.log('[GameEngine] handleCorrect', { heroHits });
+  
+      // Dừng mọi speech đang phát để tránh chồng âm khi battle bắt đầu
+      try { if (window.speechSynthesis) speechSynthesis.cancel(); } catch (e) { /* ignore */ }
+  
+      // Ghi lịch sử trả lời (nếu có dữ liệu hiện tại từ QuestionManager)
+      try {
         const history = document.getElementById("answers-history");
-        if (history && window.QuestionType1?.currentData) {
-            const en = window.QuestionType1.currentData.english_word;
-            const vi = window.QuestionType1.currentData.vietnamese_translation;
-            history.insertAdjacentHTML("beforeend", `
-                <div class="bg-white/70 rounded-xl p-3 border-2 border-blue-200">
-                    <p class="text-blue-600 font-bold">${en}</p>
-                    <p class="text-green-600 italic">${vi}</p>
-                </div>
-            `);
+        const q = window.QuestionManager?.currentQuestion?.currentData;
+        if (history && q) {
+          const en = q.english_word || '';
+          const vi = q.vietnamese_translation || '';
+          history.insertAdjacentHTML("beforeend", `
+            <div class="bg-white/70 rounded-xl p-3 border-2 border-blue-200">
+              <p class="text-blue-600 font-bold">${this.escapeHtml ? this.escapeHtml(en) : en}</p>
+              <p class="text-green-600 italic">${this.escapeHtml ? this.escapeHtml(vi) : vi}</p>
+            </div>
+          `);
         }
-
-        // Hiệu ứng tấn công
-        const monsterEmoji = document.getElementById('monster-emoji');
-        if (monsterEmoji) {
-            monsterEmoji.classList.add('animate-ping', 'text-red-500');
+      } catch (e) {
+        console.warn('[GameEngine] history log failed', e);
+      }
+  
+      // Thực hiện battle: ưu tiên startBattleTurn nếu hỗ trợ hits, ngược lại fallback processBattleRound
+      try {
+        if (typeof this.startBattleTurn === 'function') {
+          // Nếu startBattleTurn hỗ trợ tham số hits, gọi với hits; nếu không, fallback xuống processBattleRound
+          try {
+            // một số implement startBattleTurn có thể không trả Promise, nên dùng Promise.resolve để an toàn
+            await Promise.resolve(this.startBattleTurn(this.player, this.monster, heroHits));
+          } catch (e) {
+            // fallback an toàn
+            await this.processBattleRound(heroHits, 0, true);
+          }
+        } else {
+          await this.processBattleRound(heroHits, 0, true);
         }
-        
-        setTimeout(() => {
-            if (monsterEmoji) {
-                monsterEmoji.classList.remove('animate-ping', 'text-red-500');
-            }
-            this.updateBattleStatus(); 
-        }, 500);
-    },
+      } catch (e) {
+        console.error('[GameEngine] battle execution error', e);
+      }
+  
+      // Cập nhật UI sau battle
+      try { this.updateAllUI(); } catch (e) { console.warn('[GameEngine] updateAllUI failed', e); }
+  
+    } catch (err) {
+      console.error('[GameEngine] handleCorrect top-level error', err);
+    }
+  },
 
     handleWrong() {
         if (this.isBattling) return;

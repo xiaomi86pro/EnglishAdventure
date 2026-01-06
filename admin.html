@@ -344,44 +344,61 @@
         </div>
 
         <!-- CONTENT: TAB TEST CÂU HỎI -->
-        <div id="tab-questions" class="hidden space-y-6">
-            <div class="bg-white p-6 rounded-3xl admin-card">
-                <h3 class="text-xl font-bold text-purple-600 mb-6 uppercase">Test câu hỏi</h3>
-                
-                <div class="flex gap-4 mb-4">
-                    <button onclick="testQuestion(1)" class="px-6 py-2 bg-blue-500 text-white rounded-xl font-bold">
-                        Test Q1: Xếp chữ
-                    </button>
-                    <button onclick="testQuestion(2)" class="px-6 py-2 bg-green-500 text-white rounded-xl font-bold">
-                        Test Q2: Điền từ
-                    </button>
-                    <button onclick="testQuestion(3)" class="px-6 py-2 bg-purple-500 text-white rounded-xl font-bold">
-                        Test Q3: Nghe chọn
-                    </button>
-                    <button onclick="testQuestion(4)" class="px-6 py-2 bg-yellow-500 text-white rounded-xl font-bold">
-                        Test Q4: Tìm từ
-                    </button>
-                    <button onclick="testQuestion(5)" class="px-6 py-2 bg-red-500 text-white rounded-xl font-bold">
-                        Test Q5: Ghép từ
-                    </button>
-                    <button onclick="testQuestion(6)" class="px-6 py-2 bg-red-500 text-white rounded-xl font-bold">
-                        Test Q6: Nối chữ
-                    </button>
-                </div>
-                
-                <script>
-                async function testQuestion(typeNumber) {
-                    if (window.QuestionManager) {
-                        await window.QuestionManager.loadType(typeNumber);
-                    }
-                }
-                </script>
+<div id="tab-questions" class="hidden space-y-6">
+    <div class="bg-white p-6 rounded-3xl admin-card">
+        <div class="flex justify-between items-center mb-6">
+            <h3 class="text-xl font-bold text-purple-600 uppercase">Test câu hỏi</h3>
+            <button onclick="showAddQuestionForm()" class="px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 font-bold">
+                + Thêm loại câu hỏi mới
+            </button>
+        </div>
+        
+        <!-- Danh sách các loại câu hỏi -->
+        <div id="question-types-list" class="grid grid-cols-2 md:grid-cols-3 gap-4 mb-6">
+            <!-- Sẽ được load từ DB -->
+        </div>
 
-                <div id="questionarea" class="p-6 border-2 border-dashed rounded-xl bg-gray-50 min-h-[200px]">
-                    <p class="text-gray-400 italic">Câu hỏi sẽ hiển thị tại đây...</p>
+        <!-- Form thêm câu hỏi mới -->
+        <div id="add-question-form" class="hidden mb-6 p-6 bg-blue-50 rounded-2xl border-2 border-blue-200">
+            <h4 class="font-bold text-lg mb-4">Thêm loại câu hỏi mới</h4>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                    <label class="block text-sm font-bold mb-2">ID (Số thứ tự):</label>
+                    <input type="number" id="new-question-id" min="1" placeholder="VD: 6" 
+                           class="w-full p-3 border rounded-lg">
+                </div>
+                <div>
+                    <label class="block text-sm font-bold mb-2">Tên câu hỏi:</label>
+                    <input type="text" id="new-question-name" placeholder="VD: Chọn đáp án đúng" 
+                           class="w-full p-3 border rounded-lg">
+                </div>
+                <div>
+                    <label class="block text-sm font-bold mb-2">Icon:</label>
+                    <input type="text" id="new-question-icon" placeholder="VD: 🎯" 
+                           class="w-full p-3 border rounded-lg">
+                </div>
+                <div>
+                    <label class="block text-sm font-bold mb-2">Mô tả:</label>
+                    <input type="text" id="new-question-desc" placeholder="Chọn 1 trong 4 đáp án" 
+                           class="w-full p-3 border rounded-lg">
                 </div>
             </div>
+            <div class="flex gap-2 mt-4">
+                <button onclick="saveNewQuestionType()" class="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 font-bold">
+                    💾 Lưu
+                </button>
+                <button onclick="cancelAddQuestionForm()" class="px-4 py-2 bg-gray-300 rounded-lg hover:bg-gray-400 font-bold">
+                    Hủy
+                </button>
+            </div>
         </div>
+
+        <!-- Vùng test câu hỏi -->
+        <div id="questionarea" class="p-6 border-2 border-dashed rounded-xl bg-gray-50 min-h-[400px]">
+            <p class="text-gray-400 italic text-center">Chọn một loại câu hỏi bên trên để test</p>
+        </div>
+    </div>
+</div>
         
         <!-- CONTENT: Tab Locations -->
         <div id="tab-locations" class="tab-content hidden">
@@ -517,7 +534,151 @@
             if (tabName === 'steps') {
                 if (window.StepManager) StepManager.load();
             }
+            if (tabName === 'questions') {
+                loadQuestionTypes();
+            }
         }
+
+        // Load danh sách question types
+async function loadQuestionTypes() {
+    const container = document.getElementById('question-types-list');
+    if (!container) return;
+
+    try {
+        const { data, error } = await window.supabase
+            .from('question_types')
+            .select('*')
+            .order('id');
+
+        if (error) throw error;
+
+        if (data && data.length > 0) {
+            container.innerHTML = data.map(qt => `
+                <div class="bg-gradient-to-br from-white to-gray-50 p-4 rounded-xl border-2 border-gray-200 hover:border-purple-400 transition-all shadow-sm">
+                    <div class="flex justify-between items-start mb-3">
+                        <div class="flex items-center gap-2">
+                            <span class="text-3xl">${qt.icon}</span>
+                            <div>
+                                <h4 class="font-bold text-lg">${qt.name}</h4>
+                                <p class="text-xs text-gray-500">Type ${qt.id}</p>
+                            </div>
+                        </div>
+                        <button onclick="deleteQuestionType(${qt.id})" 
+                                class="text-red-500 hover:text-red-700 text-sm">
+                            🗑️
+                        </button>
+                    </div>
+                    <p class="text-sm text-gray-600 mb-3">${qt.description || ''}</p>
+                    <button onclick="testQuestion(${qt.id})" 
+                            class="w-full py-2 bg-purple-500 text-white rounded-lg hover:bg-purple-600 font-bold text-sm">
+                        ▶️ Test Question ${qt.id}
+                    </button>
+                </div>
+            `).join('');
+        } else {
+            container.innerHTML = '<p class="text-gray-500 col-span-3">Chưa có loại câu hỏi nào</p>';
+        }
+    } catch (err) {
+        console.error('Lỗi load question types:', err);
+        container.innerHTML = '<p class="text-red-500 col-span-3">Lỗi: ' + err.message + '</p>';
+    }
+}
+
+// Hiện form thêm câu hỏi
+function showAddQuestionForm() {
+    document.getElementById('add-question-form').classList.remove('hidden');
+    // Clear inputs
+    document.getElementById('new-question-id').value = '';
+    document.getElementById('new-question-name').value = '';
+    document.getElementById('new-question-icon').value = '';
+    document.getElementById('new-question-desc').value = '';
+}
+
+// Ẩn form
+function cancelAddQuestionForm() {
+    document.getElementById('add-question-form').classList.add('hidden');
+}
+
+// Lưu loại câu hỏi mới
+async function saveNewQuestionType() {
+    const id = parseInt(document.getElementById('new-question-id').value);
+    const name = document.getElementById('new-question-name').value.trim();
+    const icon = document.getElementById('new-question-icon').value.trim();
+    const desc = document.getElementById('new-question-desc').value.trim();
+
+    if (!id || !name || !icon) {
+        alert('Vui lòng điền đầy đủ ID, Tên và Icon!');
+        return;
+    }
+
+    try {
+        const { error } = await window.supabase
+            .from('question_types')
+            .insert([{
+                id: id,
+                name: name,
+                icon: icon,
+                description: desc
+            }]);
+
+        if (error) throw error;
+
+        alert('✅ Đã thêm loại câu hỏi mới!');
+        cancelAddQuestionForm();
+        loadQuestionTypes();
+    } catch (err) {
+        alert('Lỗi: ' + err.message);
+    }
+}
+
+// Xóa loại câu hỏi
+async function deleteQuestionType(id) {
+    if (!confirm(`Xóa loại câu hỏi ${id}? (Lưu ý: Không xóa được nếu đang được dùng trong steps)`)) return;
+
+    try {
+        const { error } = await window.supabase
+            .from('question_types')
+            .delete()
+            .eq('id', id);
+
+        if (error) throw error;
+
+        alert('✅ Đã xóa!');
+        loadQuestionTypes();
+    } catch (err) {
+        alert('Lỗi: ' + err.message);
+    }
+}
+
+// Test câu hỏi
+async function testQuestion(typeNumber) {
+    const area = document.getElementById('questionarea');
+    
+    // Hiện loading
+    area.innerHTML = `
+        <div class="flex flex-col items-center justify-center h-full gap-4">
+            <div class="w-16 h-16 border-4 border-purple-500 border-t-transparent rounded-full animate-spin"></div>
+            <p class="text-purple-600 font-bold">Đang load Question Type ${typeNumber}...</p>
+        </div>
+    `;
+
+    try {
+        if (window.QuestionManager) {
+            await window.QuestionManager.loadType(typeNumber);
+        } else {
+            throw new Error('QuestionManager chưa sẵn sàng');
+        }
+    } catch (err) {
+        area.innerHTML = `
+            <div class="text-center text-red-500">
+                <p class="font-bold text-xl mb-2">❌ Lỗi!</p>
+                <p>${err.message}</p>
+                <p class="text-sm mt-2">Có thể file <code>question${typeNumber}.js</code> chưa được tạo.</p>
+            </div>
+        `;
+    }
+}
+
     </script>
     
     <script type="module" src="./js/admin.js"></script>
