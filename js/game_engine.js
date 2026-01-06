@@ -363,24 +363,6 @@ async handleCorrect(hits = 1) {
       // Dừng mọi speech đang phát để tránh chồng âm khi battle bắt đầu
       try { if (window.speechSynthesis) speechSynthesis.cancel(); } catch (e) { /* ignore */ }
   
-      // Ghi lịch sử trả lời (nếu có dữ liệu hiện tại từ QuestionManager)
-      try {
-        const history = document.getElementById("answers-history");
-        const q = window.QuestionManager?.currentQuestion?.currentData;
-        if (history && q) {
-          const en = q.english_word || '';
-          const vi = q.vietnamese_translation || '';
-          history.insertAdjacentHTML("beforeend", `
-            <div class="bg-white/70 rounded-xl p-3 border-2 border-blue-200">
-              <p class="text-blue-600 font-bold">${this.escapeHtml ? this.escapeHtml(en) : en}</p>
-              <p class="text-green-600 italic">${this.escapeHtml ? this.escapeHtml(vi) : vi}</p>
-            </div>
-          `);
-        }
-      } catch (e) {
-        console.warn('[GameEngine] history log failed', e);
-      }
-  
       // Thực hiện battle: ưu tiên startBattleTurn nếu hỗ trợ hits, ngược lại fallback processBattleRound
       try {
         if (typeof this.startBattleTurn === 'function') {
@@ -409,8 +391,6 @@ async handleCorrect(hits = 1) {
 
     handleWrong() {
         if (this.isBattling) return;
-        // Monster tấn công người chơi khi trả lời sai
-        this.startBattleTurn(this.monster, this.player);
     },
     
 /**
@@ -463,10 +443,12 @@ async handleCorrect(hits = 1) {
         
                 // apply damage
                 if (defender === this.player) {
-                    this.player.hp_current = Math.max(0, (this.player.hp_current || this.player.max_hp) - damage);
+                    const cur = Number.isFinite(this.player.hp_current) ? this.player.hp_current : Number(this.player.max_hp || 0);
+                    this.player.hp_current = Math.max(0, cur - damage);
                 } else {
-                    this.monster.hp = Math.max(0, (this.monster.hp || this.monster.max_hp) - damage);
-                }
+                    const cur = Number.isFinite(this.monster.hp) ? this.monster.hp : Number(this.monster.max_hp || 0);
+                    this.monster.hp = Math.max(0, cur - damage);
+                }                
         
                 this.showDamage(defender, damage);
                 this.updateBattleStatus();
@@ -514,14 +496,6 @@ if (this.monster.hp <= 0) {
             console.log('[GameEngine] hero died - invoking handleHeroDefeat');
             // đảm bảo trạng thái trận đấu reset để tránh retry loops
             this.isBattling = false;
-        
-            // dọn timers trong QuestionManager nếu có
-            try {
-                if (window.QuestionManager?.currentQuestion?.monsterAttackTimer) {
-                    clearInterval(window.QuestionManager.currentQuestion.monsterAttackTimer);
-                    window.QuestionManager.currentQuestion.monsterAttackTimer = null;
-                }
-            } catch(e){ console.warn('[GameEngine] cleanup error', e); }
         
             // gọi handler xử lý thất bại (await để đảm bảo flow đồng bộ)
             try {
@@ -666,14 +640,6 @@ if (this.monster.hp <= 0) {
     let hpRestore = 0;
     this.stopBossMusic();
 
-    if (window.QuestionManager?.currentQuestion) {
-        const currentQ = window.QuestionManager.currentQuestion;
-        if (currentQ.monsterAttackTimer) {
-            clearInterval(currentQ.monsterAttackTimer);
-            currentQ.monsterAttackTimer = null;
-        }
-    }
-
     if (monsterType === 'elite') {
         hpRestore = 20;
     } else if (monsterType === 'boss' || monsterType === 'final boss') {
@@ -730,14 +696,6 @@ async handleHeroDefeat() {
 
         // Đánh dấu trạng thái
         this.isBattling = false;
-
-        // Dọn timers nếu có
-        try {
-            if (window.QuestionManager?.currentQuestion?.monsterAttackTimer) {
-                clearInterval(window.QuestionManager.currentQuestion.monsterAttackTimer);
-                window.QuestionManager.currentQuestion.monsterAttackTimer = null;
-            }
-        } catch(e){}
 
         // Hiệu ứng chết cho hero
         const heroEl = document.getElementById('hero');
@@ -1306,10 +1264,6 @@ async checkAndUnlockHero(completedStationId) {
 
         if (window.QuestionManager?.currentQuestion) {
             const currentQ = window.QuestionManager.currentQuestion;
-            if (currentQ.monsterAttackTimer) {
-                clearInterval(currentQ.monsterAttackTimer);
-                currentQ.monsterAttackTimer = null;
-            }
             if (typeof currentQ.destroy === 'function') {
                 currentQ.destroy();
             }
