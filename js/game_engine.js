@@ -474,7 +474,7 @@ if (this.monster.hp <= 0) {
             } else {
                 console.log('[GameEngine] round finished, advanceNext=false — keeping current question');
             }
-        }, 700);
+        }, 200);
 
     } catch (err) {
         console.error('[GameEngine] processBattleRound error', err);
