@@ -46,42 +46,74 @@ const QuestionType1 = {
             this._viExpected = undefined;
             this.hintUsed = false;
     
-            // 1) Lấy dữ liệu ưu tiên: this._preloadedData -> window.VOCAB_CACHE -> supabase
+            // 1) Chọn dữ liệu theo thứ tự ưu tiên:
+            // _vocabPick (QuestionManager) -> _vocabulary (array) -> _preloadedData -> VOCAB_CACHE -> fallback fetch
             let selected = null;
     
-            if (this._preloadedData) {
-                selected = this._preloadedData;
-                this._preloadedData = null; // dùng xong clear
-                console.log('[QuestionType1] using _preloadedData');
-            } else if (window.VOCAB_CACHE && window.VOCAB_CACHE.length) {
-                selected = window.VOCAB_CACHE[Math.floor(Math.random() * window.VOCAB_CACHE.length)];
-                console.log('[QuestionType1] using VOCAB_CACHE');
-            } else if (window.supabase) {
-                // Fallback: fetch từ supabase (như cũ)
-                const { data, error } = await window.supabase
-                    .from("vocabulary")
-                    .select("english_word, vietnamese_translation");
-                if (error) throw error;
-                if (data && data.length) {
-                    // lưu vào cache để lần sau dùng nhanh
-                    window.VOCAB_CACHE = data;
-                    selected = data[Math.floor(Math.random() * data.length)];
-                    console.log('[QuestionType1] fetched from supabase and cached');
-                }
-            } else {
-                console.warn('[QuestionType1] No data source available (preloaded, cache, or supabase)');
+            if (this._vocabPick) {
+                selected = this._vocabPick;
+                this._vocabPick = null;
+                if (window.CONFIG?.debug) console.log('[QuestionType1] using _vocabPick', selected);
             }
     
-            if (!selected) {
-                console.error('[QuestionType1] No vocabulary selected for load');
+            if (!selected && Array.isArray(this._vocabulary) && this._vocabulary.length) {
+                selected = this._vocabulary[Math.floor(Math.random() * this._vocabulary.length)];
+                if (window.CONFIG?.debug) console.log('[QuestionType1] using _vocabulary pick', selected);
+            }
+    
+            if (!selected && this._preloadedData) {
+                selected = this._preloadedData;
+                this._preloadedData = null;
+                if (window.CONFIG?.debug) console.log('[QuestionType1] using _preloadedData', selected);
+            }
+    
+            if (!selected && window.VOCAB_CACHE && window.VOCAB_CACHE.length) {
+                selected = window.VOCAB_CACHE[Math.floor(Math.random() * window.VOCAB_CACHE.length)];
+                if (window.CONFIG?.debug) console.log('[QuestionType1] using VOCAB_CACHE pick', selected);
+            }
+    
+            if (!selected && window.supabase) {
+                try {
+                    const { data, error } = await window.supabase
+                        .from("vocabulary")
+                        .select("english_word, vietnamese_translation")
+                        .limit(1);
+                    if (!error && data && data.length) {
+                        selected = data[0];
+                        window.VOCAB_CACHE = (window.VOCAB_CACHE || []).concat(data);
+                        if (window.CONFIG?.debug) console.log('[QuestionType1] fetched fallback item', selected);
+                    }
+                } catch (e) {
+                    console.warn('[QuestionType1] fallback fetch failed', e);
+                }
+            }
+    
+            // Nếu không có dữ liệu hợp lệ -> hiển thị thông báo và trigger prefetch
+            if (!selected || !selected.english_word || !selected.vietnamese_translation) {
+                console.error('[QuestionType1] No vocabulary selected for load', selected);
+                const area = document.getElementById("questionarea");
+                if (area) {
+                    area.innerHTML = `
+                        <div class="flex flex-col items-center justify-center h-full gap-4 p-8">
+                            <div class="text-4xl">⚠️</div>
+                            <p class="text-lg font-bold">Không có dữ liệu từ vựng</p>
+                            <p class="text-sm text-gray-500">Đang thử tải lại, vui lòng chờ...</p>
+                        </div>
+                    `;
+                }
+                if (window.QuestionManager?.prefetchNext) window.QuestionManager.prefetchNext();
                 return;
             }
     
-            // 2) Chuẩn bị dữ liệu và trạng thái
+            // 2) Gán dữ liệu và kỳ vọng
             this.currentData = selected;
-            this.enCompleted = "";
-            this.viCompleted = "";
-            this.hintUsed = false;
+            const en = String(selected.english_word || "").trim();
+            const vi = String(selected.vietnamese_translation || "").trim();
+    
+            // Gán expected (animateLetters cũng sẽ set phần vi nếu có khóa)
+            this._enExpected = en.replace(/\s+/g, '').toLowerCase();
+            // _viExpected có thể được set trong animateLetters nếu có phần khóa; set fallback ở đây
+            this._viExpected = vi.replace(/\s+/g, '').toLowerCase();
     
             // 3) Render UI và phát âm (không block)
             this.renderQuestionUI();
@@ -93,6 +125,10 @@ const QuestionType1 = {
     
         } catch (err) {
             console.error("QuestionType1.load error:", err);
+            const area = document.getElementById("questionarea");
+            if (area) {
+                area.innerHTML = `<div class="text-red-500 font-bold">Lỗi khi tải câu hỏi. Vui lòng thử lại.</div>`;
+            }
         }
     },
 

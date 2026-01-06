@@ -1,274 +1,327 @@
 window.VOCAB_CACHE = window.VOCAB_CACHE || [];
+window.VOCAB_CACHE_STATUS = 'loading'; // loading | ready | error
+
+// Config
+const CONFIG = {
+    preload: {
+        sampleSize: 500,
+        batchSize: 500,
+        batchDelay: 200
+    },
+    retry: {
+        maxAttempts: 8,
+        delayMs: 120
+    },
+    debug: false // Set true để bật logs
+};
+// expose for other modules
+window.CONFIG = CONFIG;
 
 /**
- * Preload: sampleSize (500) nhanh, then background fetch in batches.
+ * Preload vocabulary với progressive loading
  */
-async function preloadVocabulary(sampleSize = 200, batchSize = 200) {
+async function preloadVocabulary() {
+  const { sampleSize, batchSize, batchDelay } = CONFIG.preload;
+  
   try {
-    if (window.VOCAB_CACHE && window.VOCAB_CACHE.length) {
-      console.log('[Preload] VOCAB_CACHE already loaded, size=', window.VOCAB_CACHE.length);
-      return;
-    }
-    if (!window.supabase) {
-      console.warn('[Preload] supabase not available yet');
-      return;
-    }
+      if (window.VOCAB_CACHE.length) {
+          window.VOCAB_CACHE_STATUS = 'ready';
+          return;
+      }
+      
+      if (!window.supabase) {
+          console.warn('[Preload] Supabase chưa sẵn sàng');
+          return;
+      }
 
-    // 1) Lấy sample nhanh (limit sampleSize)
-    const { data: sample, error: sampleErr } = await window.supabase
-      .from('vocabulary')
-      .select('english_word, vietnamese_translation')
-      .limit(sampleSize);
-    if (!sampleErr && sample && sample.length) {
-      window.VOCAB_CACHE = sample.slice();
-      console.log('[Preload] VOCAB_CACHE sample size =', window.VOCAB_CACHE.length);
-    } else {
-      console.warn('[Preload] sample fetch returned empty or error', sampleErr);
-    }
+      // Load sample
+      const { data: sample, error } = await window.supabase
+          .from('vocabulary')
+          .select('english_word, vietnamese_translation')
+          .limit(sampleSize);
 
-    // 2) Background: fetch toàn bộ theo lô (non-blocking)
-    // Lấy tổng số bản ghi (nếu supabase hỗ trợ count)
-    window.supabase
-      .from('vocabulary')
-      .select('id', { count: 'exact', head: true })
-      .then(async ({ error, count }) => {
-        if (error) {
-          console.warn('[Preload] count fetch error', error);
-          // fallback: try to fetch more pages until no more results
-        } else {
-          const total = count || 0;
-          console.log('[Preload] total vocabulary count =', total);
-          // Nếu total <= sampleSize thì đã xong
-          if (total <= sampleSize) return;
+      if (error || !sample?.length) {
+          throw error || new Error('Vocabulary trống');
+      }
 
-          // Fetch remaining in batches
-          for (let offset = sampleSize; offset < total; offset += batchSize) {
-            // Non-blocking: schedule each batch with small delay to avoid spiking
-            ((off) => {
-              setTimeout(async () => {
-                try {
-                  const { data, error: batchErr } = await window.supabase
-                    .from('vocabulary')
-                    .select('english_word, vietnamese_translation')
-                    .range(off, off + batchSize - 1);
-                  if (!batchErr && data && data.length) {
-                    // append unique items (simple concat; dedupe optional)
-                    window.VOCAB_CACHE = window.VOCAB_CACHE.concat(data);
-                    console.log('[Preload] appended batch, cache size=', window.VOCAB_CACHE.length);
-                  } else {
-                    console.warn('[Preload] batch fetch error or empty', batchErr);
-                  }
-                } catch (e) {
-                  console.warn('[Preload] batch fetch exception', e);
-                }
-              }, 200 * Math.floor(off / batchSize)); // stagger requests
-            })(offset);
-          }
+      window.VOCAB_CACHE = sample;
+      window.VOCAB_CACHE_STATUS = 'ready'; // ✅ Đánh dấu sẵn sàng
+      console.log('[Preload] ✅ Ready, size:', sample.length);
+
+      // Background loading: fetch remaining in batches
+try {
+  const { error: headErr, count } = await window.supabase
+    .from('vocabulary')
+    .select('id', { head: true, count: 'exact' });
+  const total = count || window.VOCAB_CACHE.length;
+  for (let offset = window.VOCAB_CACHE.length; offset < total; offset += batchSize) {
+    setTimeout(async () => {
+      try {
+        const { data: batch, error: batchErr } = await window.supabase
+          .from('vocabulary')
+          .select('english_word, vietnamese_translation')
+          .range(offset, offset + batchSize - 1);
+        if (!batchErr && batch && batch.length) {
+          window.VOCAB_CACHE = window.VOCAB_CACHE.concat(batch);
+          console.log('[Preload] appended batch, cache size=', window.VOCAB_CACHE.length);
         }
-      }).catch(e => console.warn('[Preload] count request failed', e));
+      } catch (e) { console.warn('[Preload] batch fetch exception', e); }
+    }, batchDelay * Math.floor((offset - window.VOCAB_CACHE.length) / batchSize));
+  }
+} catch (e) {
+  console.warn('[Preload] background batch load skipped', e);
+} 
 
   } catch (e) {
-    console.error('[Preload] error', e);
+      console.error('[Preload] Error', e);
+      window.VOCAB_CACHE_STATUS = 'error'; // ❌ Đánh dấu lỗi
   }
-};
+}
 
-// Kick off preload
-preloadVocabulary(500, 500);
+// Khởi động preload khi supabase sẵn sàng
+function initPreload(maxAttempts = 20, interval = 200) {
+  let attempts = 0;
+  const tryInit = () => {
+    attempts++;
+    if (window.supabase) {
+      preloadVocabulary();
+      return;
+    }
+    if (attempts >= maxAttempts) {
+      console.warn('[Preload] supabase not available after attempts:', attempts);
+      return;
+    }
+    setTimeout(tryInit, interval);
+  };
+  tryInit();
+}
+initPreload();
 
 
+// ============================================
+// QuestionManager
+// ============================================
 const QuestionManager = {
-    
     currentQuestion: null,
     loadedTypes: {},
-    
+
     /**
-     * Load động một QuestionType từ file
+     * Đảm bảo có vocabulary, fallback sang fetch DB nếu cache rỗng
      */
-    async loadQuestionType(typeNumber) {
-        try {
-            if (this.loadedTypes[typeNumber]) {
-                return this.loadedTypes[typeNumber];
-            }
+    async ensureVocabulary(limit = 100) {
+      try {
+          // 1. Kiểm tra cache
+          if (window.VOCAB_CACHE && window.VOCAB_CACHE.length > 0) {
+              console.log('[QuestionManager] Dùng cache, size:', window.VOCAB_CACHE.length);
+              return window.VOCAB_CACHE;
+          }
 
-            const module = await import(`./question${typeNumber}.js`);
-            const qType = module.default;
-            this.loadedTypes[typeNumber] = qType;
-            
-            return qType;
-        } catch (error) {
-            console.error(`Lỗi load QuestionType${typeNumber}:`, error);
-            return null;
-        }
-    },
-    
-    /**
-     * Load câu hỏi theo số (1, 2, 3, 4, 5...)
-     * KHÔNG dựa vào enemyType nữa
-     */
-    async loadType(typeNumber, enemyType) {
-        // Debug log để kiểm tra tham số
-        console.log('[DEBUG] QuestionManager.loadType called with', { typeNumber, enemyType });
+          // 2. Đợi cache nếu đang loading (tối đa 2 giây)
+          if (window.VOCAB_CACHE_STATUS === 'loading') {
+              console.log('[QuestionManager] Cache đang loading, đợi...');
+              const cached = await this.waitForCache(2000);
+              if (cached && cached.length > 0) {
+                  return cached;
+              }
+          }
 
-        // Nếu enemyType không được truyền, lấy fallback từ GameEngine nếu có
-        const et = (typeof enemyType !== 'undefined') ? enemyType : (window.GameEngine?.monster?.type || 'normal');
+          // 3. Fallback: Fetch trực tiếp từ DB
+          console.warn('[QuestionManager] Cache không khả dụng, fetch từ DB');
+          
+          if (!window.supabase) {
+              throw new Error('Supabase chưa sẵn sàng');
+          }
 
-        // Dọn câu hỏi cũ
-        if (this.currentQuestion && typeof this.currentQuestion.destroy === 'function') {
-            this.currentQuestion.destroy();
-        }
+          const { data, error } = await window.supabase
+              .from('vocabulary')
+              .select('english_word, vietnamese_translation')
+              .limit(limit);
 
-        // Import module tương ứng
-        const QuestionType = await this.loadQuestionType(typeNumber);
-        if (!QuestionType) {
-            console.error(`Không thể load QuestionType${typeNumber}`);
+          if (error) throw error;
+
+          if (!data || data.length === 0) {
+              throw new Error('Vocabulary trống');
+          }
+
+          // Lưu vào cache cho lần sau
+          window.VOCAB_CACHE = data;
+          window.VOCAB_CACHE_STATUS = 'ready';
+          
+          console.log('[QuestionManager] ✅ Fetched và cached', data.length, 'từ');
+          return data;
+
+      } catch (err) {
+          console.error('[QuestionManager] Lỗi ensureVocabulary:', err);
+          
+          // Last resort: Trả về cache cũ nếu có
+          if (window.VOCAB_CACHE && window.VOCAB_CACHE.length > 0) {
+              console.warn('[QuestionManager] Dùng cache cũ');
+              return window.VOCAB_CACHE;
+          }
+          
+          throw new Error('Không thể load vocabulary: ' + err.message);
+      }
+  },
+
+  /**
+   * Đợi cache sẵn sàng với timeout
+   */
+  async waitForCache(timeout = 2000) {
+      return new Promise((resolve) => {
+          const startTime = Date.now();
+          
+          const checkCache = () => {
+              // Cache đã sẵn sàng
+              if (window.VOCAB_CACHE_STATUS === 'ready' && window.VOCAB_CACHE?.length > 0) {
+                  console.log('[QuestionManager] Cache đã sẵn sàng');
+                  resolve(window.VOCAB_CACHE);
+                  return;
+              }
+
+              // Timeout
+              if (Date.now() - startTime >= timeout) {
+                  console.warn('[QuestionManager] Timeout chờ cache');
+                  resolve(null);
+                  return;
+              }
+
+              // Tiếp tục đợi
+              setTimeout(checkCache, 100);
+          };
+
+          checkCache();
+      });
+  },
+
+  /**
+   * Load động một QuestionType từ file
+   */
+  async loadQuestionType(typeNumber) {
+      if (this.loadedTypes[typeNumber]) {
+          return this.loadedTypes[typeNumber];
+      }
+
+      try {
+          const module = await import(`./question${typeNumber}.js`);
+          this.loadedTypes[typeNumber] = module.default;
+          return module.default;
+      } catch (error) {
+          console.error(`Lỗi load QuestionType${typeNumber}:`, error);
+          return null;
+      }
+  },
+
+  /**
+   * Load câu hỏi theo số (1, 2, 3, 4, 5...)
+   */
+  async loadType(typeNumber, enemyType = 'normal') {
+      console.log('[QuestionManager] loadType', { typeNumber, enemyType });
+
+      try {
+          // 1. Đảm bảo có vocabulary trước
+          const vocabulary = await this.ensureVocabulary(200);
+          
+          // 2. Destroy câu hỏi cũ
+          this.currentQuestion?.destroy?.();
+
+          // 3. Load QuestionType
+          const QuestionType = await this.loadQuestionType(typeNumber);
+          if (!QuestionType) {
+              throw new Error(`Không thể load QuestionType${typeNumber}`);
+          }
+
+          this.currentQuestion = QuestionType;
+          // Chuẩn hóa: gán toàn bộ vocabulary và 1 item đã chọn sẵn cho QuestionType
+          this.currentQuestion._vocabulary = vocabulary || [];
+          this.currentQuestion._vocabPick = null;
+          if (Array.isArray(vocabulary) && vocabulary.length) {
+            // chọn ngẫu nhiên 1 item để QuestionType dùng ngay
+            this.currentQuestion._vocabPick = vocabulary[Math.floor(Math.random() * vocabulary.length)];
+            if (CONFIG.debug) console.log('[QuestionManager] _vocabPick assigned', this.currentQuestion._vocabPick);
+          }  
+
+          // 4. Gắn vocabulary vào currentQuestion để QuestionType dùng
+          this.currentQuestion._vocabulary = vocabulary;
+
+          // 5. Gắn callbacks
+          this.currentQuestion.onCorrect = () => this.handleQuestionCorrect();
+          this.currentQuestion.onWrong = () => this.handleQuestionWrong();
+
+          // 6. Load câu hỏi (await nếu load là async)
+          if (typeof this.currentQuestion.load === 'function') {
+            await Promise.resolve(this.currentQuestion.load(enemyType));
+          } else {
+            throw new Error(`QuestionType${typeNumber} không có hàm load`);
+          }
+
+      } catch (err) {
+          console.error('[QuestionManager] Lỗi loadType:', err);
+          
+          // Hiển thị lỗi cho user
+          const questionArea = document.getElementById('questionarea');
+          if (questionArea) {
+              questionArea.innerHTML = `
+                  <div class="flex flex-col items-center justify-center h-full gap-4 p-8">
+                      <div class="text-6xl">❌</div>
+                      <p class="text-xl font-bold text-red-600">Lỗi tải câu hỏi</p>
+                      <p class="text-gray-600">${err.message}</p>
+                      <button onclick="location.reload()" 
+                              class="px-6 py-3 bg-blue-500 text-white rounded-lg font-bold hover:bg-blue-600">
+                          🔄 Tải lại trang
+                      </button>
+                  </div>
+              `;
+          }
+      }
+  },
+
+    handleQuestionCorrect() {
+        if (CONFIG.debug) console.log('[QuestionManager] Correct answer');
+
+        if (!window.GameEngine?.processBattleRound) {
+            console.warn('[QuestionManager] GameEngine.processBattleRound không có, fallback');
+            window.GameEngine?.handleCorrect?.();
             return;
         }
 
-        this.currentQuestion = QuestionType;
+        // Retry logic
+        const { maxAttempts, delayMs } = CONFIG.retry;
+        let attempt = 0;
 
-        // Gắn callback
-        this.currentQuestion.onCorrect = () => this.handleQuestionCorrect();
-        this.currentQuestion.onWrong = () => this.handleQuestionWrong();
+        const tryCall = () => {
+            attempt++;
 
-        // Prepare a selected item from cache if available
-let preselected = null;
-if (window.VOCAB_CACHE && window.VOCAB_CACHE.length) {
-  preselected = window.VOCAB_CACHE[Math.floor(Math.random() * window.VOCAB_CACHE.length)];
-}
-
-// Gọi hàm load của QuestionType
-if (typeof this.currentQuestion.load === 'function') {
-  try {
-    // Nếu load nhận tham số (length > 0) thì truyền et và data nếu hỗ trợ
-    if (this.currentQuestion.load.length > 0) {
-      // Nếu QuestionType.load expects (enemyType) keep compatibility:
-      // pass enemyType first; if it can accept an object, it can read from window._preloadedData
-      // We'll set a temporary pointer so QuestionType can read it if implemented
-      if (preselected) {
-        this.currentQuestion._preloadedData = preselected;
-      }
-      this.currentQuestion.load(et);
-    } else {
-      // load() không nhận tham số: set preloaded data on the object and call load()
-      if (preselected) {
-        this.currentQuestion._preloadedData = preselected;
-      }
-      this.currentQuestion.load();
-    }
-  } catch (err) {
-    console.warn('[QuestionManager] load() threw, retrying without params', err);
-    try {
-      if (preselected) this.currentQuestion._preloadedData = preselected;
-      this.currentQuestion.load();
-    } catch(e){ console.error('QuestionType.load failed', e); }
-  }
-} else {
-  console.error(`QuestionType${typeNumber} không có hàm load`);
-}
-    },
-    
-    // Thêm vào QuestionManager
-    prefetchNext() {
-        try {
-            if (window.VOCAB_CACHE && window.VOCAB_CACHE.length) {
-                this.nextPreloadedData = window.VOCAB_CACHE[Math.floor(Math.random() * window.VOCAB_CACHE.length)];
-                console.log('[QuestionManager] prefetchNext selected from VOCAB_CACHE');
+            if (!window.GameEngine.isBattling) {
+                window.GameEngine.processBattleRound(1, 0);
                 return;
             }
-            // fallback: non-blocking fetch a small batch
-            if (window.supabase) {
-                window.supabase
-                    .from('vocabulary')
-                    .select('english_word, vietnamese_translation')
-                    .limit(10)
-                    .then(({ data, error }) => {
-                        if (!error && data && data.length) {
-                            window.VOCAB_CACHE = (window.VOCAB_CACHE || []).concat(data);
-                            this.nextPreloadedData = data[Math.floor(Math.random() * data.length)];
-                            console.log('[QuestionManager] prefetchNext fetched and cached small batch');
-                        }
-                    }).catch(e => console.warn('[QuestionManager] prefetchNext error', e));
-            }
-        } catch (e) {
-            console.warn('[QuestionManager] prefetchNext exception', e);
-        }
-    },
-    
-    handleQuestionCorrect() {
-        try {
-            console.log('[QuestionManager] handleQuestionCorrect called');
-    
-            // Nếu không có GameEngine hoặc processBattleRound thì fallback
-            if (!window.GameEngine || typeof window.GameEngine.processBattleRound !== 'function') {
-                console.warn('[QuestionManager] GameEngine.processBattleRound not available, trying fallback handleCorrect');
-                if (window.GameEngine && typeof window.GameEngine.handleCorrect === 'function') {
-                    window.GameEngine.handleCorrect();
-                }
+
+            if (attempt >= maxAttempts) {
+                console.warn('[QuestionManager] Max retries reached, forcing call');
+                window.GameEngine.isBattling = false;
+                window.GameEngine.processBattleRound(1, 0);
                 return;
             }
-    
-            // Nếu đang trong trạng thái battling, thử đợi và retry vài lần
-            const maxRetries = 8;
-            const retryDelay = 120; // ms
-            let attempt = 0;
-    
-            const tryCall = () => {
-                attempt++;
-                // Nếu isBattling false thì gọi ngay
-                if (!window.GameEngine.isBattling) {
-                    console.log('[QuestionManager] calling GameEngine.processBattleRound(1,0) (attempt)', attempt);
-                    window.GameEngine.processBattleRound(1, 0);
-                    return;
-                }
-    
-                // Nếu vượt quá số lần retry thì buộc reset isBattling và gọi (last resort)
-                if (attempt >= maxRetries) {
-                    console.warn('[QuestionManager] isBattling still true after retries — forcing call (last resort)');
-                    try { window.GameEngine.isBattling = false; } catch(e){ console.error(e); }
-                    window.GameEngine.processBattleRound(1, 0);
-                    return;
-                }
-    
-                // Chưa sẵn sàng, đợi rồi thử lại
-                console.log('[QuestionManager] GameEngine.isBattling=true, retrying in', retryDelay, 'ms (attempt)', attempt);
-                setTimeout(tryCall, retryDelay);
-            };
-    
-            tryCall();
-    
-        } catch (err) {
-            console.error('[QuestionManager] handleQuestionCorrect error', err);
-        }
+
+            if (CONFIG.debug) console.log('[QuestionManager] Retry', attempt);
+            setTimeout(tryCall, delayMs);
+        };
+
+        tryCall();
     },
-    
+
     handleQuestionWrong() {
-        try {
-            console.log('[QuestionManager] handleQuestionWrong called');
-            // Nếu GameEngine có processBattleRound thì gọi 1 đòn monster
-            if (window.GameEngine && typeof window.GameEngine.processBattleRound === 'function') {
-                console.log('[QuestionManager] calling GameEngine.processBattleRound(0,1, false)');
-                window.GameEngine.processBattleRound(0, 1, false);
-                return;
-            }            
-            // Nếu không có processBattleRound, fallback về handleWrong (cũ)
-            if (window.GameEngine && typeof window.GameEngine.handleWrong === 'function') {
-                console.log('[QuestionManager] calling GameEngine.handleWrong() fallback');
-                window.GameEngine.handleWrong();
-                return;
-            }
-            console.warn('[QuestionManager] No GameEngine handler found for wrong answer');
-        } catch (err) {
-            console.error('[QuestionManager] handleQuestionWrong error', err);
+        if (CONFIG.debug) console.log('[QuestionManager] Wrong answer');
+
+        if (window.GameEngine?.processBattleRound) {
+            window.GameEngine.processBattleRound(0, 1, false);
+        } else {
+            window.GameEngine?.handleWrong?.();
         }
     },
 
-    /**
-     * Dọn toàn bộ question
-     */
     destroy() {
-        if (this.currentQuestion && typeof this.currentQuestion.destroy === 'function') {
-            this.currentQuestion.destroy();
-        }
+        this.currentQuestion?.destroy?.();
         this.currentQuestion = null;
     }
 };
