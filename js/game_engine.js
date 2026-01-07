@@ -345,49 +345,32 @@ const GameEngine = {
     
     
     /**
- * Xử lý khi người chơi trả lời đúng
- * @param {number} hits - số đòn hero sẽ tấn công (mặc định 1)
- */
-async handleCorrect(hits = 1) {
-    try {
-      // Nếu đang trong battle thì không xử lý thêm
-      if (this.isBattling) {
-        if (window.CONFIG?.debug) console.log('[GameEngine] handleCorrect ignored, already battling');
-        return;
-      }
-  
-      // Chuẩn hóa số đòn
-      const heroHits = Math.max(1, Number(hits) || 1);
-      if (window.CONFIG?.debug) console.log('[GameEngine] handleCorrect', { heroHits });
-  
-      // Dừng mọi speech đang phát để tránh chồng âm khi battle bắt đầu
-      try { if (window.speechSynthesis) speechSynthesis.cancel(); } catch (e) { /* ignore */ }
-  
-      // Thực hiện battle: ưu tiên startBattleTurn nếu hỗ trợ hits, ngược lại fallback processBattleRound
-      try {
-        if (typeof this.startBattleTurn === 'function') {
-          // Nếu startBattleTurn hỗ trợ tham số hits, gọi với hits; nếu không, fallback xuống processBattleRound
-          try {
-            // một số implement startBattleTurn có thể không trả Promise, nên dùng Promise.resolve để an toàn
-            await Promise.resolve(this.startBattleTurn(this.player, this.monster, heroHits));
-          } catch (e) {
-            // fallback an toàn
-            await this.processBattleRound(heroHits, 0, true);
+     * Xử lý khi người chơi trả lời đúng
+     * @param {number} hits - số đòn hero sẽ tấn công (mặc định 1)
+     */
+    async handleCorrect(hits = 1, advanceNext = true) {
+        try {
+          if (this.isBattling) {
+            if (window.CONFIG?.debug) console.log('[GameEngine] handleCorrect ignored, already battling');
+            return;
           }
-        } else {
-          await this.processBattleRound(heroHits, 0, true);
+      
+          const heroHits = Math.max(1, Number(hits) || 1);
+          if (window.CONFIG?.debug) console.log('[GameEngine] handleCorrect fallback', { heroHits, advanceNext });
+      
+          // Dừng speech nếu đang phát
+          try { if (window.speechSynthesis) speechSynthesis.cancel(); } catch (e) {}
+      
+          // 👉 Fallback: chỉ gọi processBattleRound nếu QuestionManager chưa gọi
+          if (typeof this.processBattleRound === 'function') {
+            await this.processBattleRound(heroHits, 0, advanceNext);
+          }
+      
+          try { this.updateAllUI(); } catch (e) {}
+        } catch (err) {
+          console.error('[GameEngine] handleCorrect error', err);
         }
-      } catch (e) {
-        console.error('[GameEngine] battle execution error', e);
-      }
-  
-      // Cập nhật UI sau battle
-      try { this.updateAllUI(); } catch (e) { console.warn('[GameEngine] updateAllUI failed', e); }
-  
-    } catch (err) {
-      console.error('[GameEngine] handleCorrect top-level error', err);
-    }
-  },
+      },
 
     handleWrong() {
         if (this.isBattling) return;
@@ -1262,13 +1245,13 @@ async checkAndUnlockHero(completedStationId) {
         // Dừng game
         this.isBattling = false;
 
-        if (window.QuestionManager?.currentQuestion) {
-            const currentQ = window.QuestionManager.currentQuestion;
-            if (typeof currentQ.destroy === 'function') {
-                currentQ.destroy();
-            }
-        }
-        
+        // Lưu trạng thái game hiện tại
+    try {
+        this.saveGameState();
+    } catch (e) {
+        console.error('[GameEngine] saveGameState error', e);
+    }
+      
         // Xóa hoàn toàn nội dung các vùng
         const questionArea = document.getElementById('questionarea');
         const battleView = document.getElementById('battleview');
@@ -1295,18 +1278,7 @@ async checkAndUnlockHero(completedStationId) {
             if (monsterInfo) monsterInfo.innerHTML = '';
             if (answersHistory) answersHistory.innerHTML = '';
         }
-        
-        // Dọn dẹp câu hỏi hiện tại
-        if (window.QuestionManager && typeof window.QuestionManager.destroy === 'function') {
-            window.QuestionManager.destroy();
-        }
-        if (window.QuestionType1 && typeof window.QuestionType1.destroy === 'function') {
-            window.QuestionType1.destroy();
-        }
-        if (window.QuestionType2 && typeof window.QuestionType2.destroy === 'function') {
-            window.QuestionType2.destroy();
-        }
-        
+    
         // Reset player và monster
         this.player = null;
         this.monster = null;

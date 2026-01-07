@@ -343,19 +343,6 @@ const QuestionType5 = {
         this.updateCurrentWord();
     },
 
-    updateCurrentWord() {
-        const currentWordArea = document.getElementById('current-word');
-        if (!currentWordArea) return;
-
-        if (this.selectedLetters.length === 0) {
-            currentWordArea.innerHTML = '<span class="text-gray-400 italic">Chọn các chữ cái bên dưới...</span>';
-        } else {
-            currentWordArea.innerHTML = this.selectedLetters.map(item => 
-                `<span class="text-3xl font-black text-blue-600">${item.letter}</span>`
-            ).join('');
-        }
-    },
-
     /**
      * Load 5 từ mới (giữ nguyên timer)
      */
@@ -433,8 +420,10 @@ const QuestionType5 = {
     
             // Gọi callback tấn công nếu có
             if (typeof this.onCorrect === 'function') {
-                this.onCorrect();
+                const advance = this.completedWords.length === words.length;
+                this.onCorrect(1, advance);
             }
+            
     
             // Kiểm tra hoàn thành 5 từ
             if (this.completedWords.length === words.length) {

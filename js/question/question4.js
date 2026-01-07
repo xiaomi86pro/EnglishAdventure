@@ -300,6 +300,11 @@ const QuestionType4 = {
 
                 // Call onCorrect for this single found word: 1 hit, do NOT advance question
                 if (typeof this.onCorrect === 'function') {
+                    this._lastAnswered = {
+                        en: (selected[foundIndex].english || '').toUpperCase().replace(/\s+/g, ''),
+                        vi: selected[foundIndex].vietnamese || ''
+                      };
+                      this.onCorrect(1, false);                      
                     try {
                         if (window.CONFIG?.debug) console.log('[Q4] calling onCorrect single', { foundIndex });
                         this.onCorrect(1, false);

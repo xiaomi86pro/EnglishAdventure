@@ -221,43 +221,89 @@ const QuestionManager = {
     }
   },
 
-  /**
-   * hits: số đòn hero tấn công
-   * advanceNext: nếu false thì không load câu hỏi mới sau round
-   */
   handleQuestionCorrect(hits = 1, advanceNext = true) {
-    if (CONFIG.debug) console.log('[QuestionManager] Correct answer, hits=', hits, 'advanceNext=', advanceNext);
-
-    const callProcess = (h, adv) => {
-      if (window.GameEngine && typeof window.GameEngine.processBattleRound === 'function') {
-        window.GameEngine.processBattleRound(Number(h) || 1, 0, adv);
-      } else if (window.GameEngine && typeof window.GameEngine.handleCorrect === 'function') {
-        window.GameEngine.handleCorrect(Number(h) || 1);
-      } else {
-        console.warn('[QuestionManager] No GameEngine battle entry found');
+    try {
+      if (window.CONFIG?.debug) console.log('[QuestionManager] handleQuestionCorrect', { hits, advanceNext });
+  
+      // --- Append single entry to answers-history if available ---
+      try {
+        const q = this.currentQuestion;
+        const historyEl = document.getElementById('answers-history');
+  
+        // Prefer explicit lastAnswered set by QuestionType (single word that was just solved)
+        let entry = null;
+        if (q && q._lastAnswered && q._lastAnswered.en) {
+          entry = { en: q._lastAnswered.en, vi: q._lastAnswered.vi || '' };
+          // clear after consuming to avoid duplicate logs
+          try { delete q._lastAnswered; } catch(e){ q._lastAnswered = null; }
+        } else {
+          // Fallback: try to infer from currentData for single-question types
+          const data = q?.currentData || q?._vocabPick || null;
+          if (data) {
+            if (data.english_word || data.vietnamese_translation) {
+              entry = { en: data.english_word || data.english || '', vi: data.vietnamese_translation || data.vietnamese || '' };
+            } else if (Array.isArray(data.selected) && data.selected.length === 1) {
+              const w = data.selected[0];
+              entry = { en: w.english || '', vi: w.vietnamese || '' };
+            }
+          }
+        }
+  
+        if (entry && historyEl) {
+          const textKey = `${entry.en} — ${entry.vi}`;
+          if (!historyEl.querySelector(`[data-key="${encodeURIComponent(textKey)}"]`)) {
+            const node = document.createElement('div');
+            node.className = 'answer-history-item p-2 rounded bg-white/80 border mb-2';
+            node.setAttribute('data-key', encodeURIComponent(textKey));
+            node.innerHTML = `<div class="font-bold text-sm text-blue-600">${entry.en}</div>
+                              <div class="text-xs text-gray-600">${entry.vi}</div>`;
+            historyEl.appendChild(node);
+          }
+        }
+      } catch (e) {
+        console.warn('[QuestionManager] answers-history log failed', e);
       }
-    };
-
-    const { maxAttempts, delayMs } = CONFIG.retry;
-    let attempt = 0;
-
-    const tryCall = () => {
-      attempt++;
-      if (!window.GameEngine || !window.GameEngine.isBattling) {
+  
+      // --- Call GameEngine.processBattleRound with retry guard ---
+      const callProcess = (h, adv) => {
+        if (window.GameEngine && typeof window.GameEngine.processBattleRound === 'function') {
+          window.GameEngine.processBattleRound(Number(h) || 1, 0, !!adv);
+        } else if (window.GameEngine && typeof window.GameEngine.handleCorrect === 'function') {
+          window.GameEngine.handleCorrect(Number(h) || 1, !!adv);
+        } else {
+          console.warn('[QuestionManager] No GameEngine battle entry found');
+        }
+      };
+  
+      const retryCfg = (window.CONFIG && window.CONFIG.retry) || { maxAttempts: 8, delayMs: 120 };
+      let attempt = 0;
+  
+      const tryCall = () => {
+        attempt++;
+        if (window.GameEngine && window.GameEngine.isBattling) {
+          if (attempt >= retryCfg.maxAttempts) {
+            console.warn('[QuestionManager] Max retries reached, forcing call');
+            try { if (window.GameEngine) window.GameEngine.isBattling = false; } catch(e){}
+            callProcess(hits, advanceNext);
+            return;
+          }
+          if (window.CONFIG?.debug) console.log('[QuestionManager] Retry handleQuestionCorrect attempt', attempt);
+          setTimeout(tryCall, retryCfg.delayMs);
+          return;
+        }
         callProcess(hits, advanceNext);
-        return;
-      }
-      if (attempt >= maxAttempts) {
-        console.warn('[QuestionManager] Max retries reached, forcing call');
-        try { if (window.GameEngine) window.GameEngine.isBattling = false; } catch(e){}
-        callProcess(hits, advanceNext);
-        return;
-      }
-      if (CONFIG.debug) console.log('[QuestionManager] Retry handleQuestionCorrect attempt', attempt);
-      setTimeout(tryCall, delayMs);
-    };
-
-    tryCall();
+      };
+  
+      tryCall();
+    } catch (err) {
+      console.error('[QuestionManager] handleQuestionCorrect top-level error', err);
+      // best-effort fallback
+      try {
+        if (window.GameEngine && typeof window.GameEngine.processBattleRound === 'function') {
+          window.GameEngine.processBattleRound(Number(hits) || 1, 0, !!advanceNext);
+        }
+      } catch (e) { console.error('[QuestionManager] fallback processBattleRound failed', e); }
+    }
   },
 
   handleQuestionWrong() {
