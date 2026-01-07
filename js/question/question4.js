@@ -1,368 +1,213 @@
 // js/question/question4.js
-// QuestionType4 (Word Search) - cleaned: single-word onCorrect(1,false), final onCorrect(1,true), safe listeners
 
-function generateGrid(words) {
-    words.sort((a, b) => b.length - a.length);
-    const maxLen = words[0].length;
-    const totalChars = words.reduce((sum, w) => sum + w.length, 0);
-    const minSize = Math.max(maxLen, Math.ceil(Math.sqrt(totalChars * 1.5)));
-
-    let rows = minSize;
-    let cols = minSize;
-    let grid = Array.from({ length: rows }, () => Array(cols).fill(null));
-    const placed = [];
-
-    const firstWord = words[0];
-    const startRow = Math.floor(rows / 2);
-    const startCol = Math.floor((cols - firstWord.length) / 2);
-    for (let i = 0; i < firstWord.length; i++) {
-        grid[startRow][startCol + i] = firstWord[i];
+class Question4 {
+    constructor(opts = {}) {
+        this.vocabPool = opts.vocabPool || [];
+        this.containerId = opts.containerId || 'questionarea';
+        this.onCorrect = opts.onCorrect || null;
+        this.onWrong = opts.onWrong || null;
+        
+        this.wordsToFind = [];
+        this.foundWords = [];
+        this.gridSize = 0;
+        this._destroyed = false;
+        this._cellHandlers = [];
+        this._mouseupHandler = null;
+        this._lastAnswered = null;
     }
-    placed.push({ word: firstWord, placed: true });
 
-    for (let w = 1; w < words.length; w++) {
-        const word = words[w];
-        let wordPlaced = false;
+    init() {
+        this._destroyed = false;
+        this.foundWords = [];
+        this._lastAnswered = null;
 
-        for (let attempt = 0; attempt < 300 && !wordPlaced; attempt++) {
-            const horizontal = Math.random() > 0.5;
-
-            if (horizontal) {
-                const row = Math.floor(Math.random() * rows);
-                const maxCol = cols - word.length;
-                if (maxCol < 0) continue;
-                const col = Math.floor(Math.random() * (maxCol + 1));
-
-                let canPlace = true;
-                let hasIntersection = false;
-
-                for (let i = 0; i < word.length; i++) {
-                    const cell = grid[row][col + i];
-                    if (cell !== null && cell !== word[i]) {
-                        canPlace = false;
-                        break;
-                    }
-                    if (cell === word[i]) hasIntersection = true;
-                }
-
-                if (canPlace && (hasIntersection || attempt > 250)) {
-                    for (let i = 0; i < word.length; i++) {
-                        grid[row][col + i] = word[i];
-                    }
-                    wordPlaced = true;
-                    placed.push({ word, placed: true });
-                }
-            } else {
-                const maxRow = rows - word.length;
-                if (maxRow < 0) continue;
-                const row = Math.floor(Math.random() * (maxRow + 1));
-                const col = Math.floor(Math.random() * cols);
-
-                let canPlace = true;
-                let hasIntersection = false;
-
-                for (let i = 0; i < word.length; i++) {
-                    const cell = grid[row + i][col];
-                    if (cell !== null && cell !== word[i]) {
-                        canPlace = false;
-                        break;
-                    }
-                    if (cell === word[i]) hasIntersection = true;
-                }
-
-                if (canPlace && (hasIntersection || attempt > 250)) {
-                    for (let i = 0; i < word.length; i++) {
-                        grid[row + i][col] = word[i];
-                    }
-                    wordPlaced = true;
-                    placed.push({ word, placed: true });
-                }
-            }
-        }
-
-        if (!wordPlaced) {
-            console.warn(`Không thể đặt từ: ${word}`);
-            placed.push({ word, placed: false });
+        this._selectWords();
+        if (this.wordsToFind.length > 0) {
+            this.renderQuestionUI();
         }
     }
 
-    let top = rows, bottom = -1, left = cols, right = -1;
-    for (let r = 0; r < rows; r++) {
-        for (let c = 0; c < cols; c++) {
-            if (grid[r][c] !== null) {
-                if (r < top) top = r;
-                if (r > bottom) bottom = r;
-                if (c < left) left = c;
-                if (c > right) right = c;
-            }
-        }
-    }
-
-    if (bottom === -1) {
-        grid = [[firstWord[0]]];
-    } else {
-        const newGrid = [];
-        for (let r = top; r <= bottom; r++) {
-            newGrid.push(grid[r].slice(left, right + 1));
-        }
-        grid = newGrid;
-    }
-
-    const alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
-    for (let r = 0; r < grid.length; r++) {
-        for (let c = 0; c < grid[0].length; c++) {
-            if (grid[r][c] === null) {
-                grid[r][c] = alphabet[Math.floor(Math.random() * alphabet.length)];
-            }
-        }
-    }
-
-    if (window.CONFIG?.debug) console.log("Grid placed status:", placed);
-    return grid;
-};
-
-const QuestionType4 = {
-    autoReload: false,
-    currentData: null,
-    onCorrect: null,
-    onWrong: null,
-    attackInterval: null,
-    hintCount: 0,
-    maxHints: 5,
-
-    speak(text, lang = "en-US", rate = 0.9) {
-        if (!window.speechSynthesis) return;
-        try { speechSynthesis.cancel(); } catch(e){}
-        const u = new SpeechSynthesisUtterance(text);
-        u.lang = lang;
-        u.rate = rate;
-        speechSynthesis.speak(u);
-    },
-
-    async load(enemyType = "boss") {
-        this.hintCount = 0;
-
-        if (!window.supabase) return;
-
-        const { data, error } = await window.supabase
-            .from("vocabulary")
-            .select("english_word, vietnamese_translation")
-            .limit(100);
-        if (error) throw error;
-
-        const seen = new Set();
+    _selectWords() {
+        if (!this.vocabPool.length) return;
+        let pool = [...this.vocabPool];
         const selected = [];
-        while (selected.length < 5 && data.length > 0) {
-            const item = data[Math.floor(Math.random() * data.length)];
-            const word = item.english_word?.replace(/\s+/g, "").trim().toUpperCase();
-            if (word && !seen.has(word)) {
-                seen.add(word);
-                selected.push({ english: word, vietnamese: item.vietnamese_translation });
-            }
+        const targetCount = 5;
+
+        for (let i = 0; i < targetCount && pool.length > 0; i++) {
+            const idx = Math.floor(Math.random() * pool.length);
+            selected.push(pool.splice(idx, 1)[0]);
         }
 
-        const words = selected.map(w => w.english);
-        const grid = generateGrid(words);
+        this.wordsToFind = selected.map(item => ({
+            en: item.english_word.toUpperCase().replace(/\s+/g, ''),
+            vi: item.vietnamese_translation,
+            found: false
+        }));
 
-        this.currentData = { selected, grid };
-        this.renderQuestionUI();
+        const maxLen = Math.max(...this.wordsToFind.map(w => w.en.length));
+        // Kích thước lưới vừa đủ để đan xen (thường lớn hơn từ dài nhất 1-2 đơn vị)
+        this.gridSize = Math.max(maxLen, 8); 
+    }
 
-        // Monster auto-attack every 10s (optional). Keep but ensure cleanup in destroy()
-        if (this.attackInterval) clearInterval(this.attackInterval);
-        this.attackInterval = setInterval(() => {
-            if (window.GameEngine && window.GameEngine.player) {
-                window.GameEngine.player.hp_current = Math.max(0, window.GameEngine.player.hp_current - 5);
-                try { window.GameEngine.updateAllUI(); } catch(e){}
-                if (typeof window.GameEngine.showDamage === 'function') {
-                    window.GameEngine.showDamage(window.GameEngine.player, 5);
+    _generateGrid(words) {
+        const size = this.gridSize;
+        let grid = Array.from({ length: size }, () => Array(size).fill(null));
+
+        // Sắp xếp từ dài nhất để đặt trước
+        const sortedWords = [...words].sort((a, b) => b.en.length - a.en.length);
+
+        sortedWords.forEach(wordObj => {
+            const word = wordObj.en;
+            let placed = false;
+            let attempts = 0;
+
+            while (!placed && attempts < 200) {
+                const isHorizontal = Math.random() > 0.5;
+                const row = Math.floor(Math.random() * (isHorizontal ? size : size - word.length + 1));
+                const col = Math.floor(Math.random() * (isHorizontal ? size - word.length + 1 : size));
+
+                if (this._canPlace(grid, word, row, col, isHorizontal)) {
+                    for (let i = 0; i < word.length; i++) {
+                        const r = isHorizontal ? row : row + i;
+                        const c = isHorizontal ? col + i : col;
+                        grid[r][c] = word[i];
+                    }
+                    placed = true;
+                }
+                attempts++;
+            }
+        });
+
+        // Lấp đầy ô trống
+        for (let r = 0; r < size; r++) {
+            for (let c = 0; c < size; c++) {
+                if (!grid[r][c]) {
+                    grid[r][c] = String.fromCharCode(65 + Math.floor(Math.random() * 26));
                 }
             }
-        }, 10000);
-    },
+        }
+        return grid;
+    }
+
+    _canPlace(grid, word, row, col, isHorizontal) {
+        for (let i = 0; i < word.length; i++) {
+            const r = isHorizontal ? row : row + i;
+            const c = isHorizontal ? col + i : col;
+            // Cho phép đan xen nếu ký tự tại đó trùng nhau, ngược lại ô phải trống
+            if (grid[r][c] !== null && grid[r][c] !== word[i]) return false;
+        }
+        return true;
+    }
 
     renderQuestionUI() {
-        const area = document.getElementById("questionarea");
-        if (!area || !this.currentData) return;
+        const area = document.getElementById(this.containerId);
+        if (!area) return;
 
-        const { selected, grid } = this.currentData;
+        const grid = this._generateGrid(this.wordsToFind);
 
         area.innerHTML = `
-            <div class="flex gap-6">
-                <div class="w-48 space-y-4">
-                    ${selected.map((w,i) => `
-                    <div class="p-2 border rounded bg-gray-50 h-16 flex flex-col justify-between">
-                      <p class="text-green-600 font-bold">${w.vietnamese}</p>
-                      <p id="found-${i}" class="text-blue-600 font-black min-h-[1.2rem]"></p>
+            <div class="w-full h-full flex flex-col items-center p-6 bg-slate-900 rounded-3xl overflow-hidden">
+                <div class="flex flex-col lg:flex-row gap-10 items-start justify-center w-full">
+                    
+                    <div id="word-grid" class="grid gap-1.5 bg-slate-800 p-3 rounded-2xl shadow-2xl select-none" 
+                         style="grid-template-columns: repeat(${this.gridSize}, minmax(0, 1fr)); width: fit-content;">
+                        ${grid.map((row, r) => row.map((char, c) => `
+                            <div class="word-cell w-12 h-12 flex items-center justify-center bg-white text-slate-900 font-black text-2xl rounded-lg cursor-pointer hover:bg-yellow-100 transition-colors shadow-inner"
+                                 data-row="${r}" data-col="${c}">${char}</div>
+                        `).join('')).join('')}
                     </div>
-                    `).join("")}
-                </div>
 
-                <div id="word-grid" class="grid select-none"
-                     style="grid-template-columns: repeat(${grid[0].length}, 40px); gap: 4px;">
-                    ${grid.map((row,r) => row.map((ch,c) => `
-                        <div data-r="${r}" data-c="${c}"
-                             class="cell w-10 h-10 flex items-center justify-center border rounded bg-white font-bold text-lg cursor-pointer">
-                            ${ch}
-                        </div>`).join("")).join("")}
-                </div>
+                    <div class="flex flex-col gap-4 p-4 bg-slate-800/50 rounded-2xl border border-slate-700" style="width: fit-content; min-width: 180px;">
+                        <h3 class="text-blue-400 font-black text-sm tracking-widest uppercase">Targets (5)</h3>
+                        <div id="word-list" class="flex flex-col gap-2">
+                            ${this.wordsToFind.map(w => `
+                                <div id="word-${w.en}" class="px-4 py-2 bg-slate-800 text-white rounded-xl border-l-4 border-slate-600 whitespace-nowrap">
+                                    <span class="text-lg font-bold">${w.vi}</span>
+                                </div>
+                            `).join('')}
+                        </div>
+                    </div>
 
-                <div class="mt-4">
-                  <button id="hint-btn" class="px-4 py-2 bg-purple-500 text-white rounded hover:bg-purple-600">
-                    💡 Hint (${this.maxHints - this.hintCount})
-                  </button>
                 </div>
             </div>
         `;
 
-        const hintBtn = document.getElementById("hint-btn");
-        if (hintBtn) {
-            hintBtn.onclick = () => {
-                if (this.hintCount >= this.maxHints) return;
-                for (let i = 0; i < selected.length; i++) {
-                    const foundEl = document.getElementById(`found-${i}`);
-                    if (foundEl && !foundEl.innerText) {
-                        const word = selected[i].english;
-                        const hintWord = word.slice(0,2) + "***";
-                        foundEl.innerText = hintWord;
-                        this.hintCount++;
-                        break;
-                    }
-                }
-                const remaining = this.maxHints - this.hintCount;
-                hintBtn.innerText = `Hint (${remaining})`;
-                if (this.hintCount >= this.maxHints) {
-                    hintBtn.disabled = true;
-                    hintBtn.classList.add("opacity-50", "cursor-not-allowed");
-                }
-            };
-        }
+        this._attachEventListeners();
+    }
 
-        // Remove previous cell handlers if any
-        if (this._cellHandlers) {
-            this._cellHandlers.forEach(h => {
-                h.el.removeEventListener('mousedown', h.mousedown);
-                h.el.removeEventListener('mouseover', h.mouseover);
-            });
-        }
+    _attachEventListeners() {
+        let isSelecting = false;
+        let selectedCells = [];
         this._cellHandlers = [];
 
-        const cells = area.querySelectorAll(".cell");
-        let selecting = false;
-        let selectedCells = [];
-
+        const cells = document.querySelectorAll('.word-cell');
         cells.forEach(cell => {
             const mousedown = (e) => {
-                selecting = true;
+                isSelecting = true;
                 selectedCells = [cell];
-                cell.classList.add("bg-green-300");
+                cell.classList.add("!bg-yellow-400");
             };
-            const mouseover = (e) => {
-                if (selecting && !selectedCells.includes(cell)) {
+            const mouseover = () => {
+                if (isSelecting && !selectedCells.includes(cell)) {
                     selectedCells.push(cell);
-                    cell.classList.add("bg-green-300");
+                    cell.classList.add("!bg-yellow-400");
                 }
             };
+
             cell.addEventListener('mousedown', mousedown);
             cell.addEventListener('mouseover', mouseover);
             this._cellHandlers.push({ el: cell, mousedown, mouseover });
         });
 
-        // Remove previous mouseup handler if exists
-        if (this._mouseupHandler) {
-            document.removeEventListener('mouseup', this._mouseupHandler);
-            this._mouseupHandler = null;
-        }
+        this._mouseupHandler = () => {
+            if (!isSelecting) return;
+            isSelecting = false;
 
-        // mouseup handler saved to this._mouseupHandler so we can remove it in destroy()
-        this._mouseupHandler = (e) => {
-            if (!selecting) return;
-            selecting = false;
-        
-            const word = selectedCells.map(c => c.innerText).join("");
-            const reversed = selectedCells.map(c => c.innerText).reverse().join("");
-            const foundIndex = selected.findIndex(w => w.english === word || w.english === reversed);
-        
-            if (foundIndex >= 0) {
-                const foundEl = document.getElementById(`found-${foundIndex}`);
-                if (foundEl && !foundEl.innerText) {
-                    foundEl.innerText = selected[foundIndex].english;
-                }
-        
-                this.speak(word);
+            const selectedText = selectedCells.map(c => c.innerText).join('');
+            const wordObj = this.wordsToFind.find(w => w.en === selectedText && !w.found);
+
+            if (wordObj) {
+                wordObj.found = true;
+                this.foundWords.push(wordObj);
+                
                 selectedCells.forEach(c => {
-                    c.classList.remove("bg-green-300");
-                    c.classList.add("bg-yellow-300");
+                    c.classList.remove("!bg-yellow-400");
+                    c.classList.add("!bg-green-500", "!text-white");
+                    c.style.pointerEvents = "none";
                 });
-        
-                // Ghi lại từ vừa tìm được
-                if (typeof this.onCorrect === 'function') {
-                    this._lastAnswered = {
-                        en: (selected[foundIndex].english || '').toUpperCase().replace(/\s+/g, ''),
-                        vi: selected[foundIndex].vietnamese || ''
-                    };
+
+                const label = document.getElementById(`word-${wordObj.en}`);
+                if (label) {
+                    label.classList.replace("bg-slate-800", "bg-green-600");
+                    label.classList.replace("border-slate-600", "border-green-400");
                 }
-        
-                // Kiểm tra xem đã tìm đủ tất cả từ chưa
-                const allFound = selected.every((w, idx) => {
-                    const el = document.getElementById(`found-${idx}`);
-                    return el && el.textContent.trim() !== '';
-                });
-        
-                if (typeof this.onCorrect === 'function') {
-                    try {
-                        if (allFound) {
-                            if (window.CONFIG?.debug) console.log('[Q4] all words found, calling final onCorrect');
-                            this.onCorrect(1, true); // ✅ advanceNext = true
-                        } else {
-                            if (window.CONFIG?.debug) console.log('[Q4] calling onCorrect single', { foundIndex });
-                            this.onCorrect(1, false); // ✅ advanceNext = false
-                        }
-                    } catch (e) {
-                        console.warn('[Q4] onCorrect call failed', e);
-                    }
-                }
+
+                this._lastAnswered = { en: wordObj.en, vi: wordObj.vi };
+                
+                const isFinal = this.foundWords.length === this.wordsToFind.length;
+                if (typeof this.onCorrect === 'function') this.onCorrect(1, isFinal);
             } else {
-                // Sai: reset màu
-                selectedCells.forEach(c => c.classList.remove("bg-green-300"));
-                if (typeof this.onWrong === 'function') {
-                    try { this.onWrong(); } catch(e){ console.warn('[Q4] onWrong failed', e); }
-                }
+                selectedCells.forEach(c => c.classList.remove("!bg-yellow-400"));
+                if (typeof this.onWrong === 'function') this.onWrong();
             }
-        
             selectedCells = [];
         };
 
         document.addEventListener('mouseup', this._mouseupHandler);
-    },
+    }
 
     destroy() {
-        try { if (window.speechSynthesis) speechSynthesis.cancel(); } catch (e) {}
-
-        this.hintCount = 0;
-
-        if (this.attackInterval) {
-            clearInterval(this.attackInterval);
-            this.attackInterval = null;
-        }
-
+        this._destroyed = true;
         if (this._cellHandlers) {
             this._cellHandlers.forEach(h => {
                 h.el.removeEventListener('mousedown', h.mousedown);
                 h.el.removeEventListener('mouseover', h.mouseover);
             });
-            this._cellHandlers = null;
         }
-
-        if (this._mouseupHandler) {
-            document.removeEventListener('mouseup', this._mouseupHandler);
-            this._mouseupHandler = null;
-        }
-
-        const area = document.getElementById("questionarea");
+        if (this._mouseupHandler) document.removeEventListener('mouseup', this._mouseupHandler);
+        const area = document.getElementById(this.containerId);
         if (area) area.innerHTML = "";
-        this.currentData = null;
     }
-};
+}
 
-export default QuestionType4;
-window.QuestionType4 = QuestionType4;
+export default Question4;

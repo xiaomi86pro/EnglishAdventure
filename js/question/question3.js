@@ -1,187 +1,207 @@
 // js/question/question3.js
-// Question Type 3 – Nghe và sắp xếp chữ cái (Spelling)
+// Question Type 3 – Listen and Spell (Dạng Class)
 
-const QuestionType3 = {
-    autoReload: true,
-    currentData: null,
-    enCompleted: "",
-    onCorrect: null,
-    onWrong: null,
+class Question3 {
+    constructor(opts = {}) {
+        this.vocabPool = opts.vocabPool || [];
+        this.containerId = opts.containerId || 'questionarea';
+        this.onCorrect = opts.onCorrect || null;
+        this.onWrong = opts.onWrong || null;
 
-    // Hàm phát âm chung
+        this.currentData = null;
+        this.enCompleted = "";
+        this._destroyed = false;
+        this._lastAnswered = null;
+
+        this._config = Object.assign({
+            speakOnCorrect: true,
+            spellingRate: 0.7
+        }, opts.config || {});
+    }
+
+    /**
+     * Khởi tạo câu hỏi
+     */
+    init(enemyType = "normal") {
+        this._destroyed = false;
+        this.enCompleted = "";
+        this._lastAnswered = null;
+
+        this._selectWord(enemyType);
+
+        if (this.currentData) {
+            this.renderQuestionUI();
+            // Bắt đầu phát âm từ và đánh vần
+            this._startAudioSequence();
+        }
+    }
+
+    _selectWord(enemyType) {
+        if (!this.vocabPool.length) return;
+
+        // Lọc từ: Quái thường từ 3-5 ký tự, Elite/Boss từ 6 ký tự trở lên
+        let valid = this.vocabPool.filter(v => v.english_word && v.vietnamese_translation);
+        
+        if (enemyType === "normal") {
+            valid = valid.filter(v => v.english_word.trim().length <= 5);
+        } else {
+            valid = valid.filter(v => v.english_word.trim().length > 5);
+        }
+
+        if (valid.length === 0) valid = this.vocabPool;
+        this.currentData = valid[Math.floor(Math.random() * valid.length)];
+    }
+
+    async _startAudioSequence() {
+        if (!this.currentData || this._destroyed) return;
+        
+        // 1. Phát âm cả từ trước
+        this.speak(this.currentData.english_word);
+        
+        // 2. Nghỉ một chút rồi đánh vần từng chữ
+        await new Promise(r => setTimeout(r, 1200));
+        if (!this._destroyed) {
+            await this.speakLetters(this.currentData.english_word);
+        }
+    }
+
     speak(text, lang = "en-US", rate = 0.9) {
-        if (!window.speechSynthesis) return;
+        if (!window.speechSynthesis || this._destroyed) return;
         speechSynthesis.cancel();
         const u = new SpeechSynthesisUtterance(text);
         u.lang = lang;
         u.rate = rate;
         speechSynthesis.speak(u);
-    },
+    }
 
-    // Phát âm từng chữ cái một cách tuần tự
     async speakLetters(word) {
-        const letters = word.split("").filter(c => c !== " ");
+        const letters = word.replace(/\s+/g, "").split("");
         for (let char of letters) {
+            if (this._destroyed) break;
             await new Promise(resolve => {
                 const u = new SpeechSynthesisUtterance(char);
                 u.lang = "en-US";
-                u.rate = 0.7;
+                u.rate = this._config.spellingRate;
                 u.onend = resolve;
+                u.onerror = resolve; // Đảm bảo không bị kẹt nếu lỗi
                 speechSynthesis.speak(u);
             });
         }
-    },
-
-    async load(enemyType = "normal") {
-        console.log("QuestionType3.load called, enemyType:", enemyType);
-        try {
-            if (!window.supabase) {
-                setTimeout(() => this.load(enemyType), 300);
-                return;
-            }
-
-            const { data, error } = await window.supabase
-                .from("vocabulary")
-                .select("english_word, vietnamese_translation");
-
-            if (error) throw error;
-            if (!data || data.length === 0) throw new Error("Vocabulary trống");
-
-            let valid = data.filter(v => v?.english_word);
-
-            // Phân loại độ khó theo loại quái
-            if (enemyType === "normal") {
-                valid = valid.filter(v => v.english_word.trim().length <= 5);
-            } else {
-                valid = valid.filter(v => v.english_word.trim().length > 5);
-            }
-
-            if (valid.length === 0) {
-    console.warn("Không tìm thấy từ phù hợp, fallback toàn bộ data");
-    valid = data;
-}
-
-
-            this.currentData = valid[Math.floor(Math.random() * valid.length)];
-            this.enCompleted = "";
-
-            this.renderQuestionUI();
-
-            // Bắt đầu logic âm thanh
-            this.speak(this.currentData.english_word);
-            setTimeout(() => {
-                this.speakLetters(this.currentData.english_word);
-            }, 1200);
-
-        } catch (err) {
-            console.error("QuestionType3 Error:", err);
-        }
-    },
+    }
 
     renderQuestionUI() {
-        const area = document.getElementById("questionarea");
+        const area = document.getElementById(this.containerId);
         if (!area || !this.currentData) return;
 
-        const wordEn = String(this.currentData.english_word || "").trim();
-        const wordVi = String(this.currentData.vietnamese_translation || "").trim();
-
         area.innerHTML = `
-            <div class="flex flex-col w-full h-full p-6 bg-slate-800 rounded-3xl items-center justify-center gap-6 relative overflow-hidden">
-
-                <!-- Hiển thị loại câu hỏi -->
-                <div class="absolute top-0 left-0 bg-purple-600 text-white px-3 py-1 rounded-br-2xl text-xs font-bold shadow">
-                    Question Type 3
+            <div class="w-full h-full flex flex-col items-center justify-center p-6 bg-slate-900 rounded-3xl relative overflow-hidden">
+                <div class="absolute top-0 left-0 bg-blue-600 text-white px-4 py-1 rounded-br-2xl text-xs font-bold uppercase tracking-wider shadow-lg">
+                    Question Type 3: Spelling
                 </div>
 
-                <button id="replay-btn" class="absolute top-4 right-4 p-3 rounded-full bg-blue-500 hover:bg-blue-600 shadow-lg text-2xl transition-all active:scale-90">🔊</button>
-                
-                <div class="text-white/50 text-sm uppercase tracking-widest mb-2 font-bold">Listen and Type</div>
+                <button id="replay-btn" class="mb-8 w-20 h-20 bg-blue-500 hover:bg-blue-400 text-white rounded-full shadow-[0_6px_0_#1e40af] transition-all transform active:translate-y-1 active:shadow-none flex items-center justify-center text-4xl">
+                    🔊
+                </button>
 
-                <div id="en-slots" class="flex flex-wrap justify-center items-center gap-3 min-h-[70px] w-full border-b-4 border-dashed border-slate-600 pb-4"></div>
-                <div class="text-yellow-400 text-xl font-medium italic mt-2">
-                    ${wordVi}
+                <div class="mb-10 text-center">
+                    <p class="text-blue-300 text-sm font-bold uppercase tracking-widest opacity-50 mb-2">Vietnamese Meaning</p>
+                    <h2 class="text-3xl font-black text-white drop-shadow-md">${this.currentData.vietnamese_translation}</h2>
                 </div>
-                <div id="en-letters" class="flex flex-wrap justify-center gap-3 w-full mt-6"></div>
+
+                <div id="en-slots" class="flex flex-wrap justify-center gap-3 mb-12 min-h-[64px] w-full"></div>
+
+                <div id="en-letters" class="flex flex-wrap justify-center gap-4 w-full"></div>
             </div>
         `;
 
-        document.getElementById("replay-btn").onclick = async () => {
-            // 1. Phát âm toàn bộ từ trước
-            this.speak(wordEn); 
-            
-            // 2. Chờ một khoảng ngắn (ví dụ 1.2 giây) để từ đọc xong
-            await new Promise(resolve => setTimeout(resolve, 1200)); 
-            
-            // 3. Sau đó mới phát âm từng chữ cái
-            this.speakLetters(wordEn); 
-        };
+        const replayBtn = document.getElementById("replay-btn");
+        if (replayBtn) replayBtn.onclick = () => this._startAudioSequence();
 
-        this.setupGame(wordEn);
-    },
+        this.animateLetters(this.currentData.english_word);
+    }
 
-    setupGame(word) {
+    animateLetters(word) {
         const lettersContainer = document.getElementById("en-letters");
         const slotsContainer = document.getElementById("en-slots");
+        if (!lettersContainer || !slotsContainer) return;
 
         const cleanWord = word.replace(/\s+/g, "");
-        const cleanLetters = cleanWord.split("");
+        const chars = cleanWord.split("");
+        
+        // Tạo các ô trống tương ứng với số chữ cái
+        chars.forEach(() => {
+            const slot = document.createElement("div");
+            slot.className = "w-14 h-14 border-2 border-dashed border-blue-400/50 bg-slate-800/50 rounded-xl flex items-center justify-center text-3xl font-black text-white";
+            slotsContainer.appendChild(slot);
+        });
 
-        const shuffled = cleanLetters.map((c, i) => ({ c, i }))
-            .sort(() => Math.random() - 0.5);
+        // Xáo trộn chữ cái
+        const shuffled = chars.map((c, i) => ({ c, i })).sort(() => Math.random() - 0.5);
 
-        shuffled.forEach((item) => {
-            const btn = document.createElement("div");
-            btn.className = `w-14 h-14 bg-white border-b-4 border-gray-300 rounded-2xl flex items-center justify-center text-2xl font-black cursor-pointer hover:bg-yellow-100 transition-all text-slate-800 shadow-md`;
+        shuffled.forEach((item, index) => {
+            const btn = document.createElement("button");
+            btn.className = "w-14 h-14 bg-white border-2 border-blue-200 rounded-2xl shadow-[4px_4px_0px_#3b82f6] text-2xl font-black text-blue-900 hover:bg-blue-50 transition-all transform active:scale-95";
             btn.innerText = item.c.toUpperCase();
 
             btn.onclick = () => {
-                //this.speak(item.c, "en-US", 1.2);
-
-                const targetChar = cleanWord[this.enCompleted.length];
-
-                if (item.c.toLowerCase() === targetChar.toLowerCase()) {
+                const targetChar = cleanWord[this.enCompleted.length].toLowerCase();
+                
+                if (item.c.toLowerCase() === targetChar) {
+                    // Đúng chữ cái tiếp theo
                     this.enCompleted += item.c;
-
-                    const slot = document.createElement("div");
-                    slot.className = "w-14 h-14 bg-green-500 text-white rounded-2xl flex items-center justify-center text-2xl font-black border-b-4 border-green-700 animate-bounce";
-                    slot.innerText = item.c.toUpperCase();
-                    slotsContainer.appendChild(slot);
+                    
+                    // Điền vào slot tương ứng
+                    const slots = slotsContainer.querySelectorAll("div");
+                    const currentSlot = slots[this.enCompleted.length - 1];
+                    if (currentSlot) {
+                        currentSlot.innerText = item.c.toUpperCase();
+                        currentSlot.classList.add("text-green-400");
+                        currentSlot.style.borderBottomColor = "#4ade80";
+                    }
 
                     btn.style.visibility = "hidden";
                     btn.style.pointerEvents = "none";
 
                     this.checkWin();
                 } else {
-                    btn.classList.add("bg-red-500", "text-white", "border-red-700", "shake");
-                    setTimeout(() => {
-                        btn.classList.remove("bg-red-500", "text-white", "border-red-700", "shake");
-                    }, 500);
+                    // Sai chữ cái
+                    btn.classList.add("bg-red-500", "text-white", "shake");
+                    setTimeout(() => btn.classList.remove("bg-red-500", "text-white", "shake"), 500);
                     if (typeof this.onWrong === "function") this.onWrong();
                 }
             };
+
             lettersContainer.appendChild(btn);
         });
-    },
+    }
 
     checkWin() {
         const goal = this.currentData.english_word.replace(/\s+/g, "").toLowerCase();
         if (this.enCompleted.toLowerCase() === goal) {
+            // Cập nhật dữ liệu cho Manager
+            this._lastAnswered = {
+                en: this.currentData.english_word,
+                vi: this.currentData.vietnamese_translation
+            };
+
             setTimeout(() => {
-                this.speak(this.currentData.english_word);
-                if (typeof this.onCorrect === "function") this.onCorrect();
+                if (this._destroyed) return;
+                if (this._config.speakOnCorrect) this.speak(this.currentData.english_word);
+                if (typeof this.onCorrect === "function") this.onCorrect(1, true);
             }, 600);
         }
-    },
+    }
 
     destroy() {
-        try { if (window.speechSynthesis) speechSynthesis.cancel(); } catch (e) {}
-        const area = document.getElementById("questionarea");
+        this._destroyed = true;
+        if (window.speechSynthesis) speechSynthesis.cancel();
+        const area = document.getElementById(this.containerId);
         if (area) area.innerHTML = "";
+        
         this.currentData = null;
         this.enCompleted = "";
-        try { speechSynthesis.cancel(); } catch(e){}
+        this._lastAnswered = null;
     }
-};
+}
 
-window.QuestionType3 = QuestionType3;
-export default QuestionType3;
+export default Question3;
