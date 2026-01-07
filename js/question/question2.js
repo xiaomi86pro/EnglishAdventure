@@ -217,6 +217,11 @@ window.QuestionType2 = {
             console.log('[QuestionType2] will call onCorrect, onCorrect exists =', typeof this.onCorrect === 'function');
             if (this.onCorrect) setTimeout(() => {
                 try {
+                    // Gán từ vừa làm đúng để QuestionManager ghi vào history
+                    this._lastAnswered = {
+                        en: (this.currentData.word || '').toUpperCase().trim(),
+                        vi: (this.currentData.vietnamese || '').trim()
+                    };
                     this.onCorrect();
                     console.log('[QuestionType2] onCorrect called successfully');
                 } catch (err) {
@@ -242,7 +247,16 @@ window.QuestionType2 = {
                 }
             }
         }
+    },
+
+    destroy() {
+        try {
+            if (window.speechSynthesis) speechSynthesis.cancel();
+        } catch (e) {
+            console.warn('[QuestionType2] destroy: speech cancel failed', e);
+        }
     }
+
 };
 
 window.QuestionType2 = QuestionType2;

@@ -452,7 +452,7 @@ if (this.monster.hp <= 0) {
     console.log('[GameEngine] monster died');
     // Log rõ ràng rằng round kết thúc do quái chết
     console.log('[GameEngine] round finished, monster died — delegating to handleMonsterDefeat');
-
+    try { if (window.speechSynthesis) speechSynthesis.cancel(); } catch (e) {}
     // Đảm bảo reset isBattling trước khi gọi handleMonsterDefeat nếu cần
     // (handleMonsterDefeat sẽ tự lo progression và spawn quái mới)
     this.isBattling = false;
@@ -1244,6 +1244,8 @@ async checkAndUnlockHero(completedStationId) {
     showMainMenu() {
         // Dừng game
         this.isBattling = false;
+        try { if (window.speechSynthesis) speechSynthesis.cancel(); } 
+        catch (e) {}    
 
         // Lưu trạng thái game hiện tại
     try {

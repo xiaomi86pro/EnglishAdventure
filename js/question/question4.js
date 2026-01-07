@@ -277,61 +277,58 @@ const QuestionType4 = {
         this._mouseupHandler = (e) => {
             if (!selecting) return;
             selecting = false;
+        
             const word = selectedCells.map(c => c.innerText).join("");
             const reversed = selectedCells.map(c => c.innerText).reverse().join("");
             const foundIndex = selected.findIndex(w => w.english === word || w.english === reversed);
-
+        
             if (foundIndex >= 0) {
                 const foundEl = document.getElementById(`found-${foundIndex}`);
                 if (foundEl && !foundEl.innerText) {
                     foundEl.innerText = selected[foundIndex].english;
                 }
-
+        
                 this.speak(word);
                 selectedCells.forEach(c => {
                     c.classList.remove("bg-green-300");
                     c.classList.add("bg-yellow-300");
                 });
-
-                const foundWords = selected.filter((w, idx) => {
-                    const el = document.getElementById(`found-${idx}`);
-                    return el && el.innerText !== '';
-                });
-
-                // Call onCorrect for this single found word: 1 hit, do NOT advance question
+        
+                // Ghi lại từ vừa tìm được
                 if (typeof this.onCorrect === 'function') {
                     this._lastAnswered = {
                         en: (selected[foundIndex].english || '').toUpperCase().replace(/\s+/g, ''),
                         vi: selected[foundIndex].vietnamese || ''
-                      };
-                      this.onCorrect(1, false);                      
+                    };
+                }
+        
+                // Kiểm tra xem đã tìm đủ tất cả từ chưa
+                const allFound = selected.every((w, idx) => {
+                    const el = document.getElementById(`found-${idx}`);
+                    return el && el.textContent.trim() !== '';
+                });
+        
+                if (typeof this.onCorrect === 'function') {
                     try {
-                        if (window.CONFIG?.debug) console.log('[Q4] calling onCorrect single', { foundIndex });
-                        this.onCorrect(1, false);
+                        if (allFound) {
+                            if (window.CONFIG?.debug) console.log('[Q4] all words found, calling final onCorrect');
+                            this.onCorrect(1, true); // ✅ advanceNext = true
+                        } else {
+                            if (window.CONFIG?.debug) console.log('[Q4] calling onCorrect single', { foundIndex });
+                            this.onCorrect(1, false); // ✅ advanceNext = false
+                        }
                     } catch (e) {
                         console.warn('[Q4] onCorrect call failed', e);
                     }
                 }
-
-                if (foundWords.length === selected.length) {
-                    // All words found: call final onCorrect to allow advanceNext = true
-                    if (typeof this.onCorrect === 'function') {
-                        try {
-                            if (window.CONFIG?.debug) console.log('[Q4] all words found, calling final onCorrect');
-                            this.onCorrect(1, true);
-                        } catch (e) {
-                            console.warn('[Q4] final onCorrect failed', e);
-                        }
-                    }
-                }
             } else {
-                // wrong selection
+                // Sai: reset màu
                 selectedCells.forEach(c => c.classList.remove("bg-green-300"));
                 if (typeof this.onWrong === 'function') {
                     try { this.onWrong(); } catch(e){ console.warn('[Q4] onWrong failed', e); }
                 }
             }
-
+        
             selectedCells = [];
         };
 
@@ -339,6 +336,8 @@ const QuestionType4 = {
     },
 
     destroy() {
+        try { if (window.speechSynthesis) speechSynthesis.cancel(); } catch (e) {}
+
         this.hintCount = 0;
 
         if (this.attackInterval) {

@@ -525,6 +525,8 @@ const QuestionType5 = {
     },
 
     destroy() {
+        try { if (window.speechSynthesis) speechSynthesis.cancel(); } catch (e) {}
+
         if (this.monsterAttackTimer) {
             clearInterval(this.monsterAttackTimer);
             this.monsterAttackTimer = null;

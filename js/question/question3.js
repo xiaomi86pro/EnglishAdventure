@@ -174,6 +174,7 @@ const QuestionType3 = {
     },
 
     destroy() {
+        try { if (window.speechSynthesis) speechSynthesis.cancel(); } catch (e) {}
         const area = document.getElementById("questionarea");
         if (area) area.innerHTML = "";
         this.currentData = null;
