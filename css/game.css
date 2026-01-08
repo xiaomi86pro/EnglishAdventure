@@ -10,6 +10,7 @@
     --monster-normal: 64px;
     --monster-elite: 96px;
     --monster-boss: 200px;
+    --monster-fboss: 200px;
     --z-ui: 50;
   }
   
@@ -73,7 +74,7 @@
   #monster.size-normal{width:var(--monster-normal);height:var(--monster-normal)}
   #monster.size-elite{width:var(--monster-elite);height:var(--monster-elite)}
   #monster.size-boss{width:var(--monster-boss);height:var(--monster-boss)}
-  
+  #monster.size-fboss{width:var(--monster-fboss);height:var(--monster-fboss)}
   /* Attack and hit effects */
   .attack-lunge{
     animation:attackLunge .28s ease-out forwards;

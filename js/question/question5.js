@@ -69,61 +69,65 @@ class Question5 {
 
         container.innerHTML = `
         <div class="w-full h-full flex flex-col items-center justify-center p-6 bg-slate-900 rounded-3xl relative overflow-hidden">
-            <div class="flex w-full h-full gap-6 p-4">
+        <div class="flex w-full h-full gap-6 p-4">
             <div class="absolute top-0 left-0 bg-yellow-600 text-white px-3 py-1 rounded-br-2xl text-xs font-bold shadow z-10">
-              Type 6: Suffix Match
+            Type 6: Suffix Match
             </div>
-                <!-- Cột trái: Danh sách từ tiếng Việt -->
-                <div class="w-1/3 space-y-3 overflow-y-auto">
-                    <h3 class="text-xl font-black text-purple-600 mb-4">Ghép từ:</h3>
-                    ${this.words.map((w, idx) => `
-                        <div class="bg-white/80 rounded-xl p-3 border-2 border-purple-200">
-                            <p class="text-green-600 font-bold text-lg">${w.vietnamese}</p>
-                            <p id="answer-${idx}" class="text-blue-600 font-black text-xl mt-2 min-h-[28px]"></p>
-                        </div>
-                    `).join('')}
-                </div>
-
-                <!-- Cột phải: Vùng chơi -->
-                <div class="flex-1 flex flex-col gap-4">
-                    <!-- Thanh countdown -->
-                    <div class="bg-red-100 rounded-xl p-3 border-2 border-red-300 flex items-center justify-between">
-                        <span class="font-bold text-red-600">⏰ Quái tấn công sau:</span>
-                        <span id="countdown-timer" class="text-3xl font-black text-red-600">${this.monsterAttackCountdown}s</span>
-                    </div>
-
-                    <!-- Vùng hiển thị từ đang ghép -->
-                    <div id="current-word" class="bg-blue-50 rounded-xl p-4 border-2 border-blue-300 min-h-[80px] flex items-center justify-center gap-2 flex-wrap">
-                        <span class="text-gray-400 italic">Chọn các chữ cái bên dưới...</span>
-                    </div>
-
-                    <!-- Nút hành động -->
-                    <div class="flex gap-3">
-                        <button id="submit-btn" class="flex-1 py-3 bg-green-500 hover:bg-green-600 text-white font-black rounded-xl text-lg">
-                            ✓ Xác nhận
-                        </button>
-                        <button id="clear-btn" class="px-6 py-3 bg-gray-400 hover:bg-gray-500 text-white font-black rounded-xl">
-                            ✗ Xóa
-                        </button>
-                        <button id="btn-hint" class="px-4 py-3 bg-yellow-400 hover:bg-yellow-500 text-black font-black rounded-xl">
-                            💡 Hint (<span id="hint-counter">${this.hintCount}</span>/<span id="hint-max">${this.config.maxHints}</span>)
-                        </button>
-                    </div>
-
-                    <!-- Grid chữ cái -->
-                    <div id="letters-container" class="relative flex-1 overflow-hidden rounded-xl bg-gradient-to-b from-purple-50 to-white p-4 border-2 border-purple-200">
-                        ${allLetters.map((letter, idx) => `
-                            <button data-idx="${idx}" data-letter="${letter}"
-                                    class="letter-btn absolute w-12 h-12 bg-white border-2 border-purple-300 rounded-lg 
-                                           font-bold text-xl hover:bg-yellow-100 transition-all shadow-md cursor-pointer
-                                           hover:scale-110"
-                                    style="transition: all 0.4s cubic-bezier(0.68, -0.55, 0.265, 1.55);">
-                                ${letter}
-                            </button>
-                        `).join('')}
-                    </div>
-                </div>
+            <!-- Nút Hint ở góc trên bên phải -->
+            <div class="absolute top-0 right-0 z-10">
+            <button id="btn-hint" class="px-4 py-2 bg-yellow-400 hover:bg-yellow-500 text-black font-black rounded-bl-2xl">
+                💡 Hint (<span id="hint-counter">${this.hintCount}</span>/<span id="hint-max">${this.config.maxHints}</span>)
+            </button>
             </div>
+
+            <!-- Cột trái: Danh sách từ tiếng Việt -->
+            <div class="w-1/3 space-y-3 overflow-y-auto">
+            <h3 class="text-xl font-black text-purple-600 mb-4">Ghép từ:</h3>
+            ${this.words.map((w, idx) => `
+                <div class="bg-white/80 rounded-xl p-3 border-2 border-purple-200">
+                <p class="text-green-600 font-bold text-lg">${w.vietnamese}</p>
+                <p id="answer-${idx}" class="text-blue-600 font-black text-xl mt-2 min-h-[28px]"></p>
+                </div>
+            `).join('')}
+            </div>
+
+            <!-- Cột phải: Vùng chơi -->
+            <div class="flex-1 flex flex-col gap-4">
+            <!-- Thanh countdown -->
+            <div class="bg-red-100 rounded-xl p-3 border-2 border-red-300 flex items-center justify-between">
+                <span class="font-bold text-red-600">⏰ Quái tấn công sau:</span>
+                <span id="countdown-timer" class="text-3xl font-black text-red-600">${this.monsterAttackCountdown}s</span>
+            </div>
+
+            <!-- Vùng hiển thị từ đang ghép -->
+            <div id="current-word" class="bg-blue-50 rounded-xl p-4 border-2 border-blue-300 min-h-[80px] flex items-center justify-center gap-2 flex-wrap">
+                <span class="text-gray-400 italic">Chọn các chữ cái bên dưới...</span>
+            </div>
+
+            <!-- Nhóm nút hành động -->
+            <div class="flex gap-3">
+                <button id="submit-btn" class="flex-1 py-3 bg-green-500 hover:bg-green-600 text-white font-black rounded-xl text-lg">
+                ✓ Xác nhận
+                </button>
+                <button id="clear-btn" class="flex-1 py-3 bg-gray-400 hover:bg-gray-500 text-white font-black rounded-xl text-lg">
+                ✗ Xóa
+                </button>
+            </div>
+
+            <!-- Grid chữ cái -->
+            <div id="letters-container" class="relative flex-1 overflow-hidden rounded-xl bg-gradient-to-b from-purple-50 to-white p-4 border-2 border-purple-200">
+                ${allLetters.map((letter, idx) => `
+                <button data-idx="${idx}" data-letter="${letter}"
+                        class="letter-btn absolute w-12 h-12 bg-white border-2 border-purple-300 rounded-lg 
+                                font-bold text-xl hover:bg-yellow-100 transition-all shadow-md cursor-pointer
+                                hover:scale-110"
+                        style="transition: all 0.4s cubic-bezier(0.68, -0.55, 0.265, 1.55);">
+                    ${letter}
+                </button>
+                `).join('')}
+            </div>
+            </div>
+        </div>
         </div>
         `;
 

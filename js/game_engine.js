@@ -148,9 +148,14 @@ const GameEngine = {
             if (monsterEl) {
                 monsterEl.style.backgroundImage = `url('${this.monster.sprite_url}')`;
                 
-                let sizeClass = 'size-normal';
-                if (this.monster.type === 'elite') sizeClass = 'size-elite';
-                else if (this.monster.type === 'boss') sizeClass = 'size-boss';
+                        let sizeClass = 'size-normal';
+            if (this.monster.type === 'elite') {
+                sizeClass = 'size-elite';
+            } else if (this.monster.type === 'boss') {
+                sizeClass = 'size-boss';
+            } else if (this.monster.type === 'fboss') {   
+                sizeClass = 'size-fboss';
+            }
                 
                 monsterEl.className = `sprite ${sizeClass}`;
             }
@@ -440,7 +445,7 @@ const GameEngine = {
         // Hero attacks
         for (let i = 0; i < correctCount; i++) {
             if (this.monster.hp <= 0) break;
-            doAttack(this.player, this.monster, heroAtk, this.heroSlashSound);
+            doAttack(this.player, this.monster, heroAtk, this.audioManager.playSfx('../sounds/Slicing_flesh.mp3'));
             await new Promise(r => setTimeout(r, 200));
         }
 // Nếu monster chết
@@ -1081,10 +1086,8 @@ async checkAndUnlockHero(completedStationId) {
         setTimeout(() => {
             // Phát âm thanh
             if (attacker === this.player) {
-                this.heroSlashSound.currentTime = 0;
                 this.audioManager.playSfx('../sounds/Slicing_flesh.mp3');
             } else {
-                this.monsterPunchSound.currentTime = 0;
                 this.audioManager.playSfx('../sounds/Punch.mp3');
             }
     
