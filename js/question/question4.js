@@ -166,20 +166,25 @@ class Question4 {
             const selectedText = selectedCells.map(c => c.innerText).join('');
             const wordObj = this.wordsToFind.find(w => w.en === selectedText && !w.found);
 
+            // Tìm đến hàm _attachEventListeners và thay thế đoạn xử lý trúng từ (wordObj)
             if (wordObj) {
                 wordObj.found = true;
                 this.foundWords.push(wordObj);
                 
                 selectedCells.forEach(c => {
+                    // Xóa màu vàng khi đang chọn
                     c.classList.remove("!bg-yellow-400");
+                    // Thêm màu xanh để đánh dấu đã tìm thấy
+                    // KHÔNG dùng pointerEvents = "none" để từ khác vẫn có thể dùng chung ô này
                     c.classList.add("!bg-green-500", "!text-white");
-                    c.style.pointerEvents = "none";
                 });
 
                 const label = document.getElementById(`word-${wordObj.en}`);
                 if (label) {
                     label.classList.replace("bg-slate-800", "bg-green-600");
                     label.classList.replace("border-slate-600", "border-green-400");
+                    // Thêm icon tích cho trực quan
+                    if (!label.innerHTML.includes('✔')) label.innerHTML += ' ✔';
                 }
 
                 this._lastAnswered = { en: wordObj.en, vi: wordObj.vi };

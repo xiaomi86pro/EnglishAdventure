@@ -702,7 +702,7 @@ async handleHeroDefeat() {
 
         // Chuyển về menu chính
         if (typeof this.showMainMenu === 'function') {
-            this.showMainMenu();
+            this.showMainMenu(true);
         } else {
             // fallback: reload trang
             location.reload();
@@ -1245,10 +1245,10 @@ async checkAndUnlockHero(completedStationId) {
         this.audioManager.stopAll();
         // Lưu trạng thái game hiện tại
         if (!skipSave) {
-            this.saveGame();
+            this.saveGameState();
           } else {
             // tuỳ bạn: xoá save để không load lại trạng thái chết
-            this.clearSave?.();
+            this.clearSaveState();
           }
       
         // Xóa hoàn toàn nội dung các vùng
