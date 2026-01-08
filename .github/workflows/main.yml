@@ -1,31 +1,44 @@
-name: Inject Secrets and Deploy
+name: Build and Deploy (Vite -> GitHub Pages)
 
 on:
   push:
     branches: [ main ]
 
-jobs:
-  build-and-deploy:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
+permissions:
+  contents: read
+  pages: write
+  id-token: write
 
-      - name: Setup Node
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: 18
 
-      - name: Install deps
+      - name: Install dependencies
         run: npm ci
 
-      - name: Build (Vite) with secrets
+      - name: Build with Vite and inject secrets
         env:
           VITE_SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           VITE_SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
         run: npm run build
 
-      - name: Upload artifact for Pages
+      - name: Upload artifact for GitHub Pages
         uses: actions/upload-pages-artifact@v3
         with:
           path: ./dist
 
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Deploy to GitHub Pages
+        uses: actions/deploy-pages@v1
