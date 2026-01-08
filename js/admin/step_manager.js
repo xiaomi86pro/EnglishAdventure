@@ -139,7 +139,7 @@ const StepManager = {
         const type = this.questionTypes.find(t => t.id === typeId);
         if (!type) return `<span class="text-xs bg-gray-200 px-2 py-1 rounded">Type ${typeId}</span>`;
         
-        return `<span class="text-xs bg-purple-100 text-purple-700 px-2 py-1 rounded font-bold">${type.icon} ${type.name}</span>`;
+        return `<span class="text-xs bg-purple-100 text-purple-700 px-2 py-1 rounded font-bold">${typeId} - ${type.icon} ${type.name}</span>`;
     },
     
     async editStep(stepNumber) {
@@ -197,7 +197,7 @@ const StepManager = {
                     <label class="block font-bold mb-2">Loại câu hỏi:</label>
                     <select id="modal-question-type" class="w-full p-3 border rounded-lg">
                         ${this.questionTypes.map(qt => `
-                            <option value="${qt.id}">${qt.icon} ${qt.name} - ${qt.description}</option>
+                            <option value="${qt.id}"> ${qt.id} - ${qt.icon} ${qt.name} - ${qt.description}</option>
                         `).join('')}
                     </select>
 
