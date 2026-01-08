@@ -153,7 +153,7 @@ const GameEngine = {
                 sizeClass = 'size-elite';
             } else if (this.monster.type === 'boss') {
                 sizeClass = 'size-boss';
-            } else if (this.monster.type === 'fboss') {   
+            } else if (this.monster.type === 'final boss') {   
                 sizeClass = 'size-fboss';
             }
                 

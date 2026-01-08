@@ -499,6 +499,13 @@ class Question5 {
             if (heroEl) {
                 heroEl.classList.add('shake');
                 setTimeout(() => heroEl.classList.remove('shake'), 400);
+            
+                if (window.GameEngine.player.hp_current <= 0) {
+                    if (typeof window.GameEngine.handleHeroDefeat === 'function') {
+                        window.GameEngine.handleHeroDefeat();
+                    }
+                    this.stopMonsterAttackTimer(); // dừng countdown
+                }
             }
         }
     }
