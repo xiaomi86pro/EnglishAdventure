@@ -5,21 +5,27 @@ on:
     branches: [ main ]
 
 jobs:
-  build-and-replace:
+  build-and-deploy:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
-      - name: Replace Secrets in admin.js
-        # Lệnh này sẽ tìm chữ REPLACE_... và thay bằng giá trị thật từ Secret
-        run: |
-          sed -i "s|REPLACE_WITH_SUPABASE_URL|${{ secrets.SUPABASE_URL }}|g" js/admin.js
-          sed -i "s|REPLACE_WITH_SUPABASE_ANON_KEY|${{ secrets.SUPABASE_ANON_KEY }}|g" js/admin.js
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 18
 
-      # Sau khi thay thế, bạn có thể chạy lệnh deploy hoặc build tiếp theo ở đây
-      # Ví dụ: nếu bạn dùng GitHub Pages
-      - name: Upload Artifact
+      - name: Install deps
+        run: npm ci
+
+      - name: Build (Vite) with secrets
+        env:
+          VITE_SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          VITE_SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
+        run: npm run build
+
+      - name: Upload artifact for Pages
         uses: actions/upload-pages-artifact@v3
         with:
-          path: '.'
+          path: ./dist
+
