@@ -3,11 +3,7 @@
  */
 const GameEngine = {
     isBattling: false,
-    heroSlashSound: new Audio('../sounds/Slicing_flesh.mp3'),
-    monsterPunchSound: new Audio('../sounds/Punch.mp3'),
-    healSound: new Audio('../sounds/Heal.mp3'),
-    bossBgm: new Audio('../sounds/Boss_Battle.mp3'),
-    fbossBgm: new Audio('../sounds/Final_Boss.mp3'),
+    audioManager: new AudioManager({ deathSrc: '../sounds/Game_Over.mp3', sfxPoolSize: 8 }),
     player: null,
     monster: null,
     // ✅ Thêm phần mới
@@ -160,11 +156,11 @@ const GameEngine = {
             }
 
             if (this.monster.type === 'boss') {
-                this.playBossMusic();
+                this.audioManager.playBgm('../sounds/Boss_Battle.mp3', { loop: true, fadeInMs: 300 });
             } else if (this.monster.type === 'final boss') {
-                this.playFinalBossMusic();
+                this.audioManager.playBgm('../sounds/Final_Boss.mp3', { loop: true, fadeInMs: 300 });
             } else {
-                this.stopBossMusic(); // Đảm bảo tắt nhạc boss nếu gặp quái thường
+                this.audioManager.stopBgm({ fadeOutMs: 300 });
             }
 
             console.log('Spawned monster:', this.monster.name);
@@ -206,7 +202,7 @@ const GameEngine = {
         };
         localStorage.setItem(`gameState-${this.player.id}`, JSON.stringify(gameState));
         console.log('Game đã được lưu:', gameState);
-        this.stopBossMusic();
+        this.audioManager.stopBgm({ fadeOutMs: 300 });
     },
 
     /**
@@ -255,7 +251,7 @@ const GameEngine = {
             this.monster = savedGame.monster;
 
             if (this.monster.type === 'boss') {
-                this.playBossMusic();
+                this.audioManager.playBgm('../sounds/Boss_Battle.mp3', { loop: true, fadeInMs: 300 });
             }
             
             if (!this.monster.questionType) {
@@ -470,7 +466,7 @@ if (this.monster.hp <= 0) {
         // Monster attacks
         for (let j = 0; j < wrongCount; j++) {
             if ((this.player.hp_current || 0) <= 0) break;
-            doAttack(this.monster, this.player, monsterAtk, this.monsterPunchSound);
+            doAttack(this.monster, this.player, monsterAtk, this.audioManager.playSfx('../sounds/Punch.mp3'));
             await new Promise(r => setTimeout(r, 200));
         }
 
@@ -550,13 +546,13 @@ if (this.monster.hp <= 0) {
         const battle = document.getElementById('battleview');
         const heroEl = document.getElementById('hero');
         if (!battle || !heroEl) return;
-
+    
         // Tính tọa độ hero
         const rect = heroEl.getBoundingClientRect();
         const bvRect = battle.getBoundingClientRect();
         const centerX = rect.left - bvRect.left + rect.width / 2;
         const centerY = rect.top - bvRect.top + rect.height / 2;
-
+    
         // Tạo số +HP màu xanh
         const healEl = document.createElement('div');
         healEl.className = 'heal-popup';
@@ -572,20 +568,20 @@ if (this.monster.hp <= 0) {
         healEl.style.animation = 'floatUpHeal 1.5s ease-out forwards';
         healEl.style.pointerEvents = 'none';
         healEl.style.zIndex = '50';
-
+    
         battle.appendChild(healEl);
-
+    
         // Hiệu ứng ánh sáng xanh quanh hero
         heroEl.style.boxShadow = '0 0 30px #22c55e, 0 0 50px #22c55e';
         setTimeout(() => {
             heroEl.style.boxShadow = '';
         }, 1000);
-
-        if (this.healSound) {
-            this.healSound.currentTime = 0;
-            this.healSound.play().catch(e => console.log('Audio blocked:', e));
+    
+        // Phát âm thanh heal qua AudioManager
+        if (this.audioManager) {
+            this.audioManager.playSfx('../sounds/Heal.mp3');
         }
-
+    
         // Tạo các particle hồi máu xung quanh hero
         for (let i = 0; i < 8; i++) {
             const particle = document.createElement('div');
@@ -609,7 +605,7 @@ if (this.monster.hp <= 0) {
             battle.appendChild(particle);
             setTimeout(() => particle.remove(), 1000);
         }
-
+    
         // Xóa số +HP sau animation
         setTimeout(() => healEl.remove(), 1500);
     },
@@ -621,7 +617,7 @@ if (this.monster.hp <= 0) {
     this.isBattling = true;
     const monsterType = this.monster?.type;
     let hpRestore = 0;
-    this.stopBossMusic();
+    this.audioManager.stopBgm({ fadeOutMs: 300 });
 
     if (monsterType === 'elite') {
         hpRestore = 20;
@@ -675,11 +671,11 @@ if (this.monster.hp <= 0) {
 async handleHeroDefeat() {
     try {
         // Dừng nhạc trận đấu
-        try { this.stopBossMusic(); } catch(e){}
-
+        this.audioManager.stopBgm({ fadeOutMs: 300 });
+        try { this.audioManager.playDeath(); } catch(e){ console.warn(e); }
         // Đánh dấu trạng thái
         this.isBattling = false;
-
+        
         // Hiệu ứng chết cho hero
         const heroEl = document.getElementById('hero');
         if (heroEl) heroEl.classList.add('hero-dead');
@@ -1086,10 +1082,10 @@ async checkAndUnlockHero(completedStationId) {
             // Phát âm thanh
             if (attacker === this.player) {
                 this.heroSlashSound.currentTime = 0;
-                this.heroSlashSound.play();
+                this.audioManager.playSfx('../sounds/Slicing_flesh.mp3');
             } else {
                 this.monsterPunchSound.currentTime = 0;
-                this.monsterPunchSound.play();
+                this.audioManager.playSfx('../sounds/Punch.mp3');
             }
     
             // Gây damage
@@ -1170,7 +1166,7 @@ async checkAndUnlockHero(completedStationId) {
                 const deathSound = new Audio('../sounds/Game_Over.mp3'); 
                 deathSound.play(); 
                 alert("💀 Hero đã gục ngã!"); 
-                this.showMainMenu(); // hoặc logic bạn muốn khi Hero thua }
+                this.showMainMenu(true); 
             } 
             else {
             // Nếu defender là quái vật, dùng hp
@@ -1241,18 +1237,19 @@ async checkAndUnlockHero(completedStationId) {
     /**
      * Hiển thị lại menu chính (quay về màn hình chọn user)
      */
-    showMainMenu() {
+    showMainMenu(skipSave = false) {
         // Dừng game
         this.isBattling = false;
         try { if (window.speechSynthesis) speechSynthesis.cancel(); } 
         catch (e) {}    
-
+        this.audioManager.stopAll();
         // Lưu trạng thái game hiện tại
-    try {
-        this.saveGameState();
-    } catch (e) {
-        console.error('[GameEngine] saveGameState error', e);
-    }
+        if (!skipSave) {
+            this.saveGame();
+          } else {
+            // tuỳ bạn: xoá save để không load lại trạng thái chết
+            this.clearSave?.();
+          }
       
         // Xóa hoàn toàn nội dung các vùng
         const questionArea = document.getElementById('questionarea');
@@ -1293,6 +1290,8 @@ async checkAndUnlockHero(completedStationId) {
     },
     
     stopGame() {
+
+        this.audioManager.stopAll();
         // Dọn dẹp câu hỏi hiện tại
         if (window.QuestionManager) {
             window.QuestionManager.destroy();

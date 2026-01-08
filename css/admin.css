@@ -1,0 +1,31 @@
+:root {
+    --blue: #3b82f6;
+    --red: #ef4444;
+    --green: #22c55e;
+    --purple-light: #f3e8ff;
+  }
+  
+  body {
+    font-family: 'Comic Neue', cursive;
+    background-color: #f0f9ff;
+  }
+  
+  /* Tabs */
+  .tab-active { background: var(--blue); color: #fff; box-shadow: 0 4px 0 #1d4ed8; }
+  .tab-inactive { background: #fff; color: var(--blue); box-shadow: 0 4px 0 #dbeafe; }
+  
+  /* Card */
+  .admin-card, .word-item, .cut-item {
+    box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+    border-radius: 12px;
+  }
+  
+  /* Buttons */
+  .btn {
+    padding: 6px 12px;
+    font-weight: bold;
+    border-radius: 8px;
+    color: #fff;
+  }
+  .btn-save { background: var(--green); }
+  .btn-delete { background: var(--red); margin-left: 4px; }
