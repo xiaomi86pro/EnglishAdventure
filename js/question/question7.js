@@ -56,13 +56,18 @@ const QuestionTypeSimpleMC = {
       const choices = this.currentData.choices || [];
   
       area.innerHTML = `
+      <div class="w-full h-full flex flex-col items-center justify-center p-6 bg-slate-900 rounded-3xl relative overflow-hidden">
         <div class="p-6 bg-slate-800 rounded-2xl text-center text-white">
+        <div class="absolute top-0 left-0 bg-yellow-600 text-white px-3 py-1 rounded-br-2xl text-xs font-bold shadow z-10">
+              Type 7: Listen and pick
+          </div>
           <div class="text-yellow-300 italic text-lg mb-3">${this.escapeHtml(vi)}</div>
           <div id="mc-choices" class="grid grid-cols-2 gap-3"></div>
           <div class="mt-4">
             <button id="replay-sound" class="px-4 py-2 bg-blue-500 rounded text-white">🔊 Replay</button>
           </div>
         </div>
+      </div>
       `;
   
       const container = document.getElementById("mc-choices");

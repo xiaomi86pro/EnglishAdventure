@@ -90,7 +90,7 @@ class Question2 {
         area.innerHTML = `
             <div class="w-full h-full flex flex-col items-center justify-between relative animate-fade-in p-4 bg-white/10 rounded-3xl">
                 <div class="absolute top-0 left-0 bg-purple-600 text-white px-3 py-1 rounded-br-2xl text-xs font-bold shadow">
-                    Question Type 2
+                    Question Type 2 : Fill the blank
                 </div>
 
                 <button id="hint-btn" class="absolute top-4 right-4 w-12 h-12 flex items-center justify-center bg-white border-2 border-yellow-400 text-2xl rounded-2xl shadow-sm hover:bg-yellow-50 transition-all transform active:scale-90">

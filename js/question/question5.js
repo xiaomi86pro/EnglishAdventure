@@ -68,7 +68,11 @@ class Question5 {
         allLetters = allLetters.sort(() => Math.random() - 0.5);
 
         container.innerHTML = `
+        <div class="w-full h-full flex flex-col items-center justify-center p-6 bg-slate-900 rounded-3xl relative overflow-hidden">
             <div class="flex w-full h-full gap-6 p-4">
+            <div class="absolute top-0 left-0 bg-yellow-600 text-white px-3 py-1 rounded-br-2xl text-xs font-bold shadow z-10">
+              Type 6: Suffix Match
+            </div>
                 <!-- Cột trái: Danh sách từ tiếng Việt -->
                 <div class="w-1/3 space-y-3 overflow-y-auto">
                     <h3 class="text-xl font-black text-purple-600 mb-4">Ghép từ:</h3>
@@ -120,6 +124,7 @@ class Question5 {
                     </div>
                 </div>
             </div>
+        </div>
         `;
 
         this.positionLetters();
