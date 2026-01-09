@@ -3,7 +3,7 @@
  */
 const GameEngine = {
     isBattling: false,
-    audioManager: new AudioManager({ deathSrc: '../sounds/Game_Over.mp3', sfxPoolSize: 8 }),
+    audioManager: new AudioManager({ deathSrc: './sounds/Game_Over.mp3', sfxPoolSize: 8 }),
     player: null,
     monster: null,
     // ✅ Thêm phần mới
@@ -161,9 +161,9 @@ const GameEngine = {
             }
 
             if (this.monster.type === 'boss') {
-                this.audioManager.playBgm('../sounds/Boss_Battle.mp3', { loop: true, fadeInMs: 300 });
+                this.audioManager.playBgm('./sounds/Boss_Battle.mp3', { loop: true, fadeInMs: 300 });
             } else if (this.monster.type === 'final boss') {
-                this.audioManager.playBgm('../sounds/Final_Boss.mp3', { loop: true, fadeInMs: 300 });
+                this.audioManager.playBgm('./sounds/Final_Boss.mp3', { loop: true, fadeInMs: 300 });
             } else {
                 this.audioManager.stopBgm({ fadeOutMs: 300 });
             }
@@ -256,7 +256,7 @@ const GameEngine = {
             this.monster = savedGame.monster;
 
             if (this.monster.type === 'boss') {
-                this.audioManager.playBgm('../sounds/Boss_Battle.mp3', { loop: true, fadeInMs: 300 });
+                this.audioManager.playBgm('./sounds/Boss_Battle.mp3', { loop: true, fadeInMs: 300 });
             }
             
             if (!this.monster.questionType) {
@@ -445,7 +445,7 @@ const GameEngine = {
         // Hero attacks
         for (let i = 0; i < correctCount; i++) {
             if (this.monster.hp <= 0) break;
-            doAttack(this.player, this.monster, heroAtk, this.audioManager.playSfx('../sounds/Slicing_flesh.mp3'));
+            doAttack(this.player, this.monster, heroAtk, this.audioManager.playSfx('./sounds/Slicing_flesh.mp3'));
             await new Promise(r => setTimeout(r, 200));
         }
 // Nếu monster chết
@@ -471,7 +471,7 @@ if (this.monster.hp <= 0) {
         // Monster attacks
         for (let j = 0; j < wrongCount; j++) {
             if ((this.player.hp_current || 0) <= 0) break;
-            doAttack(this.monster, this.player, monsterAtk, this.audioManager.playSfx('../sounds/Punch.mp3'));
+            doAttack(this.monster, this.player, monsterAtk, this.audioManager.playSfx('./sounds/Punch.mp3'));
             await new Promise(r => setTimeout(r, 200));
         }
 
@@ -584,7 +584,7 @@ if (this.monster.hp <= 0) {
     
         // Phát âm thanh heal qua AudioManager
         if (this.audioManager) {
-            this.audioManager.playSfx('../sounds/Heal.mp3');
+            this.audioManager.playSfx('./sounds/Heal.mp3');
         }
     
         // Tạo các particle hồi máu xung quanh hero
@@ -1086,9 +1086,9 @@ async checkAndUnlockHero(completedStationId) {
         setTimeout(() => {
             // Phát âm thanh
             if (attacker === this.player) {
-                this.audioManager.playSfx('../sounds/Slicing_flesh.mp3');
+                this.audioManager.playSfx('./sounds/Slicing_flesh.mp3');
             } else {
-                this.audioManager.playSfx('../sounds/Punch.mp3');
+                this.audioManager.playSfx('./sounds/Punch.mp3');
             }
     
             // Gây damage
@@ -1166,7 +1166,7 @@ async checkAndUnlockHero(completedStationId) {
             if (this.player.hp_current < 0) this.player.hp_current = 0;
 
             if (this.player.hp_current === 0) { 
-                const deathSound = new Audio('../sounds/Game_Over.mp3'); 
+                const deathSound = new Audio('./sounds/Game_Over.mp3'); 
                 deathSound.play(); 
                 alert("💀 Hero đã gục ngã!"); 
                 this.showMainMenu(true); 

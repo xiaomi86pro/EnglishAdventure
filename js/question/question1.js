@@ -230,20 +230,28 @@ class Question1 {
           };
           
           // Đọc toàn bộ từ khi hoàn thành
+          // [Sửa lỗi] Đọc toàn bộ từ và đợi đọc xong mới chuyển câu
           setTimeout(() => {
-              if (this._destroyed) return;
-              speechSynthesis.cancel(); 
-              
-              // Phát âm tiếng Anh trước, sau đó là tiếng Việt
-              this.speak(this.currentData.english_word, "en-US", 0.9);
-              
-              // Delay nhẹ để đọc tiếng Việt sau tiếng Anh
-              setTimeout(() => {
-                  if (!this._destroyed) this.speak(this.currentData.vietnamese_translation, "vi-VN", 0.9);
-              }, 1200);
-              
-              if (typeof this.onCorrect === "function") this.onCorrect(1, true);
-          }, 500);
+            if (this._destroyed) return;
+            speechSynthesis.cancel(); 
+            
+            // 1. Đọc tiếng Anh
+            this.speak(this.currentData.english_word, "en-US", 0.9);
+            
+            // 2. Đợi 1.2s cho tiếng Anh đọc xong -> Đọc tiếng Việt
+            setTimeout(() => {
+                if (this._destroyed) return;
+                this.speak(this.currentData.vietnamese_translation, "vi-VN", 0.9);
+                
+                // 3. Đợi thêm 1.5s cho tiếng Việt đọc xong -> Mới gọi onCorrect để chuyển câu
+                setTimeout(() => {
+                    if (!this._destroyed && typeof this.onCorrect === "function") {
+                        this.onCorrect(1, true);
+                    }
+                }, 900);
+
+            }, 800);
+        }, 500);
       }
   }
 
