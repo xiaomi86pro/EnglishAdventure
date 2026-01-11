@@ -368,7 +368,7 @@ startGame: async function() {
         return;
     }
 
-    const introSound = new Audio('./sounds/StartGame.mp3'); 
+    const introSound = new Audio('https://xiaomi86pro.github.io/EnglishAdventure/sounds/StartGame.mp3'); 
     introSound.currentTime = 0; introSound.play();
 
     const supabase = window.supabase;
