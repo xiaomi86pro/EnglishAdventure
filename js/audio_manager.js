@@ -194,3 +194,4 @@ class AudioManager {
       this.unlocked = false;
     }
   }
+  window.AudioManager = AudioManager;
