@@ -101,8 +101,7 @@ class Question2 {
                     <p class="text-gray-400 text-xs uppercase font-bold tracking-widest mb-1">Nghĩa tiếng Việt</p>
                     <h2 class="text-3xl font-black text-green-600 uppercase">${this.currentData.vietnamese}</h2>
                 </div>
-
-                <div id="hint-word-display" class="h-12 flex items-center justify-center text-4xl font-extrabold text-blue-500 opacity-0 transition-opacity duration-500">
+                <div id="hint-word-display" class="h-20 flex items-center justify-center text-6xl font-extrabold text-blue-500 opacity-100 transition-opacity duration-[2000ms]">
                     ${this.currentData.word}
                 </div>
            
@@ -135,6 +134,12 @@ class Question2 {
         }
         if (checkBtn) checkBtn.onclick = () => this.checkAnswer();
         if (hintBtn) hintBtn.onclick = () => this.useHint(hintBtn);
+        setTimeout(() => {
+            const hintDiv = document.getElementById("hint-word-display");
+            if (hintDiv && !this._destroyed) {
+                hintDiv.classList.replace("opacity-100", "opacity-0");
+            }
+        }, 500);
     }
 
     useHint(btn) {

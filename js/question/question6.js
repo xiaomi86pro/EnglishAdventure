@@ -3,6 +3,7 @@
 
 const QuestionType6 = {
     autoReload: false,
+    damageOnHint: 5, // Thêm dòng này (Trừ 5 máu mỗi lần hint)
     currentData: [],
     onCorrect: null,
     onWrong: null,
@@ -78,6 +79,9 @@ const QuestionType6 = {
             <div class="absolute top-0 left-0 bg-yellow-600 text-white px-3 py-1 rounded-br-2xl text-xs font-bold shadow z-10">
                 Type 6: Suffix Match
             </div>
+            <button id="q6-hint-btn" class="absolute top-4 right-4 w-10 h-10 bg-white border-2 border-yellow-400 rounded-full flex items-center justify-center text-xl shadow hover:bg-yellow-50 active:scale-95 transition-transform z-20">
+                💡
+            </button>
             <div class="text-white/50 text-center text-sm font-bold uppercase tracking-widest mb-4">
                 Kéo mảnh ghép bên phải để hoàn thành từ
             </div>
@@ -87,27 +91,24 @@ const QuestionType6 = {
         // Phần Trái (Col 1 + Col 2 cũ): Hiển thị Nghĩa và Từ khuyết
         // Phần Phải (Col 3 cũ): Cột chứa mảnh ghép xếp dọc
         const mainLayout = document.createElement('div');
-        mainLayout.className = 'flex w-full h-full gap-6';
-  
+        mainLayout.className = 'flex w-full h-full gap-[2cm] justify-center items-stretch mt-4';
+          
         // --- KHỐI TRÁI: DANH SÁCH TỪ ---
         const listContainer = document.createElement('div');
-        listContainer.className = 'flex-1 flex flex-col gap-3 overflow-y-auto pr-2 custom-scrollbar';
-        
+        listContainer.className = 'flex-initial flex flex-col gap-3 overflow-y-auto pr-2 custom-scrollbar';
+
         this._dropZones = [];
         this._items.forEach((it, idx) => {
             const row = document.createElement('div');
             // Flex row chứa cả nghĩa tiếng Việt và phần tiếng Anh
-            row.className = 'flex items-center justify-between p-3 bg-slate-700 rounded-xl border border-slate-600';
-  
-            // Nghĩa tiếng Việt
+            row.className = 'flex items-center justify-start p-3 bg-slate-700 rounded-xl border border-slate-600 w-[450px] mx-auto';            
             const viDiv = document.createElement('div');
-            viDiv.className = 'text-green-400 text-sm font-medium w-1/3 truncate mr-2';
-            viDiv.innerText = `${idx + 1}. ${this._escape(it.vi)}`;
+            viDiv.className = 'flex-1 text-green-400 text-sm font-medium truncate pr-4';            viDiv.innerText = `${idx + 1}. ${this._escape(it.vi)}`;
   
             // Phần Tiếng Anh (Gốc + Ô trống sát nhau)
             const engDiv = document.createElement('div');
-            engDiv.className = 'flex items-baseline justify-end flex-1 gap-0.5'; // gap-0.5 để sát nhau
-  
+            engDiv.className = 'flex items-baseline justify-end gap-0.5 min-w-[150px]';
+
             // Gốc từ
             const rootSpan = document.createElement('span');
             rootSpan.className = 'text-2xl font-bold text-white tracking-widest';
@@ -133,9 +134,7 @@ const QuestionType6 = {
   
         // --- KHỐI PHẢI: CÁC MẢNH GHÉP (XẾP DỌC) ---
         const piecesContainer = document.createElement('div');
-        piecesContainer.className = 'w-24 bg-slate-900/50 rounded-xl p-2 flex flex-col items-center gap-3 overflow-y-auto custom-scrollbar border border-slate-700';
-        
-        const cutParts = this._items.map((it, idx) => ({ cut: it.cutPart, originIdx: idx }));
+        piecesContainer.className = 'w-24 self-stretch flex-none bg-slate-900/50 rounded-xl p-2 flex flex-col items-center gap-3 overflow-y-auto custom-scrollbar border border-slate-700 min-h-[300px]';        const cutParts = this._items.map((it, idx) => ({ cut: it.cutPart, originIdx: idx }));
         this._shuffle(cutParts);
   
         this._draggables = [];
@@ -156,7 +155,12 @@ const QuestionType6 = {
         mainLayout.appendChild(piecesContainer);
         wrapper.appendChild(mainLayout);
         container.appendChild(wrapper);
-  
+        
+        setTimeout(() => {
+            const hintBtn = document.getElementById('q6-hint-btn');
+            if (hintBtn) hintBtn.onclick = () => this.useHint();
+        }, 0);
+
         this._attachEvents();
     },
   
@@ -218,19 +222,18 @@ const QuestionType6 = {
         if (cut === item.cutPart) {
             // === ĐÚNG ===
             item.filled = true;
-            
+
             // 1. Biến ô trống thành chữ thường
             zone.innerText = item.cutPart;
             // 2. Add class q6-filled để xóa viền, xóa background
             zone.className = "text-2xl font-bold text-white tracking-widest q6-filled ml-0.5 animate-pulse";
             
             // Ẩn tile bên phải
-            if (tileEl) tileEl.classList.add('hidden');
-  
-            this._speak(item.full);
+            if (tileEl) tileEl.classList.add('invisible', 'pointer-events-none');
   
             if (window.GameEngine) window.GameEngine.processBattleRound(1, 0, false);
             this._checkAllCompleted();
+            this._speak(item.full);
   
         } else {
             // === SAI ===
@@ -264,13 +267,74 @@ const QuestionType6 = {
     },
   
     _speak(text) {
-        if (window.speechSynthesis) {
-            const u = new SpeechSynthesisUtterance(text);
-            u.lang = 'en-US';
-            speechSynthesis.speak(u);
-        }
+        if (!text || !window.speechSynthesis || this._destroyed) return;
+        
+        // Hủy các yêu cầu đọc trước đó để tránh bị chồng chéo âm thanh
+        window.speechSynthesis.cancel();
+        
+        const u = new SpeechSynthesisUtterance(text);
+        u.lang = 'en-US';
+        u.rate = 0.9; // Tốc độ đọc vừa phải để người học dễ nghe
+        
+        // Chọn giọng đọc nếu có sẵn
+        const voices = window.speechSynthesis.getVoices();
+        const targetVoice = voices.find(v => v.lang.includes('en'));
+        if (targetVoice) u.voice = targetVoice;
+        
+        window.speechSynthesis.speak(u);
     },
   
+    useHint() {
+        if (this._destroyed) return;
+        
+        // 1. Tìm câu chưa làm xong đầu tiên
+        const targetIndex = this._items.findIndex(item => !item.filled);
+        if (targetIndex === -1) return; // Đã xong hết
+        
+        const targetItem = this._items[targetIndex];
+
+        // --- LOGIC MỚI: TRỪ HP HERO (Giống Question 2) ---
+        if (window.GameEngine && window.GameEngine.player) {
+            // Trừ máu hiện tại
+            window.GameEngine.player.hp_current = Math.max(0, window.GameEngine.player.hp_current - (this.damageOnHint || 5));
+            
+            // Cập nhật thanh máu trên UI
+            window.GameEngine.updateAllUI();
+            
+            // Hiển thị số damage bay lên (nếu có hàm này)
+            if (typeof window.GameEngine.showDamage === 'function') {
+                window.GameEngine.showDamage(window.GameEngine.player, this.damageOnHint || 5);
+            }
+        }
+        
+        // 2. Tìm DOM của ô trống (Drop Zone)
+        const zone = this._dropZones[targetIndex];
+        
+        // 3. Tìm DOM của mảnh ghép (Draggable Tile)
+        // Phải khớp cả text (cut) và origin (đề phòng từ giống nhau)
+        const tile = this._draggables.find(d => 
+            d.getAttribute('data-cut') === targetItem.cutPart && 
+            d.getAttribute('data-origin') == targetIndex && // Lưu ý: so sánh lỏng (==) vì attribute là string
+            !d.classList.contains('hidden')
+        );
+
+        // 4. Hiệu ứng sáng lên (Highlight)
+        if (zone) {
+            zone.classList.add('bg-yellow-500/20', 'border-yellow-400', 'text-yellow-300', 'scale-110');
+        }
+        
+        if (tile) {
+            tile.classList.add('bg-yellow-500', 'ring-4', 'ring-yellow-300', 'scale-110', 'z-50');
+        }
+
+        // 5. Tắt hiệu ứng sau 1.5 giây
+        setTimeout(() => {
+            if (this._destroyed) return;
+            if (zone) zone.classList.remove('bg-yellow-500/20', 'border-yellow-400', 'text-yellow-300', 'scale-110');
+            if (tile) tile.classList.remove('bg-yellow-500', 'ring-4', 'ring-yellow-300', 'scale-110', 'z-50');
+        }, 1500);
+    },
+
     destroy() {
         this._destroyed = true;
         const container = document.getElementById("questionarea");

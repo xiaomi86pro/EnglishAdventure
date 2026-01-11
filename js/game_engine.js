@@ -575,17 +575,17 @@ if (this.monster.hp <= 0) {
         healEl.style.zIndex = '50';
     
         battle.appendChild(healEl);
-    
+        
+        // Phát âm thanh heal qua AudioManager
+        if (this.audioManager) {
+            this.audioManager.playSfx('./sounds/Heal.mp3');
+        }
+
         // Hiệu ứng ánh sáng xanh quanh hero
         heroEl.style.boxShadow = '0 0 30px #22c55e, 0 0 50px #22c55e';
         setTimeout(() => {
             heroEl.style.boxShadow = '';
         }, 1000);
-    
-        // Phát âm thanh heal qua AudioManager
-        if (this.audioManager) {
-            this.audioManager.playSfx('./sounds/Heal.mp3');
-        }
     
         // Tạo các particle hồi máu xung quanh hero
         for (let i = 0; i < 8; i++) {

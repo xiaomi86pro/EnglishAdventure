@@ -33,74 +33,215 @@ class Question4 {
     }
 
     _selectWords() {
-        if (!this.vocabPool.length) return;
-        let pool = [...this.vocabPool];
-        const selected = [];
-        const targetCount = 5;
-
-        for (let i = 0; i < targetCount && pool.length > 0; i++) {
-            const idx = Math.floor(Math.random() * pool.length);
-            selected.push(pool.splice(idx, 1)[0]);
+        if (!this.vocabPool || this.vocabPool.length === 0) return;
+        
+        // ✅ 1. CHUẨN HÓA VÀ LỌC DỮ LIỆU BAN ĐẦU
+        let pool = this.vocabPool.map(w => ({
+            en: (w.en || w.english || w.english_word || '').toUpperCase().trim(),
+            vi: w.vi || w.vietnamese || w.vietnamese_translation || ''
+        }))
+        .filter(w => w.en.length > 0 && !w.en.includes(' ')); // Bỏ từ rỗng và từ ghép
+    
+        if (pool.length === 0) return;
+    
+        // ✅ 2. TÌM TỪ TRỤC (PIVOT) - Tối đa 8 chữ cái
+        // Lọc những từ có độ dài từ 3 đến 8
+        let pivotCandidates = pool.filter(w => w.en.length >= 4 && w.en.length <= 8);
+        
+        // Nếu không có từ nào <= 8, lấy đại từ ngắn nhất trong pool để làm trục
+        if (pivotCandidates.length === 0) {
+            pivotCandidates = [...pool].sort((a, b) => a.en.length - b.en.length);
+        } else {
+            // Trộn ngẫu nhiên danh sách ứng viên từ trục
+            pivotCandidates.sort(() => Math.random() - 0.5);
         }
-
-        this.wordsToFind = selected.map(item => ({
-            en: item.english_word.toUpperCase().replace(/\s+/g, ''),
-            vi: item.vietnamese_translation,
-            found: false
+        
+        const pivotWord = pivotCandidates[0];
+    
+        // ✅ 3. TÌM 4 TỪ CÒN LẠI - Tối đa 5 chữ cái
+        // Lọc danh sách còn lại (loại bỏ từ đã chọn làm trục)
+        let smallCandidates = pool.filter(w => 
+            w.en !== pivotWord.en && 
+            w.en.length <= 5 && 
+            w.en.length >= 3
+        );
+    
+        // Nếu không đủ 4 từ <= 5 chữ, lấy thêm từ pool chính (loại bỏ từ trục)
+        if (smallCandidates.length < 4) {
+            let fallbackPool = pool.filter(w => w.en !== pivotWord.en);
+            fallbackPool.sort((a, b) => a.en.length - b.en.length); // Lấy các từ ngắn nhất có thể
+            smallCandidates = fallbackPool.slice(0, 4);
+        } else {
+            // Trộn ngẫu nhiên để mỗi ván mỗi khác
+            smallCandidates.sort(() => Math.random() - 0.5);
+        }
+    
+        const selectedSmall = smallCandidates.slice(0, 4);
+    
+        // ✅ 4. GÁN DỮ LIỆU VÀO ĐỐI TƯỢNG
+        this.wordsToFind = [pivotWord, ...selectedSmall].map(w => ({
+            en: w.en,
+            vi: w.vi,
+            found: false,
+            hinted: false
         }));
-
-        const maxLen = Math.max(...this.wordsToFind.map(w => w.en.length));
-        // Tạo grid lớn hơn một chút để dễ đặt từ
-        this.gridSize = Math.max(maxLen + 1, 8); 
     }
 
-    _generateGrid(words) {
-        const size = this.gridSize;
-        let grid = Array.from({ length: size }, () => Array(size).fill(null));
-        const placedPositions = []; // Lưu vị trí các từ đã đặt
-
-        // Sắp xếp từ dài nhất để đặt trước
-        const sortedWords = [...words].sort((a, b) => b.en.length - a.en.length);
-
-        sortedWords.forEach(wordObj => {
-            const word = wordObj.en;
+    _generateGrid() {
+        if (!this.wordsToFind || this.wordsToFind.length === 0) return [[]];
+        
+        const words = this.wordsToFind;
+        const placedPositions = []; // Mảng chứa các object {char, r, c}
+    
+        // 1. Đặt từ dài nhất nằm ngang ở dòng 0, bắt đầu từ cột 0
+        const pivot = words[0].en;
+        this._recordPlacement(words[0], 0, 0, true, placedPositions);
+    
+        // 2. Xếp các từ còn lại
+        for (let i = 1; i < words.length; i++) {
+            const word = words[i].en;
             let placed = false;
-            let attempts = 0;
-
-            while (!placed && attempts < 300) {
-                const isHorizontal = Math.random() > 0.5;
-                const row = Math.floor(Math.random() * (isHorizontal ? size : size - word.length + 1));
-                const col = Math.floor(Math.random() * (isHorizontal ? size - word.length + 1 : size));
-
-                if (this._canPlace(grid, word, row, col, isHorizontal)) {
-                    // Đặt từ và lưu vị trí
-                    for (let i = 0; i < word.length; i++) {
-                        const r = isHorizontal ? row : row + i;
-                        const c = isHorizontal ? col + i : col;
-                        grid[r][c] = word[i];
-                        placedPositions.push({ row: r, col: c });
+    
+            // Thử đan xen DỌC vào các vị trí đã có trên Grid
+            for (let charIdx = 0; charIdx < word.length; charIdx++) {
+                const char = word[charIdx];
+                const matches = placedPositions.filter(p => p.char === char);
+                
+                for (let m of matches) {
+                    const startR = m.r - charIdx;
+                    const startC = m.c;
+                    
+                    if (this._canPlaceGreedy(word, startR, startC, false, placedPositions)) {
+                        this._recordPlacement(words[i], startR, startC, false, placedPositions);
+                        placed = true;
+                        break;
                     }
-                    placed = true;
                 }
-                attempts++;
+                if (placed) break;
+            }
+    
+            // 3. Nếu không đan xen được, xếp thành 1 cột dọc riêng (Cách từ cuối cùng 2 cột)
+            if (!placed) {
+                const currentCols = placedPositions.map(p => p.c);
+                const maxC = Math.max(...currentCols, 0);
+                this._recordPlacement(words[i], 0, maxC + 2, false, placedPositions);
+            }
+        }
+    
+        return this._finalizeGrid(placedPositions);
+    }
+    
+    // Hàm kiểm tra vị trí trống
+    _canPlaceGreedy(word, r, c, isHorizontal, placed) {
+        for (let i = 0; i < word.length; i++) {
+            const curR = isHorizontal ? r : r + i;
+            const curC = isHorizontal ? c + i : c;
+            const existing = placed.find(p => p.r === curR && p.c === curC);
+            if (existing && existing.char !== word[i]) return false;
+        }
+        return true;
+    }
+    
+    // Hàm ghi lại vị trí
+    _recordPlacement(wordObj, r, c, isHorizontal, placed) {
+        wordObj.firstCharPos = { row: r, col: c };
+        wordObj.isHorizontal = isHorizontal;
+        const word = wordObj.en;
+        
+        for (let i = 0; i < word.length; i++) {
+            const curR = isHorizontal ? r : r + i;
+            const curC = isHorizontal ? c + i : c;
+            // Chỉ thêm nếu ô đó chưa có chữ (tránh trùng lặp trong mảng đặt)
+            if (!placed.find(p => p.r === curR && p.c === curC)) {
+                placed.push({ char: word[i], r: curR, c: curC });
+            }
+        }
+    }
+
+    _findBestGreedySpot(word, placedPositions) {
+        let bestSpot = null;
+        let maxOverlap = -1;
+    
+        // Thử mọi vị trí có thể đan xen với các chữ cái đã đặt
+        placedPositions.forEach(pos => {
+            const charIndexInNewWord = word.indexOf(pos.char);
+            if (charIndexInNewWord !== -1) {
+                // Thử cả 2 hướng: Ngang và Dọc
+                [true, false].forEach(isHorizontal => {
+                    const startR = isHorizontal ? pos.r : pos.r - charIndexInNewWord;
+                    const startC = isHorizontal ? pos.c - charIndexInNewWord : pos.c;
+    
+                    const overlapScore = this._calculateScore(word, startR, startC, isHorizontal, placedPositions);
+                    if (overlapScore > maxOverlap) {
+                        maxOverlap = overlapScore;
+                        bestSpot = { r: startR, c: startC, isHorizontal };
+                    }
+                });
             }
         });
-
-        // ✅ TỐI ƯU: Thu gọn grid về kích thước nhỏ nhất
-        const optimizedGrid = this._trimGrid(grid, placedPositions);
-        
-        // Lấp đầy ô trống với chữ random
-        for (let r = 0; r < optimizedGrid.length; r++) {
-            for (let c = 0; c < optimizedGrid[r].length; c++) {
-                if (!optimizedGrid[r][c]) {
-                    optimizedGrid[r][c] = String.fromCharCode(65 + Math.floor(Math.random() * 26));
+    
+        // Nếu không tìm được chỗ đan xen, đặt đại vào cạnh một từ nào đó (Score = 0)
+        if (!bestSpot) {
+            const lastPos = placedPositions[placedPositions.length - 1];
+            bestSpot = { r: lastPos.r + 2, c: lastPos.c, isHorizontal: true };
+        }
+    
+        return bestSpot;
+    }
+    
+    _calculateScore(word, r, c, isHorizontal, placedPositions) {
+        let score = 0;
+        for (let i = 0; i < word.length; i++) {
+            const curR = isHorizontal ? r : r + i;
+            const curC = isHorizontal ? c + i : c;
+    
+            const existing = placedPositions.find(p => p.r === curR && p.c === curC);
+            if (existing) {
+                if (existing.char === word[i]) {
+                    score++; // Cộng điểm nếu trùng chữ cái (đan xen tốt)
+                } else {
+                    return -1; // Không thể đặt vì bị xung đột chữ cái
                 }
             }
         }
-        
-        return optimizedGrid;
+        return score;
     }
 
+    _finalizeGrid(placedPositions) {
+        const rows = placedPositions.map(p => p.r);
+        const cols = placedPositions.map(p => p.c);
+        const minR = Math.min(...rows), maxR = Math.max(...rows);
+        const minC = Math.min(...cols), maxC = Math.max(...cols);
+    
+        const height = maxR - minR + 1;
+        const width = maxC - minC + 1;
+        this.gridWidth = width;
+        this.gridHeight = height;
+    
+        const grid = Array.from({ length: height }, () => Array(width).fill(''));
+    
+        placedPositions.forEach(p => {
+            grid[p.r - minR][p.c - minC] = p.char;
+        });
+    
+        // Cập nhật tọa độ Hint
+        this.wordsToFind.forEach(w => {
+            if (w.firstCharPos) {
+                w.firstCharPos.row -= minR;
+                w.firstCharPos.col -= minC;
+            }
+        });
+    
+        // Điền chữ ngẫu nhiên vào ô trống
+        for (let r = 0; r < height; r++) {
+            for (let c = 0; c < width; c++) {
+                if (grid[r][c] === '') {
+                    grid[r][c] = String.fromCharCode(65 + Math.floor(Math.random() * 26));
+                }
+            }
+        }
+        return grid;
+    }
     /**
      * ✅ HÀM MỚI: Thu gọn grid bằng cách loại bỏ dòng/cột trống
      */
@@ -138,7 +279,12 @@ class Question4 {
         // Cập nhật kích thước thực tế
         this.gridHeight = trimmedGrid.length;
         this.gridWidth = trimmedGrid[0]?.length || 0;
-
+        this.wordsToFind.forEach(w => {
+            if (w.firstCharPos) {
+                w.firstCharPos.row -= minRow;
+                w.firstCharPos.col -= minCol;
+            }
+        });
         return trimmedGrid;
     }
 
@@ -154,53 +300,77 @@ class Question4 {
 
     renderQuestionUI() {
         const area = document.getElementById(this.containerId);
-        if (!area) return;
-
-        const grid = this._generateGrid(this.wordsToFind);
-
-        area.innerHTML = `
-        <div class="w-full h-full flex flex-col items-center justify-center p-6 bg-slate-900 rounded-3xl relative overflow-hidden">
-        <div class="absolute top-0 left-0 bg-purple-600 text-white px-3 py-1 rounded-br-2xl text-xs font-bold shadow">
-                    Question Type 4 : Find words
-                </div>
-                <div class="flex flex-col lg:flex-row gap-10 items-start justify-center w-full">
-                    
-                    <div id="word-grid" class="grid gap-1.5 bg-slate-800 p-3 rounded-2xl shadow-2xl select-none" 
-                         style="grid-template-columns: repeat(${this.gridWidth}, minmax(0, 1fr)); width: fit-content;">
-                        ${grid.map((row, r) => row.map((char, c) => `
-                            <div class="word-cell w-12 h-12 flex items-center justify-center bg-white text-slate-900 font-black text-2xl rounded-lg cursor-pointer hover:bg-yellow-100 transition-colors shadow-inner"
-                                 data-row="${r}" data-col="${c}">${char}</div>
-                        `).join('')).join('')}
-                    </div>
-
-                    <div class="flex flex-col gap-4 p-4 bg-slate-800/50 rounded-2xl border border-slate-700 relative" style="width: fit-content; min-width: 180px;">
-                        <!-- Nút Hint ở góc trên phải -->
-                        <button id="hint-btn" class="absolute top-2 right-2 px-3 py-1.5 bg-yellow-400 hover:bg-yellow-500 text-black font-bold rounded-lg text-sm transition-all shadow-lg flex items-center gap-1">
-                            💡 Hint (<span id="hint-counter">${this.hintCount}</span>/${this.maxHints})
-                        </button>
-                        
-                        <h3 class="text-blue-400 font-black text-sm tracking-widest uppercase mt-8">Targets (${this.wordsToFind.length})</h3>
-                        <div id="word-list" class="flex flex-col gap-2">
-                            ${this.wordsToFind.map(w => `
-                                <div id="word-${w.en}" class="px-4 py-2 bg-slate-800 text-white rounded-xl border-l-4 border-slate-600 whitespace-nowrap">
-                                    <span class="text-lg font-bold">${w.vi}</span>
-                                    <span id="hint-${w.en}" class="ml-2 text-yellow-300 font-mono text-sm"></span>
-                                </div>
-                            `).join('')}
-                        </div>
-                    </div>
-
-                </div>
-                
-                <div class="mt-4 text-slate-400 text-sm">
-                    Grid size: ${this.gridWidth}×${this.gridHeight} (optimized from ${this.gridSize}×${this.gridSize})
-                </div>
+        if (!area || this._destroyed) return;
+    
+        // 1. Tạo Grid dữ liệu
+        const grid = this._generateGrid();
+        area.innerHTML = "";
+    
+        // 2. Tạo Wrapper chính (Flexbox để chứa Grid bên trái và Danh sách bên phải)
+        const wrapper = document.createElement('div');
+        wrapper.className = "relative flex flex-row items-start justify-center gap-[2cm] p-6 w-full h-full bg-slate-900/80 rounded-3xl border-4 border-slate-700 shadow-2xl overflow-hidden animate-fadeIn";
+    
+        // Gắn nhãn loại câu hỏi và nút Hint (như đã thống nhất ở các bước trước)
+        wrapper.innerHTML = `
+            <div class="absolute top-0 left-0 bg-blue-600 text-white px-4 py-1 rounded-br-2xl text-xs font-bold uppercase tracking-tighter z-10">
+                Type 4: Word Search
             </div>
+            <button id="hint-btn" class="absolute top-4 right-4 w-10 h-10 bg-white border-2 border-yellow-400 rounded-full flex items-center justify-center text-xl shadow hover:scale-110 active:scale-95 transition-transform z-20">
+                💡
+            </button>
         `;
-
+    
+        // --- KHỐI TRÁI: GRID CHỮ CÁI ---
+        const gridContainer = document.createElement('div');
+        gridContainer.className = "grid gap-1 p-2 bg-slate-800 rounded-xl border border-slate-700 shadow-inner";
+        gridContainer.style.gridTemplateColumns = `repeat(${this.gridWidth}, minmax(35px, 1fr))`;
+    
+        grid.forEach((row, r) => {
+            row.forEach((char, c) => {
+                const cell = document.createElement('div');
+                cell.className = "word-cell w-12 h-12 sm:w-14 sm:h-14 flex items-center justify-center bg-slate-700 text-white font-black rounded-xl cursor-pointer select-none hover:bg-slate-600 transition-all text-2xl shadow-md border border-slate-600/50";                cell.innerText = char;
+                cell.dataset.row = r;
+                cell.dataset.col = c;
+                gridContainer.appendChild(cell);
+            });
+        });
+    
+        // --- KHỐI PHẢI: DANH SÁCH TỪ VỰNG (HIỆN LUÔN HINT ??) ---
+        const wordList = document.createElement('div');
+        // self-stretch để cao bằng khối grid, không tự co lại
+        wordList.className = "flex-none w-64 self-stretch flex flex-col gap-2 p-4 bg-slate-800/50 rounded-2xl border border-slate-700 overflow-y-auto custom-scrollbar";
+        
+        this.wordsToFind.forEach(wordObj => {
+            const item = document.createElement('div');
+            item.id = `word-item-${wordObj.en}`;
+            item.className = "flex flex-col p-3 bg-slate-700/80 rounded-xl border border-slate-600 transition-all shadow-sm";
+            
+            // Logic ẩn 1 hoặc 2 ký tự cuối
+            const word = wordObj.en;
+            const charsToHide = word.length > 4 ? 2 : 1;
+            const visiblePart = word.substring(0, word.length - charsToHide);
+            const hiddenText = visiblePart + "?".repeat(charsToHide);
+    
+            item.innerHTML = `
+                <div class="text-[10px] text-blue-300 uppercase font-black tracking-widest mb-1 opacity-70">
+                    ${wordObj.vi}
+                </div>
+                <div id="hint-${wordObj.en}" class="text-base text-yellow-400 font-mono font-bold tracking-[0.2em]">
+                    ${hiddenText}
+                </div>
+            `;
+            wordList.appendChild(item);
+        });
+    
+        // Gom tất cả vào giao diện chính
+        wrapper.appendChild(gridContainer);
+        wrapper.appendChild(wordList);
+        area.appendChild(wrapper);
+    
+        // 3. Khởi tạo các sự kiện tương tác
         this._attachEventListeners();
         this._attachHintHandler();
-    }
+    }s
 
     _attachEventListeners() {
         let isSelecting = false;
@@ -236,7 +406,13 @@ class Question4 {
             if (wordObj) {
                 wordObj.found = true;
                 this.foundWords.push(wordObj);
-                
+                this.speakWord(wordObj.en);
+                const hintEl = document.getElementById(`hint-${wordObj.en}`);
+                if (hintEl) {
+                    hintEl.textContent = wordObj.en;
+                    hintEl.classList.remove('text-yellow-500');
+                    hintEl.classList.add('text-green-400', 'font-bold');
+                }
                 selectedCells.forEach(c => {
                     c.classList.remove("!bg-yellow-400");
                     c.classList.add("!bg-green-500", "!text-white");
@@ -271,66 +447,54 @@ class Question4 {
         if (!hintBtn) return;
 
         hintBtn.onclick = () => {
-            // Kiểm tra đã hết lượt hint chưa
-            if (this.hintCount >= this.maxHints) {
-                if (typeof showToast === 'function') {
-                    showToast("⚠️ Bạn đã dùng hết Hint!");
-                } else {
-                    alert("Bạn đã dùng hết Hint!");
+            // 1. Trừ HP Hero
+            if (window.GameEngine?.player) {
+                const damage = 5;
+                window.GameEngine.player.hp_current = Math.max(0, window.GameEngine.player.hp_current - damage);
+                window.GameEngine.updateAllUI();
+                if (typeof window.GameEngine.showDamage === 'function') {
+                    window.GameEngine.showDamage(window.GameEngine.player, damage);
                 }
-                return;
             }
 
-            // Tìm từ chưa được tìm thấy và chưa có hint
-            const unsolvedWord = this.wordsToFind.find(w => !w.found && !w.hinted);
-            
-            if (!unsolvedWord) {
-                if (typeof showToast === 'function') {
-                    showToast("✅ Không còn từ nào cần hint!");
-                } else {
-                    alert("Không còn từ nào cần hint!");
+            // 2. Tìm từ chưa giải xong đầu tiên
+            const unsolvedWord = this.wordsToFind.find(w => !w.found);
+            if (!unsolvedWord) return;
+
+            // 3. CHỈ LÀM SÁNG CHỮ CÁI ĐẦU TRÊN GRID
+            if (unsolvedWord.firstCharPos) {
+                const { row, col } = unsolvedWord.firstCharPos;
+                const cell = document.querySelector(`.word-cell[data-row="${row}"][data-col="${col}"]`);
+                if (cell) {
+                    cell.classList.add("!bg-yellow-400", "animate-bounce", "ring-4", "ring-yellow-300", "z-20");
+                    
+                    setTimeout(() => {
+                        cell.classList.remove("animate-bounce", "ring-4", "ring-yellow-300", "z-20");
+                        if (!unsolvedWord.found) {
+                            cell.classList.remove("!bg-yellow-400");
+                        }
+                    }, 2000);
                 }
-                return;
-            }
-
-            // Tạo hint: giữ lại tất cả trừ 2 chữ cuối
-            const word = unsolvedWord.en;
-            let hintText = '';
-            
-            if (word.length <= 2) {
-                // Nếu từ quá ngắn (<=2 chữ), hiển thị 1 chữ đầu + ?
-                hintText = word[0] + '?';
-            } else {
-                // Từ dài hơn: giữ (n-2) chữ đầu + ??
-                hintText = word.slice(0, -2) + '??';
-            }
-
-            // Hiển thị hint
-            const hintEl = document.getElementById(`hint-${word}`);
-            if (hintEl) {
-                hintEl.textContent = `(${hintText})`;
-            }
-
-            // Đánh dấu từ đã được hint
-            unsolvedWord.hinted = true;
-
-            // Tăng bộ đếm
-            this.hintCount++;
-            const counterEl = document.getElementById('hint-counter');
-            if (counterEl) counterEl.textContent = this.hintCount;
-
-            // Thông báo
-            if (typeof showToast === 'function') {
-                showToast(`💡 Hint: ${unsolvedWord.vi} = ${hintText}`);
-            }
-
-            // Disable nút nếu hết lượt
-            if (this.hintCount >= this.maxHints) {
-                hintBtn.disabled = true;
-                hintBtn.classList.add('opacity-50', 'cursor-not-allowed');
-                hintBtn.classList.remove('hover:bg-yellow-500');
             }
         };
+    }
+
+    speakWord(text) {
+        if (!text || !window.speechSynthesis || this._destroyed) return;
+        
+        // Hủy các yêu cầu đọc cũ để tránh chồng chéo
+        window.speechSynthesis.cancel();
+        
+        const u = new SpeechSynthesisUtterance(text);
+        u.lang = 'en-US';
+        u.rate = 0.9;
+        
+        // Tìm giọng đọc tiếng Anh
+        const voices = window.speechSynthesis.getVoices();
+        const targetVoice = voices.find(v => v.lang.includes('en'));
+        if (targetVoice) u.voice = targetVoice;
+        
+        window.speechSynthesis.speak(u);
     }
 
     destroy() {
