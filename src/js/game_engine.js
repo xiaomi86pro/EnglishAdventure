@@ -1,6 +1,8 @@
 /**
  * GameEngine - Quản lý logic chính của trò chơi
  */
+import "@/css/game.css";
+
 const GameEngine = {
     isBattling: false,
     audioManager: new AudioManager({ deathSrc: './sounds/Game_Over.mp3', sfxPoolSize: 8 }),

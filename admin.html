@@ -6,7 +6,6 @@
     <title>Admin - English for Kids</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Comic+Neue:wght@400;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="./css/admin.css">
 </head>
 <body class="p-4 md:p-8">
 
@@ -19,32 +18,31 @@
         </div>
 
         <!-- TAB NAVIGATION -->
-        <div class="flex gap-4 mb-6">
-            <button onclick="switchTab('vocab')" id="btn-tab-vocab" class="px-8 py-3 rounded-2xl font-black uppercase transition-all tab-active">
+        <div class="flex gap-4 mb-6 flex-wrap">
+            <button onclick="switchTab('vocab')" id="btn-tab-vocab" class="px-8 py-3 rounded-2xl font-black uppercase transition-all bg-blue-500 text-white shadow-lg">
                 📚 Nhập từ vựng
             </button>
-            <button onclick="switchTab('assets')" id="btn-tab-assets" class="px-8 py-3 rounded-2xl font-black uppercase transition-all tab-inactive">
+            <button onclick="switchTab('assets')" id="btn-tab-assets" class="px-8 py-3 rounded-2xl font-black uppercase transition-all bg-gray-200 text-gray-700 hover:bg-gray-300">
                 🎨 Nhập ảnh & Tài nguyên
             </button>
-            <button onclick="switchTab('questions')" id="btn-tab-questions" class="px-8 py-3 rounded-2xl font-black uppercase transition-all tab-inactive">
+            <button onclick="switchTab('questions')" id="btn-tab-questions" class="px-8 py-3 rounded-2xl font-black uppercase transition-all bg-gray-200 text-gray-700 hover:bg-gray-300">
                 ❓ Test câu hỏi
             </button>
-            <button id="btn-tab-locations" onclick="switchTab('locations')" class="tab-inactive px-8 py-3 rounded-2xl font-black uppercase transition-all">
+            <button id="btn-tab-locations" onclick="switchTab('locations')" class="px-8 py-3 rounded-2xl font-black uppercase transition-all bg-gray-200 text-gray-700 hover:bg-gray-300">
                 🗺️ Vùng đất
             </button>
-            <button id="btn-tab-stations" onclick="switchTab('stations')" class="tab-inactive px-8 py-3 rounded-2xl font-black uppercase transition-all">
+            <button id="btn-tab-stations" onclick="switchTab('stations')" class="px-8 py-3 rounded-2xl font-black uppercase transition-all bg-gray-200 text-gray-700 hover:bg-gray-300">
                 🚉 Chặng
             </button>
-            <button id="btn-tab-steps" onclick="switchTab('steps')" class="tab-inactive px-8 py-3 rounded-2xl font-black uppercase transition-all">
+            <button id="btn-tab-steps" onclick="switchTab('steps')" class="px-8 py-3 rounded-2xl font-black uppercase transition-all bg-gray-200 text-gray-700 hover:bg-gray-300">
                 👣 Cấu hình Step
             </button>
         </div>
-    </div>
 
         <!-- CONTENT: TAB NHẬP TỪ -->
         <div id="tab-vocab" class="space-y-6">
             <!-- Upload Excel Section -->
-            <div class="bg-blue-100 p-6 rounded-3xl admin-card">
+            <div class="bg-blue-100 p-6 rounded-3xl">
                 <h3 class="text-xl font-bold text-blue-700 mb-4 uppercase">1. Tải lên từ Excel</h3>
                 <div class="flex flex-wrap gap-4 items-center">
                     <input type="file" id="excel-file" accept=".xlsx, .xls" 
@@ -59,7 +57,7 @@
             </div>
 
             <!-- Edit Grid Section -->
-            <div class="bg-white p-6 rounded-3xl admin-card">
+            <div class="bg-white p-6 rounded-3xl">
                 <h3 class="text-xl font-bold text-gray-700 mb-6 uppercase">2. Tìm kiếm & Chỉnh sửa nhanh</h3>
                 
                 <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
@@ -81,19 +79,15 @@
 
                 <div class="overflow-x-auto">
                     <div id="edit-grid" class="min-w-[600px] grid grid-cols-[1.2fr_1.2fr_1fr_150px] gap-4 items-center">
-                        <div class="font-bold text-gray-400 uppercase text-xs border-b-2 border-gray-100 pb-2">Tiếng Anh</div>
-                        <div class="font-bold text-gray-400 uppercase text-xs border-b-2 border-gray-100 pb-2">Tiếng Việt</div>
-                        <div class="font-bold text-gray-400 uppercase text-xs border-b-2 border-gray-100 pb-2">Category</div>
-                        <div class="font-bold text-gray-400 uppercase text-xs border-b-2 border-gray-100 pb-2">Thao tác</div>
-                        
-                        </div>
+                        <!-- Grid sẽ được tạo động -->
+                    </div>
                 </div>                  
             </div>
         </div>
 
         <!-- CONTENT: TAB NHẬP ẢNH & TÀI NGUYÊN -->
         <div id="tab-assets" class="hidden space-y-6">
-            <div class="bg-white p-8 rounded-3xl admin-card">
+            <div class="bg-white p-8 rounded-3xl">
                 <h3 class="text-2xl font-bold text-purple-600 mb-6 uppercase text-center">Quản lý hình ảnh tài nguyên</h3>
                 
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
@@ -108,24 +102,24 @@
                             <div class="grid grid-cols-3 gap-2">
                                 <div>
                                     <label class="text-xs text-gray-500 font-bold block mb-1">❤️ HP</label>
-                                    <input type="number" id="hero-hp" value="100" 
-                                           class="w-full p-2 border rounded-lg text-center">
+                                    <input type="number" id="hero-hp" value="100" class="w-full p-2 border rounded-lg text-center">
                                 </div>
                                 <div>
                                     <label class="text-xs text-gray-500 font-bold block mb-1">⚔️ ATK</label>
-                                    <input type="number" id="hero-atk" value="10" 
-                                           class="w-full p-2 border rounded-lg text-center">
+                                    <input type="number" id="hero-atk" value="10" class="w-full p-2 border rounded-lg text-center">
                                 </div>
                                 <div>
                                     <label class="text-xs text-gray-500 font-bold block mb-1">🛡️ DEF</label>
-                                    <input type="number" id="hero-def" value="5" 
-                                           class="w-full p-2 border rounded-lg text-center">
+                                    <input type="number" id="hero-def" value="5" class="w-full p-2 border rounded-lg text-center">
                                 </div>
                             </div>
                             <div class="flex items-center gap-2">
                                 <input type="checkbox" id="hero-locked" class="w-5 h-5">
                                 <label for="hero-locked" class="font-bold text-sm">🔒 Khóa hero này</label>
                             </div>
+                            <select id="hero-unlock-station" class="w-full p-3 rounded-xl border-2 border-gray-100 outline-none focus:border-blue-400 bg-white">
+                                <option value="">Hero mặc định (không khóa)</option>
+                            </select>
                             <input type="file" id="hero-file" class="w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100">
                             <input type="text" id="hero-url" placeholder="Hoặc dán URL ảnh sprite..." class="w-full p-3 rounded-xl border-2 border-gray-100 outline-none focus:border-blue-400">
                             <button id="save-hero-btn" class="w-full py-3 bg-blue-500 text-white rounded-xl font-bold hover:bg-blue-600 transition-colors shadow-lg shadow-blue-100">Lưu Hero</button>
@@ -143,23 +137,19 @@
                             <div class="grid grid-cols-4 gap-2">
                                 <div>
                                     <label class="text-xs text-gray-500 font-bold block mb-1">❤️ HP</label>
-                                    <input type="number" id="monster-hp" value="50" 
-                                           class="w-full p-2 border rounded-lg text-center">
+                                    <input type="number" id="monster-hp" value="50" class="w-full p-2 border rounded-lg text-center">
                                 </div>
                                 <div>
                                     <label class="text-xs text-gray-500 font-bold block mb-1">⚔️ ATK</label>
-                                    <input type="number" id="monster-atk" value="5" 
-                                           class="w-full p-2 border rounded-lg text-center">
+                                    <input type="number" id="monster-atk" value="5" class="w-full p-2 border rounded-lg text-center">
                                 </div>
                                 <div>
                                     <label class="text-xs text-gray-500 font-bold block mb-1">🛡️ DEF</label>
-                                    <input type="number" id="monster-def" value="0" 
-                                           class="w-full p-2 border rounded-lg text-center">
+                                    <input type="number" id="monster-def" value="0" class="w-full p-2 border rounded-lg text-center">
                                 </div>
                                 <div>
                                     <label class="text-xs text-gray-500 font-bold block mb-1">💰 EXP</label>
-                                    <input type="number" id="monster-exp" value="10" 
-                                           class="w-full p-2 border rounded-lg text-center">
+                                    <input type="number" id="monster-exp" value="10" class="w-full p-2 border rounded-lg text-center">
                                 </div>
                             </div>
                             <select id="monster-type" class="w-full p-3 rounded-xl border-2 border-gray-100 outline-none focus:border-red-400 bg-white">
@@ -201,7 +191,7 @@
                                 </div>
                             </div>
                         </div>
-                        <div class="flex flex-col gap-1">
+                        <div class="flex flex-col gap-1 mt-4">
                             <label class="text-xs font-bold text-gray-500 uppercase">Chỉ số ô (0-31)</label>
                             <input type="number" id="gear-frame-index" value="0" min="0" max="31" 
                                    class="p-3 rounded-xl border border-gray-200 focus:ring-2 focus:ring-blue-500 outline-none" 
@@ -211,7 +201,8 @@
                     </div>
                 </div>
             </div>
-            <!-- Ví dụ cấu trúc HTML cần thêm vào tab Tài nguyên -->
+            
+            <!-- Tìm kiếm & Sửa nhanh tài nguyên -->
             <div class="mt-10 p-4 border-t-2 border-dashed">
                 <h3 class="font-bold mb-4">Tìm kiếm & Sửa nhanh tài nguyên</h3>
                 <div class="flex flex-wrap gap-4 mb-6 items-center">
@@ -229,61 +220,57 @@
         </div>
 
         <!-- CONTENT: TAB TEST CÂU HỎI -->
-<div id="tab-questions" class="hidden space-y-6">
-    <div class="bg-white p-6 rounded-3xl admin-card">
-        <div class="flex justify-between items-center mb-6">
-            <h3 class="text-xl font-bold text-purple-600 uppercase">Test câu hỏi</h3>
-            <button onclick="showAddQuestionForm()" class="px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 font-bold">
-                + Thêm loại câu hỏi mới
-            </button>
-        </div>
-        
-        <!-- Danh sách các loại câu hỏi -->
-        <div id="question-types-list" class="grid grid-cols-2 md:grid-cols-3 gap-4 mb-6">
-            <!-- Sẽ được load từ DB -->
-        </div>
+        <div id="tab-questions" class="hidden space-y-6">
+            <div class="bg-white p-6 rounded-3xl">
+                <div class="flex justify-between items-center mb-6">
+                    <h3 class="text-xl font-bold text-purple-600 uppercase">Test câu hỏi</h3>
+                    <button onclick="showAddQuestionForm()" class="px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 font-bold">
+                        + Thêm loại câu hỏi mới
+                    </button>
+                </div>
+                
+                <!-- Danh sách các loại câu hỏi -->
+                <div id="question-types-list" class="grid grid-cols-2 md:grid-cols-3 gap-4 mb-6">
+                    <!-- Sẽ được load từ DB -->
+                </div>
 
-        <!-- Form thêm câu hỏi mới -->
-        <div id="add-question-form" class="hidden mb-6 p-6 bg-blue-50 rounded-2xl border-2 border-blue-200">
-            <h4 class="font-bold text-lg mb-4">Thêm loại câu hỏi mới</h4>
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                    <label class="block text-sm font-bold mb-2">ID (Số thứ tự):</label>
-                    <input type="number" id="new-question-id" min="1" placeholder="VD: 6" 
-                           class="w-full p-3 border rounded-lg">
+                <!-- Form thêm câu hỏi mới -->
+                <div id="add-question-form" class="hidden mb-6 p-6 bg-blue-50 rounded-2xl border-2 border-blue-200">
+                    <h4 class="font-bold text-lg mb-4">Thêm loại câu hỏi mới</h4>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-sm font-bold mb-2">ID (Số thứ tự):</label>
+                            <input type="number" id="new-question-id" min="1" placeholder="VD: 6" class="w-full p-3 border rounded-lg">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-bold mb-2">Tên câu hỏi:</label>
+                            <input type="text" id="new-question-name" placeholder="VD: Chọn đáp án đúng" class="w-full p-3 border rounded-lg">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-bold mb-2">Icon:</label>
+                            <input type="text" id="new-question-icon" placeholder="VD: 🎯" class="w-full p-3 border rounded-lg">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-bold mb-2">Mô tả:</label>
+                            <input type="text" id="new-question-desc" placeholder="Chọn 1 trong 4 đáp án" class="w-full p-3 border rounded-lg">
+                        </div>
+                    </div>
+                    <div class="flex gap-2 mt-4">
+                        <button onclick="saveNewQuestionType()" class="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 font-bold">
+                            💾 Lưu
+                        </button>
+                        <button onclick="cancelAddQuestionForm()" class="px-4 py-2 bg-gray-300 rounded-lg hover:bg-gray-400 font-bold">
+                            Hủy
+                        </button>
+                    </div>
                 </div>
-                <div>
-                    <label class="block text-sm font-bold mb-2">Tên câu hỏi:</label>
-                    <input type="text" id="new-question-name" placeholder="VD: Chọn đáp án đúng" 
-                           class="w-full p-3 border rounded-lg">
-                </div>
-                <div>
-                    <label class="block text-sm font-bold mb-2">Icon:</label>
-                    <input type="text" id="new-question-icon" placeholder="VD: 🎯" 
-                           class="w-full p-3 border rounded-lg">
-                </div>
-                <div>
-                    <label class="block text-sm font-bold mb-2">Mô tả:</label>
-                    <input type="text" id="new-question-desc" placeholder="Chọn 1 trong 4 đáp án" 
-                           class="w-full p-3 border rounded-lg">
+
+                <!-- Vùng test câu hỏi -->
+                <div id="questionarea" class="p-6 border-2 border-dashed rounded-xl bg-gray-50 min-h-[400px]">
+                    <p class="text-gray-400 italic text-center">Chọn một loại câu hỏi bên trên để test</p>
                 </div>
             </div>
-            <div class="flex gap-2 mt-4">
-                <button onclick="saveNewQuestionType()" class="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 font-bold">
-                    💾 Lưu
-                </button>
-                <button onclick="cancelAddQuestionForm()" class="px-4 py-2 bg-gray-300 rounded-lg hover:bg-gray-400 font-bold">
-                    Hủy
-                </button>
-            </div>
         </div>
-
-        <!-- Vùng test câu hỏi -->
-        <div id="questionarea" class="p-6 border-2 border-dashed rounded-xl bg-gray-50 min-h-[400px]">
-            <p class="text-gray-400 italic text-center">Chọn một loại câu hỏi bên trên để test</p>
-        </div>
-    </div>
-</div>
         
         <!-- CONTENT: Tab Locations -->
         <div id="tab-locations" class="tab-content hidden">
@@ -299,24 +286,14 @@
                 <h3 class="font-bold mb-3">Thêm/Sửa Vùng đất</h3>
                 <input type="hidden" id="location-id">
                 <div class="grid grid-cols-2 gap-4 mb-3">
-                    <input type="text" id="location-name" placeholder="Tên vùng (VD: Rừng Xanh)" 
-                        class="px-3 py-2 border rounded">
-                    <input type="number" id="location-order" placeholder="Thứ tự" 
-                        class="px-3 py-2 border rounded">
+                    <input type="text" id="location-name" placeholder="Tên vùng (VD: Rừng Xanh)" class="px-3 py-2 border rounded">
+                    <input type="number" id="location-order" placeholder="Thứ tự" class="px-3 py-2 border rounded">
                 </div>
-                <textarea id="location-desc" placeholder="Mô tả vùng đất" 
-                        class="w-full px-3 py-2 border rounded mb-3" rows="2"></textarea>
-                <input type="text" id="location-image" placeholder="URL ảnh nền" 
-                    class="w-full px-3 py-2 border rounded mb-3">
+                <textarea id="location-desc" placeholder="Mô tả vùng đất" class="w-full px-3 py-2 border rounded mb-3" rows="2"></textarea>
+                <input type="text" id="location-image" placeholder="URL ảnh nền" class="w-full px-3 py-2 border rounded mb-3">
                 <div class="flex gap-2">
-                    <button onclick="LocationManager.save()" 
-                            class="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600">
-                        Lưu
-                    </button>
-                    <button onclick="LocationManager.cancelForm()" 
-                            class="px-4 py-2 bg-gray-300 rounded hover:bg-gray-400">
-                        Hủy
-                    </button>
+                    <button onclick="LocationManager.save()" class="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600">Lưu</button>
+                    <button onclick="LocationManager.cancelForm()" class="px-4 py-2 bg-gray-300 rounded hover:bg-gray-400">Hủy</button>
                 </div>
             </div>
             
@@ -340,22 +317,13 @@
                     <select id="station-location" class="px-3 py-2 border rounded">
                         <option value="">-- Chọn vùng đất --</option>
                     </select>
-                    <input type="number" id="station-order" placeholder="Thứ tự (1,2,3)" 
-                        class="px-3 py-2 border rounded">
+                    <input type="number" id="station-order" placeholder="Thứ tự (1,2,3)" class="px-3 py-2 border rounded">
                 </div>
-                <input type="text" id="station-name" placeholder="Tên chặng (VD: Cổng Rừng)" 
-                    class="w-full px-3 py-2 border rounded mb-3">
-                <textarea id="station-desc" placeholder="Mô tả chặng" 
-                        class="w-full px-3 py-2 border rounded mb-3" rows="2"></textarea>
+                <input type="text" id="station-name" placeholder="Tên chặng (VD: Cổng Rừng)" class="w-full px-3 py-2 border rounded mb-3">
+                <textarea id="station-desc" placeholder="Mô tả chặng" class="w-full px-3 py-2 border rounded mb-3" rows="2"></textarea>
                 <div class="flex gap-2">
-                    <button onclick="StationManager.save()" 
-                            class="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600">
-                        Lưu
-                    </button>
-                    <button onclick="StationManager.cancelForm()" 
-                            class="px-4 py-2 bg-gray-300 rounded hover:bg-gray-400">
-                        Hủy
-                    </button>
+                    <button onclick="StationManager.save()" class="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600">Lưu</button>
+                    <button onclick="StationManager.cancelForm()" class="px-4 py-2 bg-gray-300 rounded hover:bg-gray-400">Hủy</button>
                 </div>
             </div>
             
@@ -367,12 +335,10 @@
             <div class="flex justify-between items-center mb-6">
                 <h2 class="text-2xl font-bold">Cấu hình Steps (Monster spawn)</h2>
                 <div class="flex gap-2">
-                    <select id="step-filter-location" onchange="StepManager.filterByLocation()" 
-                            class="px-3 py-2 border rounded">
+                    <select id="step-filter-location" onchange="StepManager.filterByLocation()" class="px-3 py-2 border rounded">
                         <option value="">-- Tất cả vùng --</option>
                     </select>
-                    <select id="step-filter-station" onchange="StepManager.loadSteps()" 
-                            class="px-3 py-2 border rounded">
+                    <select id="step-filter-station" onchange="StepManager.loadSteps()" class="px-3 py-2 border rounded">
                         <option value="">-- Tất cả chặng --</option>
                     </select>
                 </div>
@@ -380,197 +346,39 @@
             
             <div id="steps-grid" class="grid grid-cols-5 gap-2"></div>
         </div>
+    </div>
 
-    <script>
-            function switchTab(tabName) {
-            // Danh sách tất cả các tab
-            const tabs = ['vocab', 'assets', 'questions', 'locations', 'stations', 'steps'];
-            
-            // Ẩn tất cả tab
-            tabs.forEach(tab => {
-                const tabEl = document.getElementById(`tab-${tab}`);
-                const btnEl = document.getElementById(`btn-tab-${tab}`);
-                
-                if (tabEl) tabEl.classList.add('hidden');
-                if (btnEl) btnEl.className = btnEl.className.replace('tab-active', 'tab-inactive');
-            });
-            
-            // Hiện tab được chọn
-            const selectedTab = document.getElementById(`tab-${tabName}`);
-            const selectedBtn = document.getElementById(`btn-tab-${tabName}`);
-            
-            if (selectedTab) selectedTab.classList.remove('hidden');
-            if (selectedBtn) selectedBtn.className = selectedBtn.className.replace('tab-inactive', 'tab-active');
-            
-            // Load data tương ứng
-            if (tabName === 'vocab') {
-                // Load vocabulary nếu có
+    <!-- Toast notification -->
+    <div id="toast" class="fixed bottom-4 right-4 bg-gray-800 text-white px-6 py-3 rounded-lg shadow-lg hidden transition-all"></div>
+
+    <!-- Import Scripts -->
+    <script type="module" src="/src/js/admin/admin.js"></script>
+    <script type="module" src="/src/js/question/question_manager.js"></script>
+    <script src="/src/js/admin/location_manager.js"></script>
+    <script src="/src/js/admin/station_manager.js"></script>
+    <script src="/src/js/admin/step_manager.js"></script>
+
+    <style>
+        .tab-active {
+            @apply bg-blue-500 text-white shadow-lg;
+        }
+        .tab-inactive {
+            @apply bg-gray-200 text-gray-700 hover:bg-gray-300;
+        }
+        #toast.show {
+            display: block;
+            animation: slideIn 0.3s ease-out;
+        }
+        @keyframes slideIn {
+            from {
+                transform: translateX(100%);
+                opacity: 0;
             }
-            if (tabName === 'assets') {
-                if (window.MonsterManager) MonsterManager.loadMonsters();
-                if (window.HeroManager) HeroManager.loadHeroes();
-            }
-            if (tabName === 'locations') {
-                if (window.LocationManager) LocationManager.load();
-            }
-            if (tabName === 'stations') {
-                if (window.StationManager) StationManager.load();
-            }
-            if (tabName === 'steps') {
-                if (window.StepManager) StepManager.load();
-            }
-            if (tabName === 'questions') {
-                loadQuestionTypes();
+            to {
+                transform: translateX(0);
+                opacity: 1;
             }
         }
-
-        // Load danh sách question types
-async function loadQuestionTypes() {
-    const container = document.getElementById('question-types-list');
-    if (!container) return;
-
-    try {
-        const { data, error } = await window.supabase
-            .from('question_types')
-            .select('*')
-            .order('id');
-
-        if (error) throw error;
-
-        if (data && data.length > 0) {
-            container.innerHTML = data.map(qt => `
-                <div class="bg-gradient-to-br from-white to-gray-50 p-4 rounded-xl border-2 border-gray-200 hover:border-purple-400 transition-all shadow-sm">
-                    <div class="flex justify-between items-start mb-3">
-                        <div class="flex items-center gap-2">
-                            <span class="text-3xl">${qt.icon}</span>
-                            <div>
-                                <h4 class="font-bold text-lg">${qt.name}</h4>
-                                <p class="text-xs text-gray-500">Type ${qt.id}</p>
-                            </div>
-                        </div>
-                        <button onclick="deleteQuestionType(${qt.id})" 
-                                class="text-red-500 hover:text-red-700 text-sm">
-                            🗑️
-                        </button>
-                    </div>
-                    <p class="text-sm text-gray-600 mb-3">${qt.description || ''}</p>
-                    <button onclick="testQuestion(${qt.id})" 
-                            class="w-full py-2 bg-purple-500 text-white rounded-lg hover:bg-purple-600 font-bold text-sm">
-                        ▶️ Test Question ${qt.id}
-                    </button>
-                </div>
-            `).join('');
-        } else {
-            container.innerHTML = '<p class="text-gray-500 col-span-3">Chưa có loại câu hỏi nào</p>';
-        }
-    } catch (err) {
-        console.error('Lỗi load question types:', err);
-        container.innerHTML = '<p class="text-red-500 col-span-3">Lỗi: ' + err.message + '</p>';
-    }
-}
-
-// Hiện form thêm câu hỏi
-function showAddQuestionForm() {
-    document.getElementById('add-question-form').classList.remove('hidden');
-    // Clear inputs
-    document.getElementById('new-question-id').value = '';
-    document.getElementById('new-question-name').value = '';
-    document.getElementById('new-question-icon').value = '';
-    document.getElementById('new-question-desc').value = '';
-}
-
-// Ẩn form
-function cancelAddQuestionForm() {
-    document.getElementById('add-question-form').classList.add('hidden');
-}
-
-// Lưu loại câu hỏi mới
-async function saveNewQuestionType() {
-    const id = parseInt(document.getElementById('new-question-id').value);
-    const name = document.getElementById('new-question-name').value.trim();
-    const icon = document.getElementById('new-question-icon').value.trim();
-    const desc = document.getElementById('new-question-desc').value.trim();
-
-    if (!id || !name || !icon) {
-        alert('Vui lòng điền đầy đủ ID, Tên và Icon!');
-        return;
-    }
-
-    try {
-        const { error } = await window.supabase
-            .from('question_types')
-            .insert([{
-                id: id,
-                name: name,
-                icon: icon,
-                description: desc
-            }]);
-
-        if (error) throw error;
-
-        alert('✅ Đã thêm loại câu hỏi mới!');
-        cancelAddQuestionForm();
-        loadQuestionTypes();
-    } catch (err) {
-        alert('Lỗi: ' + err.message);
-    }
-}
-
-// Xóa loại câu hỏi
-async function deleteQuestionType(id) {
-    if (!confirm(`Xóa loại câu hỏi ${id}? (Lưu ý: Không xóa được nếu đang được dùng trong steps)`)) return;
-
-    try {
-        const { error } = await window.supabase
-            .from('question_types')
-            .delete()
-            .eq('id', id);
-
-        if (error) throw error;
-
-        alert('✅ Đã xóa!');
-        loadQuestionTypes();
-    } catch (err) {
-        alert('Lỗi: ' + err.message);
-    }
-}
-
-// Test câu hỏi
-async function testQuestion(typeNumber) {
-    const area = document.getElementById('questionarea');
-    
-    // Hiện loading
-    area.innerHTML = `
-        <div class="flex flex-col items-center justify-center h-full gap-4">
-            <div class="w-16 h-16 border-4 border-purple-500 border-t-transparent rounded-full animate-spin"></div>
-            <p class="text-purple-600 font-bold">Đang load Question Type ${typeNumber}...</p>
-        </div>
-    `;
-
-    try {
-        if (window.QuestionManager) {
-            await window.QuestionManager.loadType(typeNumber);
-        } else {
-            throw new Error('QuestionManager chưa sẵn sàng');
-        }
-    } catch (err) {
-        area.innerHTML = `
-            <div class="text-center text-red-500">
-                <p class="font-bold text-xl mb-2">❌ Lỗi!</p>
-                <p>${err.message}</p>
-                <p class="text-sm mt-2">Có thể file <code>question${typeNumber}.js</code> chưa được tạo.</p>
-            </div>
-        `;
-    }
-}
-
-    </script>
-    
-    <script type="module" src="./js/admin.js"></script>
-    <script type="module" src="./js/question/question_manager.js"></script>
-    <script src="./js/admin/location_manager.js"></script>
-    <script src="./js/admin/station_manager.js"></script>
-    <script src="./js/admin/step_manager.js"></script>
-    <div id="toast" class="toast hidden"></div>
+    </style>
 </body>
 </html>

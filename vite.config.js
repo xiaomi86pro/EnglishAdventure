@@ -1,17 +1,22 @@
-import { defineConfig } from 'vite'
-import { resolve } from 'path'
+import { defineConfig } from "vite";
+import { fileURLToPath, URL } from "node:url";
 
 export default defineConfig({
-  // Base giữ nguyên của bạn
-  base: '/EnglishAdventure/', 
+  base: "/EnglishAdventure/",
+
   build: {
-    outDir: 'dist',
+    outDir: "dist",
     rollupOptions: {
       input: {
-        // Chỉ định tất cả các file HTML bạn có
-        main: resolve(__dirname, 'index.html'),
-        admin: resolve(__dirname, 'admin.html')
-      }
-    }
-  }
-})
+        main: fileURLToPath(new URL("./index.html", import.meta.url)),
+        admin: fileURLToPath(new URL("./admin.html", import.meta.url)),
+      },
+    },
+  },
+
+  resolve: {
+    alias: {
+      "@": fileURLToPath(new URL("./src", import.meta.url)),
+    },
+  },
+});
