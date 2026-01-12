@@ -18,6 +18,93 @@ const AuthComponent = {
     },
 
     /**
+     * Kiểm tra xem có game đã lưu không
+     */
+    checkSavedGame: function(userId) {
+        const saved = localStorage.getItem(`gameState-${userId}`);
+        if (!saved) return null;
+        try {
+            return JSON.parse(saved);
+        } catch (e) {
+            console.error('Lỗi load game:', e);
+            return null;
+        }
+    },
+    
+    continueGame: function() {
+        const savedGame = this.checkSavedGame(this.selectedUserId);
+        if (!savedGame) {
+            alert('Không tìm thấy game đã lưu!');
+            this.displayLoginMenu();
+            return;
+        }
+        if (window.GameEngine) {
+            window.GameEngine.restoreGameState(savedGame);
+        }
+    },
+    
+    startNewGame: function() {
+        localStorage.removeItem(`gameState-${this.selectedUserId}`);
+        this.displayLoginMenu();
+    },
+    
+
+    /**
+     * Kiểm tra và hiển thị menu phù hợp
+     */
+    checkAndShowMenu: function() {
+        const savedGame = this.checkSavedGame();
+        
+        if (savedGame) {
+            this.displayContinueOrNewMenu(savedGame);
+        } else {
+            this.displayLoginMenu();
+        }
+    },
+
+    /**
+     * Hiển thị menu Chơi tiếp hoặc Chơi lại
+     */
+    displayContinueOrNewMenu: function(savedGame) {
+        const container = document.getElementById(this.containerId);
+        if (!container) return;
+
+        container.innerHTML = `
+            <div class="flex flex-col items-center gap-6 w-full max-w-md">
+                <h2 class="text-3xl font-black text-blue-600 uppercase tracking-wide">Game đã lưu!</h2>
+                
+                <div class="bg-white p-6 rounded-3xl border-4 border-blue-200 w-full">
+                    <div class="text-center mb-4">
+                        <div class="text-5xl mb-2">${savedGame.player.sprite || '🧑‍🚀'}</div>
+                        <p class="font-bold text-xl text-gray-700">${savedGame.player.display_name}</p>
+                        <p class="text-sm text-gray-500">Level ${savedGame.player.level} - Stage ${savedGame.currentStage}</p>
+                    </div>
+                </div>
+
+                <div class="flex flex-col gap-4 w-full">
+                    <button onclick="AuthComponent.continueGame()" 
+                            class="w-full px-8 py-4 bg-green-500 text-white text-2xl font-black rounded-full shadow-[0_10px_0_rgb(22,163,74)] hover:bg-green-600 transition-all active:mt-2 active:shadow-none uppercase">
+                        ▶️ Chơi tiếp
+                    </button>
+                    
+                    <button onclick="AuthComponent.startNewGame()" 
+                            class="w-full px-8 py-4 bg-blue-500 text-white text-2xl font-black rounded-full shadow-[0_10px_0_rgb(37,99,235)] hover:bg-blue-600 transition-all active:mt-2 active:shadow-none uppercase">
+                        🆕 Chơi lại từ đầu
+                    </button>
+
+                    <!-- Nút quay lại -->
+                    <div class="w-full flex justify-start mt-4">
+                        <button onclick="AuthComponent.displayLoginMenu()" 
+                                class="px-6 py-2 bg-gray-400 text-white text-lg font-bold rounded-full shadow hover:bg-gray-500 transition-all">
+                            ⬅️ Quay lại
+                        </button>
+                    </div>
+                </div>
+            </div>
+        `;
+    },
+
+    /**
      * Hàm lấy danh sách User từ Supabase
      */
     fetchUsers: async function() {
@@ -43,8 +130,6 @@ const AuthComponent = {
             this.displayLoginMenu();
         } catch (err) {
             console.error("Lỗi fetchUsers:", err.message);
-            // Hiển thị menu trống nếu lỗi để người dùng vẫn có thể ấn "Thêm mới"
-            this.displayLoginMenu();
         }
     },
 
@@ -146,7 +231,7 @@ const AuthComponent = {
                     avatar_key: this.tempAvatar,
                     level: 1,
                     exp: 0,
-                    hp_current: 100
+                    hp_current: 0
                 }])
                 .select();
 
@@ -174,11 +259,19 @@ const AuthComponent = {
             selectedCard.classList.add('user-selected', 'border-blue-400');
             this.selectedUserId = userId;
             
-            // Hiện vùng chọn Hero
-            const heroArea = document.getElementById('hero-selection-area');
-            if (heroArea) {
-                heroArea.classList.remove('hidden');
-                this.loadHeroList(); 
+            // Kiểm tra xem profile này có game đã lưu không
+            const savedGame = this.checkSavedGame(userId);
+            if (savedGame) {
+                // Profile này có game đã lưu → Hiện menu Continue/New
+                this.displayContinueOrNewMenu(savedGame);
+            } else {
+                // Profile này chưa có game hoặc game đã lưu là của user khác
+                // → Hiện vùng chọn Hero
+                const heroArea = document.getElementById('hero-selection-area');
+                if (heroArea) {
+                    heroArea.classList.remove('hidden');
+                    this.loadHeroList(); 
+                }
             }
         }
     },
@@ -196,26 +289,61 @@ loadHeroList: async function() {
     
     heroListContainer.innerHTML = "<p class='text-sm text-gray-400'>Đang tìm hiệp sĩ...</p>";
 
-    const { data: heroes, error } = await supabase.from('heroes').select('*');
+    // ✅ Join với stations để lấy tên chặng unlock
+    const { data: heroes, error } = await supabase
+        .from('heroes')
+        .select('*, stations(name, order_index, locations(name))');
 
     if (error || !heroes) {
         heroListContainer.innerHTML = "<p class='text-red-500 text-xs'>Lỗi tải Hero</p>";
         return;
     }
 
-    heroListContainer.innerHTML = heroes.map(hero => `
-        <div onclick="AuthComponent.pickHero('${hero.id}')" 
-             id="hero-card-${hero.id}"
-             class="hero-pick-card p-2 bg-white rounded-xl border-2 border-transparent cursor-pointer hover:border-purple-400 transition-all flex flex-col items-center w-20">
-            <img src="${hero.image_url}" class="w-12 h-12 object-contain">
-            <span class="text-[10px] font-bold text-gray-600 mt-1">${hero.name}</span>
-        </div>
-    `).join('');
+    heroListContainer.innerHTML = heroes.map(hero => {
+        const isLocked = hero.is_locked;
+        const unlockInfo = hero.stations 
+            ? `Cần: ${hero.stations.locations?.name} - ${hero.stations.name}`
+            : 'Chưa thiết lập';
+        
+        return `
+            <div onclick="${isLocked ? '' : `AuthComponent.pickHero('${hero.id}')`}" 
+                 id="hero-card-${hero.id}"
+                 class="hero-pick-card relative p-2 bg-white rounded-xl border-2 border-transparent ${isLocked ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer hover:border-purple-400'} transition-all flex flex-col items-center w-20">
+                
+                ${isLocked ? `
+                    <div class="absolute inset-0 bg-black/60 rounded-xl flex items-center justify-center z-10">
+                        <span class="text-3xl">🔒</span>
+                    </div>
+                    <div class="absolute -top-2 -right-2 bg-red-500 text-white text-xs px-2 py-1 rounded-full z-20">
+                        Khóa
+                    </div>
+                ` : ''}
+                
+                <img src="${hero.image_url}" class="w-12 h-12 object-contain ${isLocked ? 'grayscale' : ''}">
+                <span class="text-[10px] font-bold text-gray-600 mt-1 text-center">${hero.name}</span>
+                
+                ${isLocked ? `
+                    <span class="text-[8px] text-red-500 mt-1 text-center leading-tight">${unlockInfo}</span>
+                ` : ''}
+            </div>
+        `;
+    }).join('');
 },
 
 // Hàm khi người dùng nhấn chọn 1 Hero cụ thể
 selectedHeroId: null,
-pickHero: function(heroId) {
+pickHero: async function(heroId) {
+    const { data: hero } = await window.supabase
+        .from('heroes')
+        .select('is_locked')
+        .eq('id', heroId)
+        .single();
+    
+    if (hero?.is_locked) {
+        alert('Hero này đang bị khóa! Hãy hoàn thành nhiệm vụ để mở khóa.');
+        return;
+    }
+
     document.querySelectorAll('.hero-pick-card').forEach(c => c.classList.remove('border-purple-500', 'bg-purple-50'));
     const heroCard = document.getElementById(`hero-card-${heroId}`);
     if (heroCard) {
@@ -240,6 +368,9 @@ startGame: async function() {
         return;
     }
 
+    const introSound = new Audio('https://xiaomi86pro.github.io/EnglishAdventure/sounds/StartGame.mp3'); 
+    introSound.currentTime = 0; introSound.play();
+
     const supabase = window.supabase;
     const btnStart = document.getElementById('btn-start');
     btnStart.innerText = "Đang chuẩn bị...";
@@ -262,6 +393,9 @@ startGame: async function() {
             .single();
 
         if (fetchError) throw fetchError;
+
+        userData.selected_hero_id = this.selectedHeroId;
+
 
         // 3. Khởi động GameEngine
         if (window.GameEngine) {
