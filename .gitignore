@@ -1,0 +1,20 @@
+# Các thư viện đã cài đặt
+node_modules/
+
+# File lưu phiên bản thư viện (nếu bạn muốn ẩn nó khỏi danh sách commit)
+package-lock.json
+
+# File chứa API Key bảo mật (Cực kỳ quan trọng)
+.env
+.env.local
+
+# Các thư mục sinh ra khi build web
+dist/
+build/
+
+# Các file rác của hệ điều hành hoặc trình soạn thảo
+.DS_Store
+.vscode/
+
+#Rác
+junk/
