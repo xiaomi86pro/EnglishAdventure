@@ -34,8 +34,7 @@ class AuthComponent {
         // Load local users và hiển thị menu
         const localUsers = this.state.getLocalUsers();
         this.state.setLocalUsers(localUsers);
-        console.trace("Danh sách Local Users:", localUsers);
-        
+        console.log("Danh sách Local Users:", localUsers);  
         this.displayLoginMenu();
     }
 
