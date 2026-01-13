@@ -53,6 +53,20 @@ body {
 .grid-row input:focus {
   border-color: #3b82f6;
 }
+#toast.show {
+  display: block;
+  animation: slideIn 0.3s ease-out;
+}
+@keyframes slideIn {
+  from {
+      transform: translateX(100%);
+      opacity: 0;
+  }
+  to {
+      transform: translateX(0);
+      opacity: 1;
+  }
+}
 /* Style cho nút Lưu và Xóa */
 .btn-save { background-color: #22c55e; color: white; padding: 6px 12px; rounded: 8px; font-weight: bold; border-radius: 8px; }
 .btn-delete { background-color: #ef4444; color: white; padding: 6px 12px; rounded: 8px; font-weight: bold; border-radius: 8px; margin-left: 4px; }
