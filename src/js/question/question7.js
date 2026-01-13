@@ -1,7 +1,7 @@
 // js/question/question7.js
 // Question Type 7: Listen and pick (Multiple Choice) - Class Version
 
-class QuestionTypeSimpleMC {
+class Question7 {
   constructor(opts = {}) {
       this._vocabulary = opts.vocabPool || [];
       this.containerId = opts.containerId || "questionarea";
@@ -147,5 +147,5 @@ class QuestionTypeSimpleMC {
   }
 }
 
-window.QuestionTypeSimpleMC = QuestionTypeSimpleMC;
-export default QuestionTypeSimpleMC;
+window.Question7 = Question7;
+export default Question7;

@@ -5,7 +5,7 @@ import "@/css/admin.css";
 
 // Import các managers
 import { VocabManager } from './vocab_manager.js';
-//import { AssetManager } from './asset_manager.js';
+import { AssetManager } from './asset_manager.js';
 import { TestQuestionManager } from './test_question_manager.js';
 
 // Khởi tạo Supabase
@@ -21,12 +21,12 @@ if (window.AuthComponent) {
 
 // ===== KHỞI TẠO CÁC MANAGERS =====
 const vocabManager = new VocabManager(supabase);
-//const assetManager = new AssetManager(supabase);
+const assetManager = new AssetManager(supabase);
 const testQuestionManager = new TestQuestionManager(supabase);
 
 // Expose ra window để có thể gọi từ HTML onclick
 window.vocabManager = vocabManager;
-//window.assetManager = assetManager;
+window.assetManager = assetManager;
 window.testQuestionManager = testQuestionManager;
 
 // ===== XỬ LÝ UPLOAD EXCEL =====
@@ -112,7 +112,7 @@ async function startAdminSystem() {
     vocabManager.init();
     
     // Khởi tạo Asset Manager
-    //assetManager.init();
+    assetManager.init();
     
     // Khởi tạo Test Question Manager
     testQuestionManager.init();

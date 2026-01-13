@@ -1,7 +1,7 @@
 // js/question/question6.js
 // Question Type 6: Kéo thả đuôi từ (Suffix Drag & Drop) - Vertical & Merged Style - Class Version
 
-class QuestionType6 {
+class Question6 {
   constructor(opts = {}) {
       this._vocabulary = opts.vocabPool || [];
       this.containerId = opts.containerId || "questionarea";
@@ -300,5 +300,5 @@ class QuestionType6 {
   }
 }
 
-export default QuestionType6;
-window.QuestionType6 = QuestionType6;
+export default Question6;
+window.Question6 = Question6;
