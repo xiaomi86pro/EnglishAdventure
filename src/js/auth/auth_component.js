@@ -31,22 +31,12 @@ class AuthComponent {
         this.userService = new UserService(window.supabase);
         this.heroService = new HeroService(window.supabase);
 
-        // Load users và hiển thị menu
-        this.fetchUsers();
-    }
-
-    /**
-     * Lấy danh sách users
-     */
-    async fetchUsers() {
-        try {
-            const users = await this.userService.fetchUsers();
-            this.state.setUsers(users);
-            console.log("Danh sách User đã tải:", users);
-            this.displayLoginMenu();
-        } catch (err) {
-            console.error("Lỗi fetchUsers:", err.message);
-        }
+        // Load local users và hiển thị menu
+        const localUsers = this.state.getLocalUsers();
+        this.state.setLocalUsers(localUsers);
+        console.log("Danh sách Local Users:", localUsers);
+        
+        this.displayLoginMenu();
     }
 
     /**
@@ -54,33 +44,159 @@ class AuthComponent {
      */
     displayLoginMenu() {
         this.state.reset();
-        this.ui.displayLoginMenu(this.state.getUsers());
+        const localUsers = this.state.getLocalUsers();
+        this.ui.displayLoginMenu(localUsers);
     }
 
     /**
-     * Chọn user
+     * Chọn local user (điền tên vào form)
      */
-    selectUser(userId) {
-        this.ui.highlightSelectedUser(userId);
-        this.state.setSelectedUserId(userId);
+    selectLocalUser(userId, displayName) {
+        this.ui.highlightSelectedLocalUser(userId);
+        this.ui.fillLoginUsername(displayName);
+    }
+
+    /**
+     * Xóa user khỏi local users
+     */
+    removeLocalUser(userId) {
+        if (!confirm('Xóa người chơi này khỏi danh sách?')) return;
         
-        // Kiểm tra xem profile này có game đã lưu không
-        const savedGame = this.state.checkSavedGame(userId);
-        if (savedGame) {
-            // Profile này có game đã lưu → Hiện menu Continue/New
-            this.displayContinueOrNewMenu(savedGame);
-        } else {
-            // Profile này chưa có game → Hiện vùng chọn Hero
-            this.ui.showHeroSelectionArea();
-            this.loadHeroList();
+        this.state.removeLocalUser(userId);
+        this.displayLoginMenu();
+    }
+
+    /**
+     * Hiển thị form đăng ký
+     */
+    displayRegisterForm() {
+        const avatars = this.state.getAvailableAvatars();
+        this.state.setTempAvatar(avatars[0]);
+        this.ui.displayRegisterForm(avatars);
+    }
+
+    /**
+     * Chọn avatar khi đăng ký
+     */
+    selectAvatar(emoji) {
+        this.state.setTempAvatar(emoji);
+    }
+
+    /**
+     * Xử lý đăng ký user mới
+     */
+    async handleRegister() {
+        const usernameInput = document.getElementById('register-username');
+        const passwordInput = document.getElementById('register-password');
+        
+        if (!usernameInput || !passwordInput) return;
+        
+        const username = usernameInput.value.trim();
+        const password = passwordInput.value.trim();
+        
+        if (!username) {
+            alert('Vui lòng nhập tên!');
+            return;
+        }
+        
+        if (!password) {
+            alert('Vui lòng nhập mật khẩu!');
+            return;
+        }
+
+        if (password.length < 4) {
+            alert('Mật khẩu phải có ít nhất 4 ký tự!');
+            return;
+        }
+
+        this.ui.updateButtonState('btn-confirm-register', 'Đang tạo...', true);
+
+        try {
+            const newUser = await this.userService.createUser(
+                username, 
+                password, 
+                this.state.tempAvatar
+            );
+            
+            console.log("Đăng ký thành công:", newUser);
+            
+            // Lưu vào local users
+            this.state.saveLocalUser(newUser);
+            
+            alert('✅ Đăng ký thành công! Bây giờ bạn có thể đăng nhập.');
+            
+            // Quay về màn hình login
+            this.displayLoginMenu();
+            
+        } catch (err) {
+            console.error("Lỗi handleRegister:", err);
+            alert(`Lỗi: ${err.message}`);
+            this.ui.updateButtonState('btn-confirm-register', 'Tạo tài khoản', false);
         }
     }
 
     /**
-     * Hiển thị menu Continue hoặc New Game
+     * Xử lý đăng nhập
      */
-    displayContinueOrNewMenu(savedGame) {
-        this.ui.displayContinueOrNewMenu(savedGame);
+    async handleLogin() {
+        const usernameInput = document.getElementById('login-username');
+        const passwordInput = document.getElementById('login-password');
+        
+        if (!usernameInput || !passwordInput) return;
+        
+        const username = usernameInput.value.trim();
+        const password = passwordInput.value.trim();
+        
+        if (!username || !password) {
+            alert('Vui lòng nhập đầy đủ tên và mật khẩu!');
+            return;
+        }
+
+        // Hiển thị loading
+        const btnLogin = document.querySelector('button[onclick="AuthComponent.handleLogin()"]');
+        if (btnLogin) {
+            btnLogin.innerText = 'Đang đăng nhập...';
+            btnLogin.disabled = true;
+        }
+
+        try {
+            const result = await this.userService.verifyLogin(username, password);
+            
+            if (!result.success) {
+                alert(result.message);
+                if (btnLogin) {
+                    btnLogin.innerText = '🚀 Đăng nhập';
+                    btnLogin.disabled = false;
+                }
+                return;
+            }
+
+            console.log("Đăng nhập thành công:", result.user);
+            
+            // Lưu user vào localStorage
+            this.state.saveLocalUser(result.user);
+            this.state.setSelectedUserId(result.user.id);
+
+            // Kiểm tra có game đã lưu không
+            const savedGame = this.state.checkSavedGame(result.user.id);
+            
+            if (savedGame) {
+                // Có game đã lưu → Hiện menu Continue/New
+                this.ui.displayContinueOrNewMenu(savedGame);
+            } else {
+                // Chưa có game → Chọn hero
+                this.ui.displayHeroSelection();
+                this.loadHeroList();
+            }
+            
+        } catch (err) {
+            console.error("Lỗi handleLogin:", err);
+            alert(`Lỗi: ${err.message}`);
+            if (btnLogin) {
+                btnLogin.innerText = '🚀 Đăng nhập';
+                btnLogin.disabled = false;
+            }
+        }
     }
 
     /**
@@ -102,53 +218,13 @@ class AuthComponent {
      * Bắt đầu game mới (xóa save cũ)
      */
     startNewGame() {
-        this.state.clearSavedGame(this.state.getSelectedUserId());
-        this.displayLoginMenu();
-    }
-
-    /**
-     * Hiển thị form tạo user
-     */
-    displayCreateUserForm() {
-        const avatars = this.state.getAvailableAvatars();
-        this.state.setTempAvatar(avatars[0]);
-        this.ui.displayCreateUserForm(avatars);
-    }
-
-    /**
-     * Chọn avatar khi tạo user
-     */
-    selectAvatar(emoji) {
-        this.state.setTempAvatar(emoji);
-    }
-
-    /**
-     * Xử lý lưu user mới
-     */
-    async handleSaveUser() {
-        const nameInput = document.getElementById('input-username');
-        if (!nameInput) return;
+        if (!confirm('Bạn có chắc muốn chơi lại từ đầu? Game cũ sẽ bị xóa!')) return;
         
-        const name = nameInput.value.trim();
-        if (!name) {
-            alert('Vui lòng nhập tên!');
-            return;
-        }
-
-        this.ui.updateButtonState('btn-confirm-save', 'Đang lưu...', true);
-
-        try {
-            await this.userService.createUser(name, this.state.tempAvatar);
-            console.log("Lưu thành công, đang tải lại danh sách...");
-            
-            // Đợi một chút để DB ổn định rồi load lại
-            setTimeout(() => this.fetchUsers(), 300);
-            
-        } catch (err) {
-            console.error("Lỗi handleSaveUser:", err);
-            alert(`Lỗi: ${err.message}`);
-            this.ui.updateButtonState('btn-confirm-save', 'Xác nhận', false);
-        }
+        this.state.clearSavedGame(this.state.getSelectedUserId());
+        
+        // Hiển thị màn hình chọn hero
+        this.ui.displayHeroSelection();
+        this.loadHeroList();
     }
 
     /**
@@ -191,7 +267,7 @@ class AuthComponent {
     async startGame() {
         // Kiểm tra xem đã chọn đầy đủ chưa
         if (!this.state.getSelectedUserId() || !this.state.getSelectedHeroId()) {
-            alert("Vui lòng chọn cả nhân vật và hiệp sĩ!");
+            alert("Vui lòng chọn hiệp sĩ!");
             return;
         }
 

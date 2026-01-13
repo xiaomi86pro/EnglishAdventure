@@ -8,7 +8,7 @@ export class UserService {
     }
 
     /**
-     * Lấy danh sách users từ Supabase
+     * Lấy danh sách users từ Supabase (không dùng nữa - chỉ để backup)
      */
     async fetchUsers() {
         try {
@@ -27,14 +27,54 @@ export class UserService {
     }
 
     /**
-     * Tạo user mới
+     * Xác thực đăng nhập với username và password
      */
-    async createUser(displayName, avatarKey) {
+    async verifyLogin(username, password) {
         try {
             const { data, error } = await this.supabase
                 .from('profiles')
+                .select('*')
+                .eq('display_name', username)
+                .eq('password', password)
+                .single();
+
+            if (error) {
+                if (error.code === 'PGRST116') {
+                    // Không tìm thấy user hoặc sai password
+                    return { success: false, message: 'Tên hoặc mật khẩu không đúng!' };
+                }
+                throw error;
+            }
+            
+            return { success: true, user: data };
+        } catch (err) {
+            console.error("Lỗi verifyLogin:", err.message);
+            return { success: false, message: err.message };
+        }
+    }
+
+    /**
+     * Tạo user mới (thêm password)
+     */
+    async createUser(displayName, password, avatarKey) {
+        try {
+            // Kiểm tra xem tên đã tồn tại chưa
+            const { data: existing } = await this.supabase
+                .from('profiles')
+                .select('id')
+                .eq('display_name', displayName)
+                .single();
+
+            if (existing) {
+                throw new Error('Tên này đã được sử dụng!');
+            }
+
+            // Tạo user mới
+            const { data, error } = await this.supabase
+                .from('profiles')
                 .insert([{ 
-                    display_name: displayName, 
+                    display_name: displayName,
+                    password: password,
                     avatar_key: avatarKey,
                     level: 1,
                     exp: 0,
@@ -86,6 +126,26 @@ export class UserService {
             return data;
         } catch (err) {
             console.error("Lỗi getUserWithHero:", err.message);
+            throw err;
+        }
+    }
+
+    /**
+     * Lấy thông tin user theo tên
+     */
+    async getUserByName(displayName) {
+        try {
+            const { data, error } = await this.supabase
+                .from('profiles')
+                .select('*')
+                .eq('display_name', displayName)
+                .single();
+
+            if (error) throw error;
+            
+            return data;
+        } catch (err) {
+            console.error("Lỗi getUserByName:", err.message);
             throw err;
         }
     }
