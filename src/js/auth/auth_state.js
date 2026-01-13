@@ -1,92 +1,83 @@
-// src/js/auth/user_service.js
+// src/js/auth/auth_state.js
 /**
- * Service xử lý các tác vụ liên quan đến User/Profile
+ * Quản lý state của authentication
  */
-export class UserService {
-    constructor(supabase) {
-        this.supabase = supabase;
+export class AuthState {
+    constructor() {
+        this.selectedUserId = null;
+        this.selectedHeroId = null;
+        this.tempAvatar = null;
+        this.users = [];
+        this.containerId = 'questionarea';
+        this.availableAvatars = ["🧑‍🚀", "👸", "🤖", "🧸", "🱠", "🶠", "🦊", "🦁"];
     }
 
-    /**
-     * Lấy danh sách users từ Supabase
-     */
-    async fetchUsers() {
+    // Lưu game state vào localStorage
+    saveGameState(userId, gameState) {
         try {
-            const { data, error } = await this.supabase
-                .from('profiles')
-                .select('*')
-                .limit(4);
-
-            if (error) throw error;
-            
-            return data || [];
-        } catch (err) {
-            console.error("Lỗi fetchUsers:", err.message);
-            throw err;
-        }
-    }
-
-    /**
-     * Tạo user mới
-     */
-    async createUser(displayName, avatarKey) {
-        try {
-            const { data, error } = await this.supabase
-                .from('profiles')
-                .insert([{ 
-                    display_name: displayName, 
-                    avatar_key: avatarKey,
-                    level: 1,
-                    exp: 0,
-                    hp_current: 0
-                }])
-                .select();
-
-            if (error) throw error;
-            
-            return data[0];
-        } catch (err) {
-            console.error("Lỗi createUser:", err.message);
-            throw err;
-        }
-    }
-
-    /**
-     * Cập nhật hero đã chọn cho user
-     */
-    async updateSelectedHero(userId, heroId) {
-        try {
-            const { error } = await this.supabase
-                .from('profiles')
-                .update({ selected_hero_id: heroId })
-                .eq('id', userId);
-
-            if (error) throw error;
-            
+            localStorage.setItem(`gameState-${userId}`, JSON.stringify(gameState));
             return true;
-        } catch (err) {
-            console.error("Lỗi updateSelectedHero:", err.message);
-            throw err;
+        } catch (error) {
+            console.error('Lỗi lưu game state:', error);
+            return false;
         }
     }
 
-    /**
-     * Lấy thông tin user kèm hero
-     */
-    async getUserWithHero(userId) {
+    // Kiểm tra xem có game đã lưu không
+    checkSavedGame(userId) {
+        const saved = localStorage.getItem(`gameState-${userId}`);
+        if (!saved) return null;
         try {
-            const { data, error } = await this.supabase
-                .from('profiles')
-                .select('*, heroes(*)')
-                .eq('id', userId)
-                .single();
-
-            if (error) throw error;
-            
-            return data;
-        } catch (err) {
-            console.error("Lỗi getUserWithHero:", err.message);
-            throw err;
+            return JSON.parse(saved);
+        } catch (e) {
+            console.error('Lỗi load game:', e);
+            return null;
         }
+    }
+
+    // Xóa game đã lưu
+    clearSavedGame(userId) {
+        localStorage.removeItem(`gameState-${userId}`);
+    }
+
+    // Reset state
+    reset() {
+        this.selectedUserId = null;
+        this.selectedHeroId = null;
+        this.tempAvatar = null;
+    }
+
+    // Getters
+    getSelectedUserId() {
+        return this.selectedUserId;
+    }
+
+    getSelectedHeroId() {
+        return this.selectedHeroId;
+    }
+
+    getUsers() {
+        return this.users;
+    }
+
+    getAvailableAvatars() {
+        return this.availableAvatars;
+    }
+
+    // Setters
+    setSelectedUserId(id) {
+        this.selectedUserId = id;
+    }
+
+    setSelectedHeroId(id) {
+        this.selectedHeroId = id;
+    }
+
+    setTempAvatar(avatar) {
+        this.tempAvatar = avatar;
+    }
+
+    setUsers(users) {
+        this.users = users;
     }
 }
