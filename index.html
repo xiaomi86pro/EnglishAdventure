@@ -56,22 +56,5 @@
             }
         });
     </script>
-    <script type="module">
-        // Đảm bảo khởi tạo instance sau khi script đã nạp xong
-        window.addEventListener('load', () => {
-          if (typeof AudioManager !== 'undefined') {
-             window.audioManager = new AudioManager({
-                deathSrc: './sounds/Game_Over.mp3',
-                volume: 0.8
-             });
-             console.log("AudioManager đã sẵn sàng!");
-          }
-          
-          if (window.AuthComponent) {
-             window.AuthComponent.init();
-          }
-        });
-      </script>
-
 </body>
 </html>
