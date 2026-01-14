@@ -98,21 +98,21 @@ class Question6 {
       this._dropZones = [];
       this._items.forEach((it, idx) => {
           const row = document.createElement('div');
-          row.className = 'flex items-center justify-start p-3 bg-slate-700 rounded-xl border border-slate-600 w-[450px] mx-auto';            
-          
+          row.className = 'flex items-center justify-between bg-slate-700/30 p-2 rounded-xl h-14 w-full';
+
           const viDiv = document.createElement('div');
-          viDiv.className = 'flex-1 text-green-400 text-sm font-medium truncate pr-4';            
+          viDiv.className = 'text-green-400 font-medium text-lg ml-2 leading-none';
           viDiv.innerText = `${idx + 1}. ${this._escape(it.vi)}`;
 
           const engDiv = document.createElement('div');
-          engDiv.className = 'flex items-baseline justify-end gap-0.5 min-w-[150px]';
+          engDiv.className = 'flex items-center justify-end gap-1 min-w-[150px] h-12';
 
           const rootSpan = document.createElement('span');
-          rootSpan.className = 'text-2xl font-bold text-white tracking-widest';
-          rootSpan.innerText = it.leftPart;
+          rootSpan.className = 'text-2xl font-bold text-white tracking-widest leading-none';          rootSpan.innerText = it.leftPart;
 
           const zone = document.createElement('div');
-          zone.className = 'min-w-[50px] h-10 px-1 ml-0.5 flex items-center justify-center border-b-4 border-dashed border-slate-400 text-slate-400 text-xl font-bold transition-all';
+          zone.className = 'min-w-[60px] h-10 px-2 ml-1 flex items-center justify-center border-b-4 border-dashed border-slate-400 text-slate-400 text-xl font-bold transition-all leading-none';
+          
           zone.setAttribute('data-index', idx);
           zone.setAttribute('data-expected', it.cutPart);
           zone.innerText = '__'; 
