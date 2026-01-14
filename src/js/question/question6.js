@@ -211,14 +211,35 @@ class Question6 {
       );
 
       if (cut === item.cutPart) {
-          item.filled = true;
-          zone.innerText = item.cutPart;
-          zone.className = "text-2xl font-bold text-white tracking-widest q6-filled ml-0.5 animate-pulse";
-          if (tileEl) tileEl.classList.add('invisible', 'pointer-events-none');
-          if (window.GameEngine) window.GameEngine.processBattleRound(1, 0, false);
-          this._checkAllCompleted();
-          this._speak(item.full);
-      } else {
+        item.filled = true;
+    
+        // Tìm container chứa từ
+        const engDiv = zone.parentElement;
+    
+        // Xoá root + zone
+        engDiv.innerHTML = '';
+    
+        // Tạo span mới cho từ hoàn chỉnh
+        const fullWord = document.createElement('span');
+        fullWord.innerText = item.full;
+        fullWord.className =
+            'text-2xl font-bold tracking-widest';
+        fullWord.style.color = '#22c55e'; // xanh chắc chắn
+    
+        engDiv.appendChild(fullWord);
+    
+        // Ẩn mảnh kéo
+        if (tileEl) tileEl.classList.add('invisible', 'pointer-events-none');
+    
+        if (window.GameEngine)
+            window.GameEngine.processBattleRound(1, 0, false);
+    
+        this._checkAllCompleted();
+        this._speak(item.full);
+    }
+    
+    
+     else {
           if (tileEl) {
               tileEl.classList.add('bg-red-500', 'shake');
               setTimeout(() => tileEl.classList.remove('bg-red-500', 'shake'), 500);
