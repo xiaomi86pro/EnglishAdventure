@@ -194,7 +194,7 @@ export class AuthUI {
 
         container.innerHTML = `
             <div class="flex flex-col items-center gap-6 w-full max-w-2xl">
-                <h2 class="text-3xl font-black text-white uppercase tracking-wide drop-shadow-lg">Chọn hiệp sĩ</h2>
+                <h2 class="text-3xl font-black text-black uppercase tracking-wide drop-shadow-lg">Chọn hiệp sĩ</h2>
                 
                 <div class="w-full bg-white/95 backdrop-blur-sm p-6 rounded-3xl border-4 border-white shadow-2xl">
                     <div id="hero-list" class="flex flex-wrap justify-center gap-4 mb-6">
