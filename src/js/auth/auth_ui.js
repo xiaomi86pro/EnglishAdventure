@@ -159,7 +159,7 @@ export class AuthUI {
                     <div class="text-center mb-4">
                         <div class="text-5xl mb-2">${savedGame.player.sprite || '🧑‍🚀'}</div>
                         <p class="font-bold text-xl text-gray-700">${savedGame.player.display_name}</p>
-                        <p class="text-sm text-gray-500">Level ${savedGame.player.level} - Stage ${savedGame.currentStage}</p>
+                        <p class="text-sm text-gray-500">Level ${savedGame.player.level} - Stage ${savedGame.currentStationName}</p>
                     </div>
                 </div>
 

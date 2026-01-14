@@ -196,7 +196,8 @@ const GameEngine = {
                 sprite: this.player.avatar_key
             },
             currentLocationId: this.currentLocation?.id,  // ← Thêm
-            currentStationId: this.currentStation?.id,    // ← Thêm
+            currentStationId: this.currentStation?.id, 
+            currentStationName: this.currentStation?.name,  
             currentStep: this.currentStep,
             monster: this.monster ? {
                 name: this.monster.name,
