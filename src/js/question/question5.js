@@ -7,11 +7,10 @@ class Question5 {
         this.config = {
             speakOnCorrect: config.speakOnCorrect ?? true,
             numWords: config.numWords ?? 5,
-            countdownTime: config.countdownTime ?? 10,
+            countdownTime: config.countdownTime ?? 15,
             maxHints: config.maxHints ?? 3,
             ...config
         };
-
         // State
         this.words = [];
         this.selectedLetters = [];
@@ -20,7 +19,6 @@ class Question5 {
         this.monsterAttackTimer = null;
         this.monsterAttackCountdown = this.config.countdownTime;
         this._lastAnswered = null;
-
         // Callbacks
         this.onCorrect = null;
         this.onWrong = null;
@@ -41,7 +39,6 @@ class Question5 {
                 english: (item.english_word || item.english || '').trim().toUpperCase(),
                 vietnamese: (item.vietnamese_translation || item.vietnamese || '').trim()
             }));
-
             this.render();
             this.startMonsterAttackTimer();
         } catch (err) {
@@ -64,23 +61,23 @@ class Question5 {
             allLetters.push(...lettersNoSpace.split(''));
         });
         
-        // Trộn ngẫu nhiên
-        allLetters = allLetters.sort(() => Math.random() - 0.5);
+        // --- THAY ĐỔI Ở ĐÂY ---
+        // Thay vì trộn ngẫu nhiên (Math.random), ta sắp xếp theo Alpha B (sort)
+        allLetters = allLetters.sort(); 
+        // ---------------------
 
         container.innerHTML = `
         <div class="w-full h-full flex flex-col items-center justify-center p-6 bg-slate-900 rounded-3xl relative overflow-hidden">
         <div class="flex w-full h-full gap-6 p-4">
             <div class="absolute top-0 left-0 bg-yellow-600 text-white px-3 py-1 rounded-br-2xl text-xs font-bold shadow z-10">
-            Type 6: Suffix Match
+            Type 5: Combine Letters
             </div>
-            <!-- Nút Hint ở góc trên bên phải -->
             <div class="absolute top-0 right-0 z-10">
             <button id="btn-hint" class="px-4 py-2 bg-yellow-400 hover:bg-yellow-500 text-black font-black rounded-bl-2xl">
                 💡 Hint (<span id="hint-counter">${this.hintCount}</span>/<span id="hint-max">${this.config.maxHints}</span>)
             </button>
             </div>
 
-            <!-- Cột trái: Danh sách từ tiếng Việt -->
             <div class="w-1/3 space-y-3 overflow-y-auto">
             <h3 class="text-xl font-black text-purple-600 mb-4">Ghép từ:</h3>
             ${this.words.map((w, idx) => `
@@ -91,20 +88,16 @@ class Question5 {
             `).join('')}
             </div>
 
-            <!-- Cột phải: Vùng chơi -->
             <div class="flex-1 flex flex-col gap-4">
-            <!-- Thanh countdown -->
             <div class="bg-red-100 rounded-xl p-3 border-2 border-red-300 flex items-center justify-between">
                 <span class="font-bold text-red-600">⏰ Quái tấn công sau:</span>
                 <span id="countdown-timer" class="text-3xl font-black text-red-600">${this.monsterAttackCountdown}s</span>
             </div>
 
-            <!-- Vùng hiển thị từ đang ghép -->
             <div id="current-word" class="bg-blue-50 rounded-xl p-4 border-2 border-blue-300 min-h-[80px] flex items-center justify-center gap-2 flex-wrap">
                 <span class="text-gray-400 italic">Chọn các chữ cái bên dưới...</span>
             </div>
 
-            <!-- Nhóm nút hành động -->
             <div class="flex gap-3">
                 <button id="submit-btn" class="flex-1 py-3 bg-green-500 hover:bg-green-600 text-white font-black rounded-xl text-lg">
                 ✓ Xác nhận
@@ -114,7 +107,6 @@ class Question5 {
                 </button>
             </div>
 
-            <!-- Grid chữ cái -->
             <div id="letters-container" class="relative flex-1 overflow-hidden rounded-xl bg-gradient-to-b from-purple-50 to-white p-4 border-2 border-purple-200">
                 ${allLetters.map((letter, idx) => `
                 <button data-idx="${idx}" data-letter="${letter}"
@@ -130,7 +122,6 @@ class Question5 {
         </div>
         </div>
         `;
-
         this.positionLetters();
         this.attachEventHandlers();
 
@@ -150,7 +141,6 @@ class Question5 {
         const cols = 8;
         const gap = 8;
         const btnSize = 48;
-
         letters.forEach((btn, idx) => {
             const row = Math.floor(idx / cols);
             const col = idx % cols;
@@ -170,7 +160,6 @@ class Question5 {
         const submitBtn = document.getElementById('submit-btn');
         const clearBtn = document.getElementById('clear-btn');
         const hintBtn = document.getElementById('btn-hint');
-
         // Click chọn chữ cái
         letterBtns.forEach(btn => {
             btn.onclick = () => {
@@ -186,7 +175,6 @@ class Question5 {
                 this.updateCurrentWord();
             };
         });
-
         if (submitBtn) submitBtn.onclick = () => this.submitWord();
         if (clearBtn) clearBtn.onclick = () => this.clearWord();
         if (hintBtn) hintBtn.onclick = () => this.useHint();
@@ -202,7 +190,6 @@ class Question5 {
         const currentWordRect = currentWordArea.getBoundingClientRect();
         const container = document.getElementById('letters-container');
         const containerRect = container.getBoundingClientRect();
-
         const targetX = currentWordRect.left - containerRect.left + (currentWordRect.width / 2) - 24;
         const targetY = currentWordRect.top - containerRect.top + (currentWordRect.height / 2) - 24;
 
@@ -249,7 +236,6 @@ class Question5 {
             item.btn.classList.remove('selected');
             this.moveLetterToOriginal(item.btn);
         });
-        
         this.selectedLetters = [];
         this.updateCurrentWord();
     }
@@ -269,7 +255,6 @@ class Question5 {
         let unsolvedIndex = -1;
         for (let i = 0; i < this.words.length; i++) {
             if (this.completedWords.includes(i)) continue;
-
             const ansEl = document.getElementById(`answer-${i}`);
             const ansText = ansEl ? ansEl.innerText.trim() : "";
             if (!ansText) {
@@ -288,13 +273,11 @@ class Question5 {
         const wordObj = this.words[unsolvedIndex];
         const english = wordObj.english;
         const chars = english.split('');
-        
         // Tìm các vị trí không phải space
         const nonSpaceIndices = [];
         chars.forEach((ch, idx) => { 
             if (ch !== ' ') nonSpaceIndices.push(idx); 
         });
-
         let hintHtml = '';
         if (nonSpaceIndices.length <= 2) {
             hintHtml = english;
@@ -332,27 +315,22 @@ class Question5 {
      */
     submitWord() {
         if (this.selectedLetters.length === 0) return;
-
         const word = this.selectedLetters.map(item => item.letter).join('');
         
         const foundIndex = this.words.findIndex((w, idx) => {
             const targetNormalized = w.english.replace(/\s+/g, '');
             return targetNormalized === word && !this.completedWords.includes(idx);
         });
-
         if (foundIndex >= 0) {
             const w = this.words[foundIndex];
-
             // Lưu để QuestionManager ghi vào history
             this._lastAnswered = { en: w.english, vi: w.vietnamese };
-
             // Hiển thị đáp án
             const answerEl = document.getElementById(`answer-${foundIndex}`);
             if (answerEl) answerEl.innerText = w.english;
 
             // Đánh dấu hoàn thành
             this.completedWords.push(foundIndex);
-
             // Phát âm
             if (this.config.speakOnCorrect) {
                 this.speak(w.english);
@@ -363,6 +341,7 @@ class Question5 {
                 item.btn.style.transform = 'scale(0) rotate(360deg)';
                 item.btn.style.opacity = '0';
                 setTimeout(() => item.btn.remove(), 400);
+            
             });
 
             this.selectedLetters = [];
@@ -370,7 +349,6 @@ class Question5 {
 
             // Reset timer
             this.resetMonsterAttackTimer();
-
             // Callback
             if (typeof this.onCorrect === 'function') {
                 const advance = this.completedWords.length === this.words.length;
@@ -394,7 +372,6 @@ class Question5 {
             }
 
             setTimeout(() => this.clearWord(), 50);
-
             if (typeof this.onWrong === 'function') {
                 this.onWrong();
             }
@@ -411,7 +388,6 @@ class Question5 {
                 english: (item.english_word || item.english || '').trim().toUpperCase(),
                 vietnamese: (item.vietnamese_translation || item.vietnamese || '').trim()
             }));
-
             this.completedWords = [];
             this.selectedLetters = [];
             
@@ -431,7 +407,6 @@ class Question5 {
         
         this.monsterAttackCountdown = this.config.countdownTime;
         this.updateCountdownDisplay();
-
         this.monsterAttackTimer = setInterval(() => {
             if (window.GameEngine?.monster?.hp <= 0) {
                 this.stopMonsterAttackTimer();
@@ -439,6 +414,7 @@ class Question5 {
             }
             
             this.monsterAttackCountdown--;
+            
             this.updateCountdownDisplay();
 
             if (this.monsterAttackCountdown <= 0) {
@@ -473,7 +449,6 @@ class Question5 {
         const countdownEl = document.getElementById('countdown-timer');
         if (countdownEl) {
             countdownEl.innerText = `${this.monsterAttackCountdown}s`;
-            
             if (this.monsterAttackCountdown <= 3) {
                 countdownEl.classList.add('animate-pulse');
             } else {
@@ -504,7 +479,8 @@ class Question5 {
                     if (typeof window.GameEngine.handleHeroDefeat === 'function') {
                         window.GameEngine.handleHeroDefeat();
                     }
-                    this.stopMonsterAttackTimer(); // dừng countdown
+                    this.stopMonsterAttackTimer();
+                    // dừng countdown
                 }
             }
         }
@@ -527,7 +503,7 @@ class Question5 {
      */
     destroy() {
         try { 
-            if (window.speechSynthesis) speechSynthesis.cancel(); 
+            if (window.speechSynthesis) speechSynthesis.cancel();
         } catch (e) {}
 
         this.stopMonsterAttackTimer();

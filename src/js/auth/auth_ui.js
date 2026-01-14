@@ -23,7 +23,6 @@ export class AuthUI {
 
         container.innerHTML = `
             <div class="flex flex-col items-center gap-6 w-full max-w-2xl">
-                <h2 class="text-3xl font-black text-white uppercase tracking-wide drop-shadow-lg">🎮 English Adventure</h2>
                 
                 <!-- KHUNG TRÊN: Local Users -->
                 <div class="w-full bg-white/90 backdrop-blur-sm p-6 rounded-3xl border-4 border-white shadow-2xl">
@@ -98,7 +97,7 @@ export class AuthUI {
 
         container.innerHTML = `
             <div class="flex flex-col items-center justify-center w-full max-w-md animate-fade-in">
-                <h2 class="text-3xl font-bold text-white mb-6 uppercase drop-shadow-lg">Tạo nhân vật mới</h2>
+                <h2 class="text-3xl font-bold text-black mb-6 uppercase drop-shadow-lg">Tạo nhân vật mới</h2>
                 
                 <div class="bg-white/95 backdrop-blur-sm p-8 rounded-3xl border-4 border-white shadow-2xl w-full">
                     <div class="space-y-4">

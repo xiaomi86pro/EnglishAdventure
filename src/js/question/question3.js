@@ -15,7 +15,7 @@ class Question3 {
 
         this._config = Object.assign({
             speakOnCorrect: true,
-            spellingRate: 0.7
+            spellingRate: 0.8 // Tăng nhẹ tốc độ đánh vần cho mượt
         }, opts.config || {});
     }
 
@@ -38,10 +38,8 @@ class Question3 {
 
     _selectWord(enemyType) {
         if (!this.vocabPool.length) return;
-
         // Lọc từ: Quái thường từ 3-5 ký tự, Elite/Boss từ 6 ký tự trở lên
         let valid = this.vocabPool.filter(v => v.english_word && v.vietnamese_translation);
-        
         if (enemyType === "normal") {
             valid = valid.filter(v => v.english_word.trim().length <= 5);
         } else {
@@ -60,6 +58,7 @@ class Question3 {
         
         // 2. Nghỉ một chút rồi đánh vần từng chữ
         await new Promise(r => setTimeout(r, 1200));
+        
         if (!this._destroyed) {
             await this.speakLetters(this.currentData.english_word);
         }
@@ -67,7 +66,7 @@ class Question3 {
 
     speak(text, lang = "en-US", rate = 0.9) {
         if (!window.speechSynthesis || this._destroyed) return;
-        speechSynthesis.cancel();
+        speechSynthesis.cancel(); // Dừng các âm thanh cũ
         const u = new SpeechSynthesisUtterance(text);
         u.lang = lang;
         u.rate = rate;
@@ -75,18 +74,84 @@ class Question3 {
     }
 
     async speakLetters(word) {
+        // Làm sạch từ và tách thành mảng ký tự
         const letters = word.replace(/\s+/g, "").split("");
-        for (let char of letters) {
+
+        // Dùng vòng lặp index để biết đang đọc chữ thứ mấy
+        for (let i = 0; i < letters.length; i++) {
             if (this._destroyed) break;
+            
+            const char = letters[i];
+
+            // --- BƯỚC 1: Bật sáng (Highlight) ---
+            this._highlightChar(i, char);
+
             await new Promise(resolve => {
                 const u = new SpeechSynthesisUtterance(char);
                 u.lang = "en-US";
                 u.rate = this._config.spellingRate;
-                u.onend = resolve;
-                u.onerror = resolve; // Đảm bảo không bị kẹt nếu lỗi
+                
+                // Khi đọc xong chữ này
+                u.onend = () => {
+                    // --- BƯỚC 2: Tắt sáng ---
+                    this._removeHighlight();
+                    // Nghỉ cực ngắn giữa các chữ để hiệu ứng nháy rõ hơn
+                    setTimeout(resolve, 100); 
+                };
+                
+                u.onerror = () => {
+                    this._removeHighlight();
+                    resolve();
+                };
+                
                 speechSynthesis.speak(u);
             });
         }
+    }
+
+    // Hàm xử lý việc làm sáng ô chữ hoặc nút bấm
+    _highlightChar(index, char) {
+        const slotsContainer = document.getElementById("en-slots");
+        const lettersContainer = document.getElementById("en-letters");
+        if (!slotsContainer || !lettersContainer) return;
+
+        const slots = slotsContainer.querySelectorAll("div");
+        
+        // Kiểm tra xem vị trí index này trên slot đã được điền chưa
+        // (Logic: slots[index] tương ứng với ký tự thứ i của từ gốc)
+        if (slots[index] && slots[index].innerText.trim() !== "") {
+            // CASE 1: Chữ đã được đưa lên Slot -> Sáng slot đó
+            slots[index].classList.add("ring-4", "ring-yellow-400", "scale-110", "bg-yellow-900/50", "transition-all", "duration-200");
+        } else {
+            // CASE 2: Chữ chưa được đưa lên -> Tìm nút bấm (Button) tương ứng để sáng
+            const buttons = lettersContainer.querySelectorAll("button");
+            // Tìm tất cả các nút có chữ cái khớp và chưa bị ẩn
+            for (let btn of buttons) {
+                if (btn.innerText.toLowerCase() === char.toLowerCase() && btn.style.visibility !== "hidden") {
+                    btn.classList.add("ring-4", "ring-yellow-400", "bg-yellow-100", "scale-110", "transition-all", "duration-200");
+                    // Chỉ cần sáng các nút phù hợp (có thể sáng nhiều nút nếu có 2 chữ giống nhau chưa chọn)
+                }
+            }
+        }
+    }
+
+    // Hàm tắt toàn bộ hiệu ứng sáng
+    _removeHighlight() {
+        const slotsContainer = document.getElementById("en-slots");
+        const lettersContainer = document.getElementById("en-letters");
+        if (!slotsContainer || !lettersContainer) return;
+
+        // Xóa highlight ở Slot
+        const slots = slotsContainer.querySelectorAll("div");
+        slots.forEach(slot => {
+            slot.classList.remove("ring-4", "ring-yellow-400", "scale-110", "bg-yellow-900/50");
+        });
+
+        // Xóa highlight ở Button
+        const buttons = lettersContainer.querySelectorAll("button");
+        buttons.forEach(btn => {
+            btn.classList.remove("ring-4", "ring-yellow-400", "bg-yellow-100", "scale-110");
+        });
     }
 
     renderQuestionUI() {
@@ -113,7 +178,6 @@ class Question3 {
                 <div id="en-letters" class="flex flex-wrap justify-center gap-4 w-full"></div>
             </div>
         `;
-
         const replayBtn = document.getElementById("replay-btn");
         if (replayBtn) replayBtn.onclick = () => this._startAudioSequence();
 
@@ -131,13 +195,13 @@ class Question3 {
         // Tạo các ô trống tương ứng với số chữ cái
         chars.forEach(() => {
             const slot = document.createElement("div");
-            slot.className = "w-14 h-14 border-2 border-dashed border-blue-400/50 bg-slate-800/50 rounded-xl flex items-center justify-center text-3xl font-black text-white";
+            // Thêm transition để hiệu ứng sáng mượt hơn
+            slot.className = "w-14 h-14 border-2 border-dashed border-blue-400/50 bg-slate-800/50 rounded-xl flex items-center justify-center text-3xl font-black text-white transition-all duration-200";
             slotsContainer.appendChild(slot);
         });
 
         // Xáo trộn chữ cái
         const shuffled = chars.map((c, i) => ({ c, i })).sort(() => Math.random() - 0.5);
-
         shuffled.forEach((item, index) => {
             const btn = document.createElement("button");
             btn.className = "w-14 h-14 bg-white border-2 border-blue-200 rounded-2xl shadow-[4px_4px_0px_#3b82f6] text-2xl font-black text-blue-900 hover:bg-blue-50 transition-all transform active:scale-95";
@@ -178,12 +242,10 @@ class Question3 {
     checkWin() {
         const goal = this.currentData.english_word.replace(/\s+/g, "").toLowerCase();
         if (this.enCompleted.toLowerCase() === goal) {
-            // Cập nhật dữ liệu cho Manager
             this._lastAnswered = {
                 en: this.currentData.english_word,
                 vi: this.currentData.vietnamese_translation
             };
-
             setTimeout(() => {
                 if (this._destroyed) return;
                 if (this._config.speakOnCorrect) this.speak(this.currentData.english_word);
