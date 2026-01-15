@@ -42,12 +42,31 @@
             </a>
         </div>
     </aside>
+    <!-- Utils first -->
+    <script type="module" src="/src/js/utils/DOMUtil.js"></script>
+    <script type="module" src="/src/js/utils/EffectsUtil.js"></script>
+
+    <!-- Config -->
     <script type="module" src="/src/js/core/GameConfig.js"></script>
+
+    <!-- Handlers -->
+    <script type="module" src="/src/js/handlers/MonsterHandler.js"></script>
+    <script type="module" src="/src/js/handlers/HeroHandler.js"></script>
+
+    <!-- Managers -->
+    <script type="module" src="/src/js/managers/StateManager.js"></script>
+    <script type="module" src="/src/js/managers/UIManager.js"></script>
+    <script type="module" src="/src/js/managers/BattleManager.js"></script>
+    <script type="module" src="/src/js/managers/ProgressionManager.js"></script>
+
+    <!-- Core - CUỐI CÙNG -->
+    <script type="module" src="/src/js/core/GameEngine.js"></script>
+
 
     <script type="module" src="/src/js/supabase_config.js"></script>
     <script type="module" src="/src/js/audio_manager.js"></script> 
     <script type="module" src="/src/js/auth/auth_component.js"></script>
-    <script type="module" src="/src/js/game_engine.js"></script>
+    <!--<script type="module" src="/src/js/game_engine.js"></script>-->
     <script type="module" src="/src/js/question/question_manager.js"></script>
     <script>
         // Đảm bảo Supabase đã load xong rồi mới init Auth

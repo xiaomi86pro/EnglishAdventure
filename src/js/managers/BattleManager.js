@@ -1,0 +1,197 @@
+/**
+ * BattleManager.js
+ * Quản lý logic chiến đấu: tấn công, nhận sát thương, animation
+ */
+
+import GameConfig from '../core/GameConfig.js';
+import DOMUtil from '../utils/DOMUtil.js';
+
+class BattleManager {
+    constructor(audioManager, effectsUtil, uiManager) {
+        this.audioManager = audioManager;
+        this.effects = effectsUtil;
+        this.uiManager = uiManager;
+        this.isBattling = false;
+    }
+
+    /**
+     * Xử lý một round chiến đấu
+     * @param {Object} player 
+     * @param {Object} monster 
+     * @param {number} correctCount - Số đòn hero tấn công
+     * @param {number} wrongCount - Số đòn monster tấn công
+     * @returns {Object} - { playerAlive, monsterAlive }
+     */
+    async processBattleRound(player, monster, correctCount = 0, wrongCount = 0) {
+        try {
+            console.log('[BattleManager] processBattleRound start', { correctCount, wrongCount });
+            
+            if (!player || !monster) {
+                console.warn('[BattleManager] Missing player or monster');
+                return { playerAlive: false, monsterAlive: false };
+            }
+
+            if (this.isBattling) {
+                console.log('[BattleManager] Already battling, skip');
+                return { playerAlive: true, monsterAlive: true };
+            }
+
+            this.isBattling = true;
+
+            const heroAtk = Number(player.atk || 5);
+            const monsterAtk = Number(monster.atk || 5);
+
+            // Hero attacks
+            for (let i = 0; i < correctCount; i++) {
+                if (monster.hp <= 0) break;
+                
+                await this._executeAttack(player, monster, heroAtk, 'hero');
+                await this._delay(GameConfig.TIMINGS.damageDelay);
+            }
+
+            // Kiểm tra monster chết
+            if (monster.hp <= 0) {
+                console.log('[BattleManager] Monster defeated');
+                this.isBattling = false;
+                return { playerAlive: true, monsterAlive: false };
+            }
+
+            // Monster attacks
+            for (let j = 0; j < wrongCount; j++) {
+                if (player.hp_current <= 0) break;
+                
+                await this._executeAttack(monster, player, monsterAtk, 'monster');
+                await this._delay(GameConfig.TIMINGS.damageDelay);
+            }
+
+            // Kiểm tra hero chết
+            if (player.hp_current <= 0) {
+                console.log('[BattleManager] Hero defeated');
+                this.isBattling = false;
+                return { playerAlive: false, monsterAlive: true };
+            }
+
+            // Cập nhật UI
+            if (this.uiManager) {
+                this.uiManager.updateBattleStatus(player, monster);
+            }
+
+            this.isBattling = false;
+
+            return {
+                playerAlive: player.hp_current > 0,
+                monsterAlive: monster.hp > 0
+            };
+
+        } catch (err) {
+            console.error('[BattleManager] processBattleRound error', err);
+            this.isBattling = false;
+            return { playerAlive: true, monsterAlive: true };
+        }
+    }
+
+    /**
+     * Thực hiện một đòn tấn công
+     * @param {Object} attacker 
+     * @param {Object} defender 
+     * @param {number} damage 
+     * @param {string} attackerType - 'hero' hoặc 'monster'
+     * @private
+     */
+    async _executeAttack(attacker, defender, damage, attackerType) {
+        try {
+            // Phát âm thanh
+            if (this.effects) {
+                this.effects.playAttackSound(attackerType);
+            }
+
+            // Visual: lunge attacker forward
+            const attackerElId = attackerType === 'hero' ? 'hero' : 'monster';
+            const defenderElId = attackerType === 'hero' ? 'monster' : 'hero';
+
+            if (this.effects) {
+                this.effects.attackLunge(attackerElId);
+            }
+
+            // Flash defender
+            if (this.effects) {
+                this.effects.hitFlash(defenderElId);
+                this.effects.shakeElement(defenderElId);
+            }
+
+            // Apply damage
+            if (defender.hp_current !== undefined) {
+                // Defender là player
+                const cur = Number.isFinite(defender.hp_current) ? defender.hp_current : Number(defender.max_hp || 0);
+                defender.hp_current = Math.max(0, cur - damage);
+            } else {
+                // Defender là monster
+                const cur = Number.isFinite(defender.hp) ? defender.hp : Number(defender.max_hp || 0);
+                defender.hp = Math.max(0, cur - damage);
+            }
+
+            // Hiển thị damage number
+            this._showDamageNumber(defenderElId, damage);
+
+            // Cập nhật UI
+            if (this.uiManager) {
+                this.uiManager.updateBattleStatus(
+                    attackerType === 'hero' ? attacker : defender,
+                    attackerType === 'hero' ? defender : attacker
+                );
+            }
+
+            console.log('[BattleManager] Attack applied', { attacker: attackerType, damage });
+
+        } catch (e) {
+            console.warn('[BattleManager] _executeAttack error', e);
+        }
+    }
+
+    /**
+     * Hiển thị số damage bay lên
+     * @param {string} targetElId 
+     * @param {number} damage 
+     * @private
+     */
+    _showDamageNumber(targetElId, damage) {
+        const pos = DOMUtil.getRelativeCenter(targetElId, 'battleview');
+        if (!pos || !this.effects) return;
+
+        this.effects.showDamage('battleview', pos.x, pos.y, damage);
+
+        // Tạo hiệu ứng sao
+        this.effects.createStars('battleview', pos.x, pos.y, 8);
+    }
+
+    /**
+     * Delay helper
+     * @param {number} ms 
+     * @returns {Promise}
+     * @private
+     */
+    _delay(ms) {
+        return new Promise(resolve => setTimeout(resolve, ms));
+    }
+
+    /**
+     * Reset trạng thái battle
+     */
+    reset() {
+        this.isBattling = false;
+    }
+
+    /**
+     * Check xem đang trong battle không
+     * @returns {boolean}
+     */
+    isInBattle() {
+        return this.isBattling;
+    }
+}
+
+// Expose ra window
+window.BattleManager = BattleManager;
+
+// Export
+export default BattleManager;
