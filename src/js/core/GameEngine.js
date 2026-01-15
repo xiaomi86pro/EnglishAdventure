@@ -62,7 +62,7 @@ const GameEngine = {
                 max_hp: heroData.base_hp + (userData.hp_current || 0),
                 hp_current: heroData.base_hp + (userData.hp_current || 0),
                 atk: heroData.base_atk,
-                sprite_url: heroData.image_url
+                sprite_url: heroData.image_url,
             };
 
             // 4. Load first location & station

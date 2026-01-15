@@ -86,7 +86,10 @@ class UIManager {
 
         // 5. Thêm nút Exit
         this.addExitButton();
-        this.addKillButton();
+        //this.addKillButton();
+
+        this.renderAdminButtons();
+
     }
 
     /**
@@ -223,7 +226,7 @@ class UIManager {
     addExitButton() {
         const userUI = DOMUtil.getById('userUI');
         if (!userUI) return;
-
+        
         // Xóa nút cũ nếu có
         const oldExitBtn = DOMUtil.getById('exit-menu-btn');
         if (oldExitBtn) oldExitBtn.remove();
@@ -246,15 +249,38 @@ class UIManager {
         userUI.appendChild(exitBtn);
     }
 
-    addKillButton() {
+    renderAdminButtons() {
         const dashboardUI = DOMUtil.getById('dashboard');
-        if (!dashboardUI) return;
+        console.log('Có dashboard');
+        // Lấy role từ GameEngine
+        const GE = window.GameEngine;
+        const role = GE?.player?.role;
+
+        console.log("UIManager: player role 1 =", role);
+
+         // Nếu không tìm thấy dashboardUI thì log lỗi và return
+        if (!dashboardUI) {
+            console.error("UIManager: dashboardUI không tồn tại!");
+            return;
+        }
+
+
+        // Nếu là admin thì ẩn/không tạo nút
+        if (role === !'admin') {
+            // Xóa nếu có sẵn
+            DOMUtil.getById('kill-btn')?.remove();
+            DOMUtil.getBy
+            Id('admin-link-btn')?.remove();
+            return;
+        }
+        
+        console.log("UIManager: player role 2  =", role);
 
         // Xóa nút cũ nếu có
-        const oldKillBtn = DOMUtil.getById('kill-btn');
-        if (oldKillBtn) oldKillBtn.remove();
+        DOMUtil.getById('kill-btn')?.remove();
+        DOMUtil.getById('admin-link-btn')?.remove();
 
-        // Tạo nút mới
+        // Tạo nút Kill
         const KillBtn = DOMUtil.createElement('button', {
             id: 'kill-btn',
             className: 'w-full mb-2 p-3 rounded-2xl bg-purple-500 hover:bg-purple-600 text-white font-bold transition-all shadow-md',
@@ -263,46 +289,35 @@ class UIManager {
 
         KillBtn.onclick = () => {
             try {
-              const GE = window.GameEngine;
-              if (!GE || !GE.monster) return;
-          
-              // Nếu đang trong battle, tránh can thiệp để không gây race
-              if (GE.battleManager && GE.battleManager.isInBattle && GE.battleManager.isInBattle()) {
-                return;
-              }
-          
-              // Set quái chết ngay
-              GE.monster.hp = 0;
-              GE.monster.isDead = true;
-          
-              // Cập nhật UI mượt: schedule update trong next frame
-              requestAnimationFrame(() => {
-                if (window.UIManager && typeof window.UIManager.updateBattleStatus === 'function') {
-                  window.UIManager.updateBattleStatus(GE.player, GE.monster);
-                }
-                if (window.UIManager && typeof window.UIManager.renderMonsterSprite === 'function') {
-                  window.UIManager.renderMonsterSprite(GE.monster);
-                }
-              });
-          
-              // Gọi handler xử lý quái chết (không await)
-              try {
-                if (typeof GE._handleMonsterDefeat === 'function') {
-                  GE._handleMonsterDefeat();
-                } else if (typeof GE.handleMonsterDefeat === 'function') {
-                  GE.handleMonsterDefeat();
-                } else if (typeof GE.processBattleRound === 'function') {
-                  GE.processBattleRound(0, 0, true);
-                }
-              } catch (e) {
-                console.error('Kill button: error invoking defeat handler', e);
-              }
-            } catch (err) {
-              console.error('Kill button unexpected error', err);
-            }
-          };
+                if (!GE || !GE.monster) return;
+                if (GE.battleManager?.isInBattle && GE.battleManager.isInBattle()) return;
 
-          const adminBtn = DOMUtil.createElement('a', {
+                GE.monster.hp = 0;
+                GE.monster.isDead = true;
+
+                requestAnimationFrame(() => {
+                    window.UIManager?.updateBattleStatus?.(GE.player, GE.monster);
+                    window.UIManager?.renderMonsterSprite?.(GE.monster);
+                });
+
+                try {
+                    if (typeof GE._handleMonsterDefeat === 'function') {
+                        GE._handleMonsterDefeat();
+                    } else if (typeof GE.handleMonsterDefeat === 'function') {
+                        GE.handleMonsterDefeat();
+                    } else if (typeof GE.processBattleRound === 'function') {
+                        GE.processBattleRound(0, 0, true);
+                    }
+                } catch (e) {
+                    console.error('Kill button: error invoking defeat handler', e);
+                }
+            } catch (err) {
+                console.error('Kill button unexpected error', err);
+            }
+        };
+
+        // Tạo nút Admin
+        const adminBtn = DOMUtil.createElement('a', {
             id: 'admin-link-btn',
             className: 'w-full mb-2 p-3 rounded-2xl bg-purple-500 hover:bg-purple-600 text-white font-bold transition-all shadow-md',
             innerHTML: `
@@ -311,12 +326,9 @@ class UIManager {
             `
         });
         adminBtn.setAttribute('href', './admin.html');
-        adminBtn.onclick = (e) => {
-            // e.stopPropagation(); // Chỉ bật nếu nút này nằm trong một vùng có sự kiện click khác
-        };
 
-        dashboardUI.appendChild(KillBtn);
-        dashboardUI.appendChild(adminBtn);
+        this.dashboardUI.appendChild(KillBtn);
+        this.dashboardUI.appendChild(adminBtn);
     }
 
     /**
