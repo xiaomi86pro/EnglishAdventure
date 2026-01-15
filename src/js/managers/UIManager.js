@@ -261,7 +261,6 @@ class UIManager {
         // Lấy role từ GameEngine
         const GE = window.GameEngine;
         const role = GE?.player?.role;
-        console.log("UIManager: player role 1  =", role);
 
         // Nếu là admin thì ẩn/không tạo nút
         if (role !== 'admin') {
