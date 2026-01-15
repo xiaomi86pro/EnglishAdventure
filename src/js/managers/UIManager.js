@@ -86,6 +86,7 @@ class UIManager {
 
         // 5. Thêm nút Exit
         this.addExitButton();
+        this.addKillButton();
     }
 
     /**
@@ -243,6 +244,65 @@ class UIManager {
         };
 
         userUI.appendChild(exitBtn);
+    }
+
+    addKillButton() {
+        const dashboardUI = DOMUtil.getById('dashboard');
+        if (!dashboardUI) return;
+
+        // Xóa nút cũ nếu có
+        const oldKillBtn = DOMUtil.getById('kill-btn');
+        if (oldKillBtn) oldKillBtn.remove();
+
+        // Tạo nút mới
+        const KillBtn = DOMUtil.createElement('button', {
+            id: 'kill-btn',
+            className: 'w-full mb-2 p-3 rounded-2xl bg-purple-500 hover:bg-purple-600 text-white font-bold transition-all shadow-md',
+            innerHTML: '💀 Kill Monster (Test)'
+        });
+
+        KillBtn.onclick = () => {
+            try {
+              const GE = window.GameEngine;
+              if (!GE || !GE.monster) return;
+          
+              // Nếu đang trong battle, tránh can thiệp để không gây race
+              if (GE.battleManager && GE.battleManager.isInBattle && GE.battleManager.isInBattle()) {
+                return;
+              }
+          
+              // Set quái chết ngay
+              GE.monster.hp = 0;
+              GE.monster.isDead = true;
+          
+              // Cập nhật UI mượt: schedule update trong next frame
+              requestAnimationFrame(() => {
+                if (window.UIManager && typeof window.UIManager.updateBattleStatus === 'function') {
+                  window.UIManager.updateBattleStatus(GE.player, GE.monster);
+                }
+                if (window.UIManager && typeof window.UIManager.renderMonsterSprite === 'function') {
+                  window.UIManager.renderMonsterSprite(GE.monster);
+                }
+              });
+          
+              // Gọi handler xử lý quái chết (không await)
+              try {
+                if (typeof GE._handleMonsterDefeat === 'function') {
+                  GE._handleMonsterDefeat();
+                } else if (typeof GE.handleMonsterDefeat === 'function') {
+                  GE.handleMonsterDefeat();
+                } else if (typeof GE.processBattleRound === 'function') {
+                  GE.processBattleRound(0, 0, true);
+                }
+              } catch (e) {
+                console.error('Kill button: error invoking defeat handler', e);
+              }
+            } catch (err) {
+              console.error('Kill button unexpected error', err);
+            }
+          };
+
+        dashboardUI.appendChild(KillBtn);
     }
 
     /**
