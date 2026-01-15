@@ -15,6 +15,3 @@ build/
 # Các file rác của hệ điều hành hoặc trình soạn thảo
 .DS_Store
 .vscode/
-
-#Rác
-junk/

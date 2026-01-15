@@ -302,7 +302,18 @@ class UIManager {
             }
           };
 
+          const adminBtn = DOMUtil.createElement('a', {
+            id: 'admin-link-btn',
+            className: 'w-full mb-2 p-3 rounded-2xl bg-purple-500 hover:bg-purple-600 text-white font-bold transition-all shadow-md',
+            href: './admin.html',
+            innerHTML: `
+                <span class="text-2xl mr-2">⚙️</span>
+                <span class="text-sm uppercase tracking-wider">Quản trị</span>
+            `
+        });
+        
         dashboardUI.appendChild(KillBtn);
+        dashboardUI.appendChild(adminBtn);
     }
 
     /**
