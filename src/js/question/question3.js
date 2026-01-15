@@ -19,35 +19,70 @@ class Question3 {
         }, opts.config || {});
     }
 
-    /**
-     * Khởi tạo câu hỏi
-     */
+    
+    /** Khởi tạo câu hỏi (Đã nâng cấp an toàn) **/
     init(enemyType = "normal") {
         this._destroyed = false;
         this.enCompleted = "";
         this._lastAnswered = null;
 
+        // --- SỬA LỖI ---
+        // 1. Luôn nạp mới Vocab Cache để đảm bảo không bị rỗng do khởi tạo quá sớm
+        if (!this.vocabPool || this.vocabPool.length === 0) {
+            this.vocabPool = window.VOCAB_CACHE || [];
+        }
+
+        // 2. Nếu Cache vẫn rỗng (mạng lag chưa tải xong), hiển thị thông báo đợi
+        if (this.vocabPool.length === 0) {
+            console.warn("Vocab pool empty, retrying...");
+            const area = document.getElementById(this.containerId);
+            if (area) area.innerHTML = '<div class="text-white animate-pulse">Đang tải dữ liệu...</div>';
+            // Thử lại sau 500ms
+            setTimeout(() => this.init(enemyType), 500);
+            return;
+        }
+
+        // 3. Chọn từ
         this._selectWord(enemyType);
 
+        // 4. Render
         if (this.currentData) {
             this.renderQuestionUI();
-            // Bắt đầu phát âm từ và đánh vần
             this._startAudioSequence();
+        } else {
+            // Trường hợp cực hy hữu: Có vocab nhưng không lọc được từ nào
+            console.error("Không tìm thấy từ phù hợp, force reset về normal");
+            this.init('normal'); 
         }
     }
 
     _selectWord(enemyType) {
-        if (!this.vocabPool.length) return;
         // Lọc từ: Quái thường từ 3-5 ký tự, Elite/Boss từ 6 ký tự trở lên
-        let valid = this.vocabPool.filter(v => v.english_word && v.vietnamese_translation);
-        if (enemyType === "normal") {
-            valid = valid.filter(v => v.english_word.trim().length <= 5);
+        let valid = [];
+        
+        if (enemyType === 'boss' || enemyType === 'elite') {
+            valid = this.vocabPool.filter(i => i.english_word && i.english_word.length >= 6);
+            
+            // --- FALLBACK (QUAN TRỌNG) ---
+            // Nếu không tìm được từ khó (do kho từ ít), tự động lấy từ bất kỳ để game không bị lỗi
+            if (valid.length === 0) {
+                console.warn("Không tìm thấy từ Boss, chuyển sang từ thường");
+                valid = this.vocabPool.filter(i => i.english_word && i.english_word.length >= 3);
+            }
         } else {
-            valid = valid.filter(v => v.english_word.trim().length > 5);
+            valid = this.vocabPool.filter(i => i.english_word && i.english_word.length >= 3 && i.english_word.length <= 6);
+            // Fallback nếu không có từ ngắn
+            if (valid.length === 0) {
+                valid = this.vocabPool.filter(i => i.english_word);
+            }
         }
 
-        if (valid.length === 0) valid = this.vocabPool;
-        this.currentData = valid[Math.floor(Math.random() * valid.length)];
+        if (valid.length > 0) {
+            const item = valid[Math.floor(Math.random() * valid.length)];
+            this.currentData = { ...item };
+        } else {
+            this.currentData = null;
+        }
     }
 
     async _startAudioSequence() {

@@ -161,3 +161,14 @@
   
   /* Misc */
   #preview-area{min-height:80px}
+
+  .btn-disabled {
+    background-color: #9ca3af !important;
+    color: #ffffff !important;
+    cursor: not-allowed !important;
+    opacity: 0.85 !important;
+    box-shadow: none !important;
+    transform: none !important;
+    pointer-events: none !important;
+  }
+  

@@ -7,7 +7,7 @@ class Question2 {
         this.containerId = opts.containerId || 'questionarea';
         this.onCorrect = opts.onCorrect || null;
         this.onWrong = opts.onWrong || null;
-        
+        this._answered = false;
         this.currentData = null;
         this.hintUsed = false;
         this._destroyed = false;
@@ -122,6 +122,9 @@ class Question2 {
                 </button>
             </div>
         `;
+        
+        this._answered = false;
+        this.hintUsed = false;
 
         // Gắn sự kiện
         const input = document.getElementById("answer-input");
@@ -129,9 +132,35 @@ class Question2 {
         const hintBtn = document.getElementById("hint-btn");
 
         if (input) {
+            input.disabled = false;
+            input.value = "";
+            input.classList.remove("bg-green-100", "border-green-500", "text-green-600", "animate-shake", "border-red-500", "text-red-500");
             input.focus();
-            input.onkeypress = (e) => { if (e.key === "Enter") this.checkAnswer(); };
+          }
+          if (checkBtn) {
+            checkBtn.disabled = false;
+            checkBtn.classList.remove("btn-disabled");
+          }
+          if (hintBtn) {
+            hintBtn.disabled = false;
+            hintBtn.classList.remove("btn-disabled");
+          }
+                                         
+          if (input) {
+            input.disabled = false;
+            input.value = "";
+            input.focus();
+        
+            // Dùng keydown thay vì onkeypress; chặn repeat để tránh spam
+            input.addEventListener('keydown', (e) => {
+                // chỉ xử lý Enter, bỏ qua auto-repeat
+                if ((e.key === 'Enter' || e.code === 'Enter') && !e.repeat) {
+                    e.preventDefault(); // ngăn form submit mặc định nếu có
+                    this.checkAnswer();
+                }
+            });
         }
+        
         if (checkBtn) checkBtn.onclick = () => this.checkAnswer();
         if (hintBtn) hintBtn.onclick = () => this.useHint(hintBtn);
         setTimeout(() => {
@@ -171,13 +200,30 @@ class Question2 {
     }
 
     checkAnswer() {
+        if (this._answered) return;
+
         const input = document.getElementById("answer-input");
+        const checkBtn = document.getElementById("check-btn");
         if (!input || !this.currentData) return;
+
+        // Disable ngay khi người chơi nhấn CHECK hoặc Enter
+        //input.disabled = true;
+        //if (checkBtn) checkBtn.disabled = true;
 
         const userChar = input.value.trim().toLowerCase();
         const correctChar = this.currentData.word[this.currentData.missingIndex].toLowerCase();
 
         if (userChar === correctChar) {
+            // Mark answered to prevent duplicates
+            this._answered = true;
+
+            // Disable input and button permanently for this question
+            input.disabled = true;
+            if (checkBtn) {
+                checkBtn.disabled = true;
+                checkBtn.classList.add("btn-disabled");
+            }
+
             // Đúng: Hiệu ứng xanh và nộp bài
             input.classList.add("bg-green-100", "border-green-500", "text-green-600");
             
@@ -192,15 +238,23 @@ class Question2 {
                 if (typeof this.onCorrect === "function") this.onCorrect(1, true);
             }, 600);
         } else {
-            // Sai: Hiệu ứng rung và xóa input
+            // Wrong answer: short lock to prevent spam, then re-enable for retry
             input.classList.add("animate-shake", "border-red-500", "text-red-500");
+
+            // Temporarily disable to avoid immediate re-submit
+            input.disabled = true;
+            if (checkBtn) checkBtn.disabled = true;
+
+            // Sai: Hiệu ứng rung và xóa input
             setTimeout(() => {
                 if (!this._destroyed && input) {
                     input.classList.remove("animate-shake", "border-red-500", "text-red-500");
                     input.value = "";
+                    input.disabled = false;
+                    if (checkBtn) checkBtn.disabled = false;
                     input.focus();
                 }
-            }, 500);
+            }, 300);
 
             if (typeof this.onWrong === "function") this.onWrong();
         }
