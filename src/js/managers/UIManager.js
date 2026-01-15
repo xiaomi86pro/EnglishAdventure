@@ -251,35 +251,28 @@ class UIManager {
 
     renderAdminButtons() {
         const dashboardUI = DOMUtil.getById('dashboard');
-        console.log('Có dashboard');
+        if (!dashboardUI) return;
+
+        const oldKillBtn = DOMUtil.getById('kill-btn');
+        if (oldKillBtn) oldKillBtn.remove();
+        const oldAdminBtn = DOMUtil.getById('admin-link-btn');
+        if (oldAdminBtn) oldAdminBtn.remove();
+       
         // Lấy role từ GameEngine
         const GE = window.GameEngine;
         const role = GE?.player?.role;
-
-        console.log("UIManager: player role 1 =", role);
-
-         // Nếu không tìm thấy dashboardUI thì log lỗi và return
-        if (!dashboardUI) {
-            console.error("UIManager: dashboardUI không tồn tại!");
-            return;
-        }
-
+        console.log("UIManager: player role 1  =", role);
 
         // Nếu là admin thì ẩn/không tạo nút
-        if (role === !'admin') {
+        if (role !== 'admin') {
             // Xóa nếu có sẵn
-            DOMUtil.getById('kill-btn')?.remove();
-            DOMUtil.getBy
-            Id('admin-link-btn')?.remove();
+            const oldKillBtn = DOMUtil.getById('kill-btn');
+            if (oldKillBtn) oldKillBtn.remove();
+            const oldAdminBtn = DOMUtil.getById('admin-link-btn');
+            if (oldAdminBtn) oldAdminBtn.remove();
             return;
         }
-        
-        console.log("UIManager: player role 2  =", role);
-
-        // Xóa nút cũ nếu có
-        DOMUtil.getById('kill-btn')?.remove();
-        DOMUtil.getById('admin-link-btn')?.remove();
-
+         
         // Tạo nút Kill
         const KillBtn = DOMUtil.createElement('button', {
             id: 'kill-btn',
@@ -327,8 +320,8 @@ class UIManager {
         });
         adminBtn.setAttribute('href', './admin.html');
 
-        this.dashboardUI.appendChild(KillBtn);
-        this.dashboardUI.appendChild(adminBtn);
+        dashboardUI.appendChild(KillBtn);
+        dashboardUI.appendChild(adminBtn);
     }
 
     /**
@@ -345,6 +338,7 @@ class UIManager {
     clearAllUI() {
         DOMUtil.clearChildren('questionarea');
         DOMUtil.clearChildren('userUI');
+        DOMUtil.clearChildren('dashboard');
         
         // Reset battleView về trạng thái ban đầu
         const battleView = DOMUtil.getById('battleview');

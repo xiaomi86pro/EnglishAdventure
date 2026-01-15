@@ -63,6 +63,7 @@ const GameEngine = {
                 hp_current: heroData.base_hp + (userData.hp_current || 0),
                 atk: heroData.base_atk,
                 sprite_url: heroData.image_url,
+                role: userData.role
             };
 
             // 4. Load first location & station
@@ -404,8 +405,12 @@ const GameEngine = {
                 GameConfig.TOTAL_STEPS_PER_STATION
             );
 
+            await new Promise(r => setTimeout(r, 100));
+            this.uiManager.renderAdminButtons();
+
             // 8. Load question
             this.nextQuestion();
+            
 
             console.log('[GameEngine] Game restored successfully');
 

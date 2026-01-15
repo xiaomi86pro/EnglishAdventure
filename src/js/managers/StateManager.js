@@ -30,6 +30,7 @@ class StateManager {
                     max_hp: gameState.player.max_hp,
                     hp_current: gameState.player.hp_current,
                     atk: gameState.player.atk,
+                    role: gameState.player.role,
                     sprite_url: gameState.player.sprite_url,
                     selected_hero_id: gameState.player.selected_hero_id,
                     sprite: gameState.player.avatar_key
