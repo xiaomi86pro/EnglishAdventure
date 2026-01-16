@@ -42,6 +42,11 @@ const GameEngine = {
             // 1. Initialize managers
             this._initManagers();
 
+            // ✅ 2. Render leaderboard widget
+            if (window.LeaderboardWidget) {
+                await window.LeaderboardWidget.render();
+            }
+
             // 2. Lấy dữ liệu Hero từ DB
             const { data: heroData, error } = await window.supabase
                 .from('heroes')
@@ -348,6 +353,11 @@ const GameEngine = {
 
             // 1. Initialize managers
             this._initManagers();
+
+            // ✅ 2. Render leaderboard widget
+            if (window.LeaderboardWidget) {
+                await window.LeaderboardWidget.render();
+            }
 
             // 2. Khôi phục player
             this.player = savedGame.player;

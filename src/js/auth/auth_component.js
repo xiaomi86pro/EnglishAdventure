@@ -3,6 +3,7 @@ import { AuthState } from './auth_state.js';
 import { AuthUI } from './auth_ui.js';
 import { UserService } from './user_service.js';
 import { HeroService } from './hero_service.js';
+import LeaderboardWidget from '@/js/LeaderboardWidget.js';
 
 /**
  * Component xử lý giao diện chọn User đầu game
@@ -30,6 +31,12 @@ class AuthComponent {
         // Khởi tạo services
         this.userService = new UserService(window.supabase);
         this.heroService = new HeroService(window.supabase);
+
+        // ✅ Khởi tạo và render LeaderboardWidget
+        if (!window.LeaderboardWidget) {
+            window.LeaderboardWidget = new LeaderboardWidget(window.supabase);
+        }
+        window.LeaderboardWidget.render();
 
         // Load local users và hiển thị menu
         const localUsers = this.state.getLocalUsers();
