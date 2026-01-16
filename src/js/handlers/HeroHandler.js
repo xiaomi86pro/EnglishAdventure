@@ -84,52 +84,68 @@ class HeroHandler {
         return modal;
     }
 
-    /**
-     * Kiểm tra và mở khóa hero nếu hoàn thành station điều kiện
-     * @param {number} completedStationId 
-     * @returns {Array} - Danh sách heroes đã unlock
-     */
-    async checkAndUnlockHero(completedStationId) {
-        try {
-            // Tìm hero bị khóa bởi station này
-            const { data: lockedHeroes, error } = await this.supabase
-                .from('heroes')
-                .select('id, name, is_locked, unlock_station_id')
-                .eq('unlock_station_id', completedStationId)
-                .eq('is_locked', true);
-
-            if (error) {
-                console.error('Lỗi check unlock hero:', error);
-                return [];
-            }
-
-            if (!lockedHeroes || lockedHeroes.length === 0) {
-                return []; // Không có hero nào cần unlock
-            }
-
-            const unlockedHeroes = [];
-
-            // Unlock tất cả heroes
-            for (const hero of lockedHeroes) {
-                const { error: updateError } = await this.supabase
-                    .from('heroes')
-                    .update({ is_locked: false })
-                    .eq('id', hero.id);
-
-                if (!updateError) {
-                    unlockedHeroes.push(hero);
-                    // Hiển thị thông báo unlock
-                    this.showUnlockNotification(hero.name);
-                }
-            }
-
-            return unlockedHeroes;
-
-        } catch (err) {
-            console.error('Lỗi checkAndUnlockHero:', err);
+    
+/**
+ * Kiểm tra và mở khóa hero nếu hoàn thành station điều kiện
+ * @param {number} completedStationId 
+ * @param {string} userId - ID của user hiện tại
+ * @returns {Array} - Danh sách heroes đã unlock
+ */
+async checkAndUnlockHero(completedStationId, userId) {
+    try {
+        if (!userId) {
+            console.warn('[HeroHandler] userId is required for unlock');
             return [];
         }
+
+        // Tìm hero cần unlock bởi station này
+        const { data: heroToUnlock, error } = await this.supabase
+            .from('heroes')
+            .select('id, name')
+            .eq('unlock_station_id', completedStationId)
+            .single();
+
+        if (error || !heroToUnlock) {
+            return []; // Không có hero nào cần unlock
+        }
+
+        // ✅ Kiểm tra user đã unlock hero này chưa
+        const { data: existing } = await this.supabase
+            .from('unlocked_heroes')
+            .select('id')
+            .eq('profile_id', userId)
+            .eq('hero_id', heroToUnlock.id)
+            .single();
+
+        if (existing) {
+            console.log('[HeroHandler] User already unlocked this hero');
+            return []; // Đã unlock rồi
+        }
+
+        // ✅ INSERT vào unlocked_heroes cho user này
+        const { error: insertError } = await this.supabase
+            .from('unlocked_heroes')
+            .insert({
+                profile_id: userId,
+                hero_id: heroToUnlock.id,
+                unlocked_at: new Date().toISOString()
+            });
+
+        if (insertError) {
+            console.error('[HeroHandler] Error inserting unlocked hero:', insertError);
+            return [];
+        }
+
+        // Hiển thị thông báo unlock
+        this.showUnlockNotification(heroToUnlock.name);
+
+        return [heroToUnlock];
+
+    } catch (err) {
+        console.error('[HeroHandler] checkAndUnlockHero error:', err);
+        return [];
     }
+}
 
     /**
      * Hiển thị thông báo mở khóa hero

@@ -243,43 +243,49 @@ const GameEngine = {
     },
 
     /**
-     * Xử lý khi monster bị tiêu diệt
+     * Xử lý khi monster bị hạ gục
      * @private
      */
     async _handleMonsterDefeat() {
         try {
             // 1. Xử lý defeat (hồi máu nếu cần)
             this.monsterHandler.handleDefeat(this.monster, this.player);
-
+    
             // 2. Update UI
             this.uiManager.updateBattleStatus(this.player, this.monster);
-
+    
             // 3. Delay trước khi tiến hành
             await new Promise(r => setTimeout(r, GameConfig.TIMINGS.monsterDefeatDelay));
-
-            // 4. Check unlock hero
-            await this.heroHandler.checkAndUnlockHero(this.currentStation.id);
-
-            // 5. Advance progression
+    
+            // 4. Advance progression
             const progression = await this.progressionManager.advanceAfterMonsterDefeat(
                 this.currentLocation,
                 this.currentStation,
                 this.currentStep,
                 GameConfig.TOTAL_STEPS_PER_STATION
             );
-
+    
+            // ✅ 5. Check unlock hero CHỈ KHI HOÀN THÀNH STATION
+            // (Khi chuyển sang station mới = hoàn thành station cũ)
+            if (this.currentStep === GameConfig.TOTAL_STEPS_PER_STATION) {
+                await this.heroHandler.checkAndUnlockHero(
+                    this.currentStation.id,
+                    this.player.id // ← Truyền userId
+                );
+            }
+    
             // 6. Kiểm tra game complete
             if (progression.gameComplete) {
                 alert('🎉 Chúc mừng! Bạn đã hoàn thành toàn bộ cuộc phiêu lưu!');
                 this.showMainMenu();
                 return;
             }
-
+    
             // 7. Update state
             this.currentLocation = progression.location;
             this.currentStation = progression.station;
             this.currentStep = progression.step;
-
+    
             // 8. Spawn monster mới
             if (progression.needsNewMonster) {
                 this.monster = await this.monsterHandler.spawnFromStep(
@@ -287,7 +293,7 @@ const GameEngine = {
                     this.currentStep
                 );
             }
-
+    
             // 9. Update UI
             this.uiManager.updateAllUI(
                 this.player,
@@ -297,10 +303,10 @@ const GameEngine = {
                 this.currentStep,
                 GameConfig.TOTAL_STEPS_PER_STATION
             );
-
+    
             // 10. Load question
             this.nextQuestion();
-
+    
         } catch (err) {
             console.error('[GameEngine] _handleMonsterDefeat error', err);
         }

@@ -19,7 +19,7 @@ class StateManager {
                 console.error('[StateManager] Invalid gameState, missing player.id');
                 return false;
             }
-
+    
             const stateToSave = {
                 player: {
                     id: gameState.player.id,
@@ -30,10 +30,10 @@ class StateManager {
                     max_hp: gameState.player.max_hp,
                     hp_current: gameState.player.hp_current,
                     atk: gameState.player.atk,
-                    role: gameState.player.role,
                     sprite_url: gameState.player.sprite_url,
                     selected_hero_id: gameState.player.selected_hero_id,
-                    sprite: gameState.player.avatar_key
+                    sprite: gameState.player.avatar_key,
+                    role: gameState.player.role // ✅ THÊM ROLE
                 },
                 currentLocationId: gameState.currentLocation?.id,
                 currentStationId: gameState.currentStation?.id,
@@ -50,13 +50,13 @@ class StateManager {
                 } : null,
                 savedAt: new Date().toISOString()
             };
-
+    
             const key = this._getStorageKey(gameState.player.id);
             localStorage.setItem(key, JSON.stringify(stateToSave));
             
             console.log('[StateManager] Game đã được lưu:', stateToSave);
             return true;
-
+    
         } catch (err) {
             console.error('[StateManager] Lỗi save game:', err);
             return false;

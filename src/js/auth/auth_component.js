@@ -226,39 +226,46 @@ class AuthComponent {
         this.loadHeroList();
     }
 
-    /**
-     * Load danh sách heroes
-     */
-    async loadHeroList() {
-        this.ui.showHeroListLoading();
+/**
+ * Load danh sách heroes
+ */
+async loadHeroList() {
+    this.ui.showHeroListLoading();
 
-        try {
-            const heroes = await this.heroService.fetchHeroes();
-            this.ui.displayHeroList(heroes);
-        } catch (err) {
-            console.error("Lỗi loadHeroList:", err);
-            const heroListContainer = document.getElementById('hero-list');
-            if (heroListContainer) {
-                heroListContainer.innerHTML = "<p class='text-red-500 text-xs'>Lỗi tải Hero</p>";
-            }
+    try {
+        const userId = this.state.getSelectedUserId();
+        
+        // ✅ Truyền userId vào
+        const heroes = await this.heroService.fetchHeroes(userId);
+        
+        this.ui.displayHeroList(heroes);
+    } catch (err) {
+        console.error("Lỗi loadHeroList:", err);
+        const heroListContainer = document.getElementById('hero-list');
+        if (heroListContainer) {
+            heroListContainer.innerHTML = "<p class='text-red-500 text-xs'>Lỗi tải Hero</p>";
         }
     }
+}
 
-    /**
-     * Chọn hero
-     */
-    async pickHero(heroId) {
-        // Kiểm tra hero có bị khóa không
-        const isLocked = await this.heroService.isHeroLocked(heroId);
-        if (isLocked) {
-            alert('Hero này đang bị khóa! Hãy hoàn thành nhiệm vụ để mở khóa.');
-            return;
-        }
-
-        this.ui.highlightSelectedHero(heroId);
-        this.state.setSelectedHeroId(heroId);
-        this.ui.enableStartButton();
+/**
+ * Chọn hero
+ */
+async pickHero(heroId) {
+    const userId = this.state.getSelectedUserId();
+    
+    // ✅ Truyền userId vào
+    const isLocked = await this.heroService.isHeroLocked(heroId, userId);
+    
+    if (isLocked) {
+        alert('Hero này đang bị khóa! Hãy hoàn thành nhiệm vụ để mở khóa.');
+        return;
     }
+
+    this.ui.highlightSelectedHero(heroId);
+    this.state.setSelectedHeroId(heroId);
+    this.ui.enableStartButton();
+}
 
     /**
      * Bắt đầu game
