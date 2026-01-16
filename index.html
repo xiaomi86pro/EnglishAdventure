@@ -10,8 +10,14 @@
 <body>
 
     <!-- 1. Cột UserUI bên trái (1/6 màn hình, dài hết cỡ) -->
-    <aside id="userUI" class="w-1/6 h-full rounded-3xl p-4 flex flex-col items-center gap-6 game-card">
+    <aside id="userUI" class="w-1/6 h-full rounded-3xl p-4 grid grid-rows-[1fr_2fr] gap-6 game-card">
+
         <!-- Nội dung sẽ được thêm vào đây -->
+        <!-- Slot cố định cho user name -->
+        <div id="user-info-slot"></div>
+
+        <!-- Slot cố định cho leaderboard -->
+        <div id="leaderboard-slot" class="overflow-hidden"></div>
     </aside>
 
     <!-- 3. Khung Container ở giữa (Chiếm phần còn lại) -->

@@ -35,8 +35,8 @@ export class LeaderboardWidget {
      * Render widget vào userUI
      */
     async render() {
-        const userUI = DOMUtil.getById('userUI');
-        if (!userUI) return;
+        const slot = DOMUtil.getById('leaderboard-slot');
+        if (!slot) return;
 
         // Xóa widget cũ nếu có
         const oldWidget = DOMUtil.getById('leaderboard-widget');
@@ -57,8 +57,8 @@ export class LeaderboardWidget {
             </div>
         `;
 
-        // Insert vào đầu userUI
-        userUI.insertBefore(widget, userUI.firstChild);
+        
+        slot.appendChild(widget);
 
         // Fetch và render data
         const topPlayers = await this.fetchTopPlayers();

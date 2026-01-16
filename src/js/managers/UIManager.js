@@ -122,8 +122,8 @@ class UIManager {
      * @param {Object} player 
      */
     updatePlayerCard(player) {
-        const userUI = DOMUtil.getById('userUI');
-        if (!userUI || !player) return;
+        const userinfoslot = DOMUtil.getById('user-info-slot');
+        if (!userinfoslot || !player) return;
 
         // Xóa card cũ nếu có
         const oldCard = DOMUtil.getById('player-info-card');
@@ -145,7 +145,7 @@ class UIManager {
         });
 
         // Chèn vào đầu userUI
-        userUI.insertBefore(playerCard, userUI.firstChild);
+        userinfoslot.appendChild(playerCard);
     }
 
     /**
