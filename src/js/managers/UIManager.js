@@ -16,8 +16,9 @@ class UIManager {
      * @param {number} totalSteps 
      */
     initUI(totalSteps = 10) {
+        // --- PHẦN 1: Xử lý Battle View ---
         const battleView = DOMUtil.getById('battleview');
-        if (!battleView) return;
+        if (battleView) {
 
         // Tạo progress bar chia đoạn
         const segments = Array.from({ length: totalSteps }, (_, i) => {
@@ -58,6 +59,30 @@ class UIManager {
         });
 
         battleView.insertAdjacentHTML('beforeend', uiOverlay);
+    }
+
+    // --- PHẦN 2: (MỚI) Đảm bảo cấu trúc Dashboard tồn tại ---
+        const dashboard = DOMUtil.getById('dashboard');
+        if (dashboard) {
+            // 1. Kiểm tra và tạo container cho Monster Info
+            if (!DOMUtil.getById('monster-info')) {
+                const mInfo = DOMUtil.createElement('div', { 
+                    id: 'monster-info', 
+                    className: 'w-full mb-4 transition-all duration-300' 
+                });
+                // Chèn lên đầu dashboard
+                dashboard.prepend(mInfo);
+            }
+
+            // 2. Kiểm tra và tạo container cho Lịch sử câu trả lời (Answers History)
+            if (!DOMUtil.getById('answers-history')) {
+                const ansHist = DOMUtil.createElement('div', { 
+                    id: 'answers-history', 
+                    className: 'w-full flex flex-col gap-2 mt-auto overflow-y-auto max-h-48' 
+                });
+                dashboard.appendChild(ansHist);
+            }
+        }
 
         console.log('[UIManager] UI initialized');
     }
