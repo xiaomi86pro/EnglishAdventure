@@ -230,6 +230,7 @@ class UIManager {
             const confirm = window.confirm('Bạn có muốn lưu game và thoát ra menu?');
             if (confirm && window.GameEngine) {
                 window.GameEngine.saveGameState();
+                //this.clearAllUI();
                 window.GameEngine.showMainMenu();
             }
         };
@@ -327,6 +328,9 @@ class UIManager {
      * Clear tất cả UI khi về menu
      */
     clearAllUI() {
+
+        window.audioControl.destroy();
+
         // ✅ Hide user-info-slot
         const userSlot = DOMUtil.getById('user-info-slot');
         if (userSlot) {
@@ -334,24 +338,26 @@ class UIManager {
             userSlot.innerHTML = '';
         }
 
+        const monsterSlot = DOMUtil.getById('monster-info-slot');
+        if (monsterSlot) {
+            monsterSlot.classList.add('hidden');
+            monsterSlot.innerHTML = '';
+        }
+
+        const historyslot = DOMUtil.getById('answers-history-slot');
+        if (historyslot) {
+            historyslot.classList.add('hidden');
+            historyslot.innerHTML = '';
+        }
+
+
         // ✅ Clear action buttons
         const actionSlot = DOMUtil.getById('action-buttons-slot');
         if (actionSlot) {
             actionSlot.innerHTML = '';
         }
 
-        // ✅ Reset monster info
-        const monsterInfo = DOMUtil.getById('monster-info');
-        if (monsterInfo) {
-            monsterInfo.innerHTML = '<p class="text-gray-500 text-sm text-center">Chưa có dữ liệu</p>';
-        }
-
-        // ✅ Clear answers history
-        const answersHistory = DOMUtil.getById('answers-history');
-        if (answersHistory) {
-            answersHistory.innerHTML = '<p class="text-gray-500 text-xs text-center">Chưa có câu trả lời</p>';
-        }
-
+        
         // ✅ Xóa admin buttons (nếu có)
         const killBtn = DOMUtil.getById('kill-btn');
         const adminBtn = DOMUtil.getById('admin-link-btn');
