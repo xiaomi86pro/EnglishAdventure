@@ -329,8 +329,6 @@ class UIManager {
      */
     clearAllUI() {
 
-        window.audioControl.destroy();
-
         // ✅ Hide user-info-slot
         const userSlot = DOMUtil.getById('user-info-slot');
         if (userSlot) {

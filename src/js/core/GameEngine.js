@@ -442,6 +442,10 @@ const GameEngine = {
     showMainMenu(skipSave = false) {
         // Dừng game
         this.battleManager.reset();
+
+        if (window.QuestionManager) {
+            window.QuestionManager.destroy();
+        }
         
         try { 
             if (window.speechSynthesis) window.speechSynthesis.cancel(); 
