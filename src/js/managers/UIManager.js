@@ -121,7 +121,7 @@ class UIManager {
      * Cập nhật monster info
      */
     updateMonsterInfo(monster, location, station, currentStep, totalSteps) {
-        const container = DOMUtil.getById('monster-info');
+        const container = DOMUtil.getById('monster-info-slot');
         if (!container) return;
 
         container.classList.remove('hidden');
