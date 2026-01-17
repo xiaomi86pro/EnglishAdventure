@@ -59,29 +59,6 @@ class UIManager {
         });
 
         battleView.insertAdjacentHTML('beforeend', uiOverlay);
-    }
-
-    // --- PHẦN 2: (MỚI) Đảm bảo cấu trúc Dashboard tồn tại ---
-        const dashboard = DOMUtil.getById('dashboard');
-        if (dashboard) {
-            // 1. Kiểm tra và tạo container cho Monster Info
-            if (!DOMUtil.getById('monster-info')) {
-                const mInfo = DOMUtil.createElement('div', { 
-                    id: 'monster-info', 
-                    className: 'w-full mb-4 transition-all duration-300' 
-                });
-                // Chèn lên đầu dashboard
-                dashboard.prepend(mInfo);
-            }
-
-            // 2. Kiểm tra và tạo container cho Lịch sử câu trả lời (Answers History)
-            if (!DOMUtil.getById('answers-history')) {
-                const ansHist = DOMUtil.createElement('div', { 
-                    id: 'answers-history', 
-                    className: 'w-full flex flex-col gap-2 mt-auto overflow-y-auto max-h-48' 
-                });
-                dashboard.appendChild(ansHist);
-            }
         }
 
         console.log('[UIManager] UI initialized');
@@ -111,56 +88,42 @@ class UIManager {
 
         // 5. Thêm nút Exit
         this.addExitButton();
-        //this.addKillButton();
 
+        // 6. Render admin buttons (nếu là admin)
         this.renderAdminButtons();
-
     }
 
     /**
      * Cập nhật player info card
-     * @param {Object} player 
      */
     updatePlayerCard(player) {
-        const userinfoslot = DOMUtil.getById('user-info-slot');
-        if (!userinfoslot || !player) return;
+        const slot = DOMUtil.getById('user-info-slot');
+        if (!slot || !player) return;
 
-        // Xóa card cũ nếu có
-        const oldCard = DOMUtil.getById('player-info-card');
-        if (oldCard) oldCard.remove();
+        // ✅ Show slot
+        slot.classList.remove('hidden');
 
-        // Tạo card mới
-        const playerCard = DOMUtil.createElement('div', {
-            id: 'player-info-card',
-            className: 'bg-white/70 rounded-2xl p-4 border-4 border-blue-200 shadow-lg mb-4',
-            innerHTML: `
-                <div class="flex flex-col items-center gap-3">
-                    <div class="text-5xl">${player.avatar_key || '👤'}</div>
-                    <div class="text-center">
-                        <p class="font-black text-xl text-blue-700">${player.display_name}</p>
-                        <p class="text-sm font-bold text-gray-500">Level ${player.level || 1}</p>
-                    </div>
+        // ✅ Update nội dung
+        slot.innerHTML = `
+            <div class="flex flex-col items-center gap-3">
+                <div class="text-5xl">${player.avatar_key || '👤'}</div>
+                <div class="text-center">
+                    <p class="font-black text-xl text-blue-700">${player.display_name}</p>
+                    <p class="text-sm font-bold text-gray-500">Level ${player.level || 1}</p>
                 </div>
-            `
-        });
-
-        // Chèn vào đầu userUI
-        userinfoslot.appendChild(playerCard);
+            </div>
+        `;
     }
 
     /**
      * Cập nhật monster info
-     * @param {Object} monster 
-     * @param {Object} location 
-     * @param {Object} station 
-     * @param {number} currentStep 
-     * @param {number} totalSteps 
      */
     updateMonsterInfo(monster, location, station, currentStep, totalSteps) {
-        const mInfo = DOMUtil.getById('monster-info');
-        if (!mInfo) return;
+        const container = DOMUtil.getById('monster-info');
+        if (!container) return;
 
-        const html = `
+        // ✅ Chỉ update nội dung, không tạo wrapper mới
+        container.innerHTML = `
             <h3 class="text-xl font-black text-red-600 uppercase mb-2">Tiến trình</h3>
             <div class="bg-white/50 rounded-2xl p-3 border-2 border-purple-200 mb-3">
                 <p class="text-xs text-purple-600 font-bold">📍 ${location?.name || '...'}</p>
@@ -176,15 +139,10 @@ class UIManager {
                 </div>
             </div>
         `;
-
-        DOMUtil.setHTML('monster-info', html);
     }
 
     /**
      * Cập nhật progress bar
-     * @param {number} currentStep 
-     * @param {number} totalSteps 
-     * @param {string} monsterType 
      */
     updateProgressBar(currentStep, totalSteps, monsterType = 'normal') {
         for (let i = 1; i <= totalSteps; i++) {
@@ -192,10 +150,8 @@ class UIManager {
             if (!seg) continue;
 
             if (i < currentStep) {
-                // Đã hoàn thành
                 seg.className = "flex-1 h-6 mx-0.5 rounded-md border border-white bg-green-500";
             } else if (i === currentStep) {
-                // Đang chơi
                 if (monsterType === "normal") {
                     seg.className = "flex-1 h-6 mx-0.5 rounded-md border border-white bg-blue-400";
                 } else if (monsterType === "elite") {
@@ -204,7 +160,6 @@ class UIManager {
                     seg.className = "flex-1 h-6 mx-0.5 rounded-md border border-white bg-red-500";
                 }
             } else {
-                // Chưa đến
                 seg.className = "flex-1 h-6 mx-0.5 rounded-md border border-white bg-gray-300";
             }
         }
@@ -212,8 +167,6 @@ class UIManager {
 
     /**
      * Cập nhật chỉ số máu trong trận đấu
-     * @param {Object} player 
-     * @param {Object} monster 
      */
     updateBattleStatus(player, monster) {
         // 1. Cập nhật máu Hero
@@ -222,7 +175,6 @@ class UIManager {
             
             DOMUtil.setStyle('hero-hp-fill', 'width', `${heroHpPercent}%`);
             
-            // Hiệu ứng đổi màu khi máu thấp
             const color = heroHpPercent < 30 ? GameConfig.COLORS.hpLow : GameConfig.COLORS.hpNormal;
             DOMUtil.setStyle('hero-hp-fill', 'backgroundColor', color);
 
@@ -246,12 +198,12 @@ class UIManager {
     }
 
     /**
-     * Thêm nút Exit vào UserUI
+     * Thêm nút Exit vào action-buttons-slot
      */
     addExitButton() {
-        const userUI = DOMUtil.getById('userUI');
-        if (!userUI) return;
-        
+        const slot = DOMUtil.getById('action-buttons-slot');
+        if (!slot) return;
+
         // Xóa nút cũ nếu có
         const oldExitBtn = DOMUtil.getById('exit-menu-btn');
         if (oldExitBtn) oldExitBtn.remove();
@@ -259,7 +211,7 @@ class UIManager {
         // Tạo nút mới
         const exitBtn = DOMUtil.createElement('button', {
             id: 'exit-menu-btn',
-            className: 'w-full mt-auto p-3 rounded-2xl bg-red-400 hover:bg-red-500 text-white font-bold transition-all shadow-md',
+            className: 'w-full p-3 rounded-2xl bg-red-400 hover:bg-red-500 text-white font-bold transition-all shadow-md',
             innerHTML: '🚪 Thoát ra Menu'
         });
 
@@ -271,40 +223,42 @@ class UIManager {
             }
         };
 
-        userUI.appendChild(exitBtn);
+        slot.appendChild(exitBtn);
     }
 
+    /**
+     * Render admin buttons (Kill Monster + Admin Link) vào DASHBOARD
+     * Chỉ hiển thị khi role = 'admin'
+     */
     renderAdminButtons() {
-        const dashboardUI = DOMUtil.getById('dashboard');
-        if (!dashboardUI) return;
+        // Lấy dashboard container
+        const dashboard = DOMUtil.getById('dashboard');
+        if (!dashboard) return;
 
+        // Xóa nút cũ nếu có
         const oldKillBtn = DOMUtil.getById('kill-btn');
-        if (oldKillBtn) oldKillBtn.remove();
         const oldAdminBtn = DOMUtil.getById('admin-link-btn');
+        if (oldKillBtn) oldKillBtn.remove();
         if (oldAdminBtn) oldAdminBtn.remove();
-       
+
         // Lấy role từ GameEngine
         const GE = window.GameEngine;
         const role = GE?.player?.role;
 
-        // Nếu là admin thì ẩn/không tạo nút
+        // Nếu KHÔNG phải admin thì return (không hiển thị)
         if (role !== 'admin') {
-            // Xóa nếu có sẵn
-            const oldKillBtn = DOMUtil.getById('kill-btn');
-            if (oldKillBtn) oldKillBtn.remove();
-            const oldAdminBtn = DOMUtil.getById('admin-link-btn');
-            if (oldAdminBtn) oldAdminBtn.remove();
+            console.log('[UIManager] User is not admin, admin buttons hidden');
             return;
         }
-         
-        // Tạo nút Kill
-        const KillBtn = DOMUtil.createElement('button', {
+
+        // ✅ Tạo nút Kill Monster (Test)
+        const killBtn = DOMUtil.createElement('button', {
             id: 'kill-btn',
             className: 'w-full mb-2 p-3 rounded-2xl bg-purple-500 hover:bg-purple-600 text-white font-bold transition-all shadow-md',
             innerHTML: '💀 Kill Monster (Test)'
         });
 
-        KillBtn.onclick = () => {
+        killBtn.onclick = () => {
             try {
                 if (!GE || !GE.monster) return;
                 if (GE.battleManager?.isInBattle && GE.battleManager.isInBattle()) return;
@@ -326,31 +280,33 @@ class UIManager {
                         GE.processBattleRound(0, 0, true);
                     }
                 } catch (e) {
-                    console.error('Kill button: error invoking defeat handler', e);
+                    console.error('[UIManager] Kill button: error invoking defeat handler', e);
                 }
             } catch (err) {
-                console.error('Kill button unexpected error', err);
+                console.error('[UIManager] Kill button unexpected error', err);
             }
         };
 
-        // Tạo nút Admin
+        // ✅ Tạo nút Admin Link
         const adminBtn = DOMUtil.createElement('a', {
             id: 'admin-link-btn',
-            className: 'w-full mb-2 p-3 rounded-2xl bg-purple-500 hover:bg-purple-600 text-white font-bold transition-all shadow-md',
+            className: 'flex items-center justify-center gap-2 w-full mb-2 p-3 rounded-2xl bg-purple-500 hover:bg-purple-600 text-white font-bold transition-all shadow-md',
             innerHTML: `
-                <span class="text-2xl mr-2">⚙️</span>
+                <span class="text-2xl">⚙️</span>
                 <span class="text-sm uppercase tracking-wider">Quản trị</span>
             `
         });
         adminBtn.setAttribute('href', './admin.html');
 
-        dashboardUI.appendChild(KillBtn);
-        dashboardUI.appendChild(adminBtn);
+        // ✅ Append vào cuối dashboard (trước nút Admin cố định trong HTML nếu có)
+        dashboard.appendChild(killBtn);
+        dashboard.appendChild(adminBtn);
+
+        console.log('[UIManager] Admin buttons rendered');
     }
 
     /**
      * Hiển thị loading trong question area
-     * @param {string} message 
      */
     showQuestionLoading(message = 'Đang chuẩn bị thử thách...') {
         DOMUtil.showLoading('questionarea', message);
@@ -360,11 +316,41 @@ class UIManager {
      * Clear tất cả UI khi về menu
      */
     clearAllUI() {
+        // ✅ Hide user-info-slot
+        const userSlot = DOMUtil.getById('user-info-slot');
+        if (userSlot) {
+            userSlot.classList.add('hidden');
+            userSlot.innerHTML = '';
+        }
+
+        // ✅ Clear action buttons
+        const actionSlot = DOMUtil.getById('action-buttons-slot');
+        if (actionSlot) {
+            actionSlot.innerHTML = '';
+        }
+
+        // ✅ Reset monster info
+        const monsterInfo = DOMUtil.getById('monster-info');
+        if (monsterInfo) {
+            monsterInfo.innerHTML = '<p class="text-gray-500 text-sm text-center">Chưa có dữ liệu</p>';
+        }
+
+        // ✅ Clear answers history
+        const answersHistory = DOMUtil.getById('answers-history');
+        if (answersHistory) {
+            answersHistory.innerHTML = '<p class="text-gray-500 text-xs text-center">Chưa có câu trả lời</p>';
+        }
+
+        // ✅ Xóa admin buttons (nếu có)
+        const killBtn = DOMUtil.getById('kill-btn');
+        const adminBtn = DOMUtil.getById('admin-link-btn');
+        if (killBtn) killBtn.remove();
+        if (adminBtn) adminBtn.remove();
+
+        // ✅ Clear questionarea
         DOMUtil.clearChildren('questionarea');
-        DOMUtil.clearChildren('userUI');
-        DOMUtil.clearChildren('dashboard');
-        
-        // Reset battleView về trạng thái ban đầu
+
+        // ✅ Reset battleView
         const battleView = DOMUtil.getById('battleview');
         if (battleView) {
             battleView.innerHTML = `
@@ -375,16 +361,11 @@ class UIManager {
             `;
         }
 
-        // Xóa monster-info và answers-history trong dashboard
-        DOMUtil.clearChildren('monster-info');
-        DOMUtil.clearChildren('answers-history');
-
         console.log('[UIManager] All UI cleared');
     }
 
     /**
      * Render hero sprite
-     * @param {Object} player 
      */
     renderHeroSprite(player) {
         if (!player || !player.sprite_url) return;
@@ -398,7 +379,6 @@ class UIManager {
 
     /**
      * Render monster sprite
-     * @param {Object} monster 
      */
     renderMonsterSprite(monster) {
         if (!monster || !monster.sprite_url) return;

@@ -9,15 +9,29 @@
 </head>
 <body>
 
-    <!-- 1. Cột UserUI bên trái (1/6 màn hình, dài hết cỡ) -->
-    <aside id="userUI" class="w-1/6 h-full rounded-3xl p-4 grid grid-rows-[1fr_2fr] gap-6 game-card">
+    <!-- 1. Cột UserUI bên trái (1/6 màn hình) -->
+    <aside id="userUI" class="w-1/6 h-full rounded-3xl p-4 flex flex-col gap-4 game-card overflow-y-auto">
+        
+        <!-- ✅ SLOT 1: Leaderboard (Luôn hiện) -->
+        <div id="leaderboard-slot" class="w-full bg-gradient-to-br from-yellow-400/20 to-orange-500/20 backdrop-blur-sm rounded-2xl p-4 border-2 border-yellow-400/50">
+            <h3 class="text-center text-yellow-400 font-black text-lg mb-3 flex items-center justify-center gap-2">
+                🏆 Vinh Danh 🏆
+            </h3>
+            <div id="leaderboard-list" class="space-y-2 max-h-96 overflow-y-auto">
+                <p class="text-white/50 text-xs text-center">Đang tải...</p>
+            </div>
+        </div>
 
-        <!-- Nội dung sẽ được thêm vào đây -->
-        <!-- Slot cố định cho user name -->
-        <div id="user-info-slot"></div>
+        <!-- ✅ SLOT 2: User Info (Chỉ hiện trong game) -->
+        <div id="user-info-slot" class="w-full bg-white/70 rounded-2xl p-4 border-4 border-blue-200 shadow-lg hidden">
+            <!-- UIManager sẽ update nội dung vào đây -->
+        </div>
 
-        <!-- Slot cố định cho leaderboard -->
-        <div id="leaderboard-slot" class="overflow-hidden"></div>
+        <!-- ✅ SLOT 3: Action Buttons (Các nút Exit, Admin, etc.) -->
+        <div id="action-buttons-slot" class="w-full flex flex-col gap-2 mt-auto">
+            <!-- UIManager sẽ thêm nút vào đây -->
+        </div>
+
     </aside>
 
     <!-- 3. Khung Container ở giữa (Chiếm phần còn lại) -->
@@ -39,9 +53,25 @@
 
     <!-- 2. Cột Dashboard bên phải (1/6 màn hình, dài hết cỡ) -->
     <aside id="dashboard" class="w-1/6 h-full rounded-3xl p-4 flex flex-col gap-4 game-card">
-        <div id="monster-info"></div>
-        <div id="answers-history" class="mt-4 space-y-2 flex-1 overflow-y-auto pr-2"></div>
+        
+        <!-- ✅ SLOT 1: Monster Info -->
+        <div id="monster-info-slot" class="w-full bg-white/50 rounded-2xl p-3 border-2 border-red-200">
+            <h3 class="text-xl font-black text-red-600 uppercase mb-2">Đối thủ</h3>
+            <div id="monster-info">
+                <p class="text-gray-500 text-sm text-center">Chưa có dữ liệu</p>
+            </div>
+        </div>
+
+        <!-- ✅ SLOT 2: Answers History -->
+        <div id="answers-history-slot" class="flex-1 bg-white/50 rounded-2xl p-3 border-2 border-green-200 overflow-hidden flex flex-col">
+            <h3 class="text-lg font-black text-green-600 uppercase mb-2">Lịch sử</h3>
+            <div id="answers-history" class="flex-1 space-y-2 overflow-y-auto pr-2">
+                <p class="text-gray-500 text-xs text-center">Chưa có câu trả lời</p>
+            </div>
+        </div>
+        
     </aside>
+
     <!-- Utils first -->
     <script type="module" src="/src/js/utils/DOMUtil.js"></script>
     <script type="module" src="/src/js/utils/EffectsUtil.js"></script>
