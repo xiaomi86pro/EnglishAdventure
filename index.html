@@ -13,7 +13,7 @@
     <aside id="userUI" class="w-1/6 h-full rounded-3xl p-4 flex flex-col gap-4 game-card overflow-y-auto">
         
         <!-- ✅ SLOT 1: Leaderboard (Luôn hiện) -->
-        <div id="leaderboard-slot" class="w-full bg-gradient-to-br from-yellow-400/20 to-orange-500/20 backdrop-blur-sm rounded-2xl p-4 border-2 border-yellow-400/50">
+        <div id="leaderboard-slot" class="w-full bg-white rounded-2xl p-4 border-2 border-yellow-400/50">
             <h3 class="text-center text-yellow-400 font-black text-lg mb-3 flex items-center justify-center gap-2">
                 🏆 Vinh Danh 🏆
             </h3>
@@ -56,20 +56,18 @@
         
         <!-- ✅ SLOT 1: Monster Info -->
         <div id="monster-info-slot" class="w-full bg-white/50 rounded-2xl p-3 border-2 border-red-200">
-            <h3 class="text-xl font-black text-red-600 uppercase mb-2">Đối thủ</h3>
             <div id="monster-info">
-                <p class="text-gray-500 text-sm text-center">Chưa có dữ liệu</p>
+                <p class="text-gray-500 text-sm text-center hidden">Chưa có dữ liệu</p>
             </div>
         </div>
 
         <!-- ✅ SLOT 2: Answers History -->
-        <div id="answers-history-slot" class="flex-1 bg-white/50 rounded-2xl p-3 border-2 border-green-200 overflow-hidden flex flex-col">
+        <div id="answers-history-slot" class="flex-1 bg-white/50 rounded-2xl p-3 border-2 border-green-200 overflow-hidden flex flex-col hidden">
             <h3 class="text-lg font-black text-green-600 uppercase mb-2">Lịch sử</h3>
             <div id="answers-history" class="flex-1 space-y-2 overflow-y-auto pr-2">
-                <p class="text-gray-500 text-xs text-center">Chưa có câu trả lời</p>
             </div>
         </div>
-        
+
     </aside>
 
     <!-- Utils first -->
@@ -99,7 +97,6 @@
     <script type="module" src="/src/js/supabase_config.js"></script>
     <script type="module" src="/src/js/audio_manager.js"></script> 
     <script type="module" src="/src/js/auth/auth_component.js"></script>
-    <!--<script type="module" src="/src/js/game_engine.js"></script>-->
     <script type="module" src="/src/js/question/question_manager.js"></script>
     <script>
         // Đảm bảo Supabase đã load xong rồi mới init Auth

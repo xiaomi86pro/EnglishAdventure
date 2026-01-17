@@ -89,6 +89,8 @@ class UIManager {
         // 5. Thêm nút Exit
         this.addExitButton();
 
+        this.showhistory();
+
         // 6. Render admin buttons (nếu là admin)
         this.renderAdminButtons();
     }
@@ -122,6 +124,8 @@ class UIManager {
         const container = DOMUtil.getById('monster-info');
         if (!container) return;
 
+        container.classList.remove('hidden');
+
         // ✅ Chỉ update nội dung, không tạo wrapper mới
         container.innerHTML = `
             <h3 class="text-xl font-black text-red-600 uppercase mb-2">Tiến trình</h3>
@@ -139,6 +143,13 @@ class UIManager {
                 </div>
             </div>
         `;
+    }
+
+    showhistory() {
+       const historyslot = DOMUtil.getById('answers-history-slot');
+        if (!historyslot) return;
+
+        historyslot.classList.remove('hidden');
     }
 
     /**

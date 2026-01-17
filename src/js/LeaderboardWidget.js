@@ -51,49 +51,6 @@ export class LeaderboardWidget {
         this._renderList(topPlayers);
     }
     
-    _renderList(players) {
-        const list = DOMUtil.getById('leaderboard-list');
-        if (!list) return;
-    
-        if (players.length === 0) {
-            list.innerHTML = '<p class="text-white/50 text-xs text-center">Chưa có dữ liệu</p>';
-            return;
-        }
-    
-        list.innerHTML = players.map((player, index) => {
-            const rank = index + 1;
-            let medalEmoji = '';
-            let bgClass = 'bg-white/10';
-            
-            if (rank === 1) {
-                medalEmoji = '🥇';
-                bgClass = 'bg-yellow-400/30 border border-yellow-400';
-            } else if (rank === 2) {
-                medalEmoji = '🥈';
-                bgClass = 'bg-gray-300/30 border border-gray-400';
-            } else if (rank === 3) {
-                medalEmoji = '🥉';
-                bgClass = 'bg-orange-400/30 border border-orange-400';
-            }
-    
-            return `
-                <div class="${bgClass} rounded-xl p-2 flex items-center gap-2">
-                    <div class="w-6 text-center font-bold text-white text-sm">
-                        ${medalEmoji || rank}
-                    </div>
-                    <div class="text-xl">${player.avatar_key || '👤'}</div>
-                    <div class="flex-1 min-w-0">
-                        <p class="text-white font-bold text-xs truncate">${player.display_name}</p>
-                        <div class="flex items-center gap-2 text-[10px]">
-                            <span class="text-blue-300">⚡${player.level}</span>
-                            <span class="text-yellow-300">💰${player.coin || 0}</span>
-                        </div>
-                    </div>
-                </div>
-            `;
-        }).join('');
-    }
-
     /**
      * Render danh sách players
      * @private
@@ -130,7 +87,7 @@ export class LeaderboardWidget {
                     </div>
                     <div class="text-xl">${player.avatar_key || '👤'}</div>
                     <div class="flex-1 min-w-0">
-                        <p class="text-white font-bold text-xs truncate">${player.display_name}</p>
+                        <p class="text-black font-bold text-xs truncate">${player.display_name}</p>
                         <div class="flex items-center gap-2 text-[10px]">
                             <span class="text-blue-300">⚡${player.level}</span>
                             <span class="text-yellow-300">💰${player.coin || 0}</span>
