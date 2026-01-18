@@ -481,6 +481,7 @@ export class AssetManager {
                 base_atk: atk,
                 base_def: def,
                 exp_reward: exp,
+                coin: coin,
                 type,
                 location_id: locationId
             })

@@ -52,7 +52,7 @@ if (uploadBtn && fileInput) {
 // ===== TAB SWITCHING =====
 window.switchTab = function(tabName) {
     // Danh sách tất cả các tab
-    const tabs = ['vocab', 'assets', 'questions', 'locations', 'stations', 'steps'];
+    const tabs = ['vocab', 'assets', 'questions', 'locations', 'stations', 'steps', 'profiles'];
     
     // Ẩn tất cả tab
     tabs.forEach(tab => {
@@ -100,6 +100,13 @@ window.switchTab = function(tabName) {
             
         case 'steps':
             if (window.StepManager) window.StepManager.load();
+            break;
+
+        case 'profiles':
+            if (window.ProfileManager) {
+                window.ProfileManager.init();
+                window.ProfileManager.load();
+            }
             break;
     }
 };
