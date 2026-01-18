@@ -98,10 +98,10 @@ class Question6 {
         this._dropZones = [];
         this._items.forEach((it, idx) => {
             const row = document.createElement('div');
-            row.className = 'flex items-center justify-between bg-slate-700/30 p-2 rounded-xl h-14 w-full';
+            row.className = 'flex items-center gap-5 bg-slate-700/30 p-2 rounded-xl h-14 w-full';
   
             const viDiv = document.createElement('div');
-            viDiv.className = 'text-green-400 font-medium text-lg ml-2 leading-none';
+            viDiv.className = 'text-green-400 font-medium text-lg ml-2 leading-none flex-none w-[180px] truncate';
             viDiv.innerText = `${idx + 1}. ${this._escape(it.vi)}`;
   
             const engDiv = document.createElement('div');
@@ -127,7 +127,7 @@ class Question6 {
         });
   
         const piecesContainer = document.createElement('div');
-        piecesContainer.className = 'w-24 self-stretch flex-none bg-slate-900/50 rounded-xl p-2 flex flex-col items-center gap-3 overflow-y-auto custom-scrollbar border border-slate-700 min-h-[300px]';
+        piecesContainer.className = 'w-24 self-start flex-none bg-slate-900/50 rounded-xl p-2 flex flex-col items-center gap-3 overflow-y-auto custom-scrollbar border border-slate-700 min-h-[300px]';
         
         const cutParts = this._items.map((it, idx) => ({ cut: it.cutPart, originIdx: idx }));
         this._shuffle(cutParts);
