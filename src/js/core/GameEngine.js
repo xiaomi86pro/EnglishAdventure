@@ -4,6 +4,7 @@
  */
 
 import "@/css/game.css";
+import "@/css/effects.css";
 import GameConfig from './GameConfig.js';
 import DOMUtil from '../utils/DOMUtil.js';
 import EffectsUtil from '../utils/EffectsUtil.js';
@@ -248,58 +249,109 @@ const GameEngine = {
     },
 
     /**
-     * Xử lý khi monster bị hạ gục
+     * Xử lý khi monster bị tiêu diệt
      * @private
      */
     async _handleMonsterDefeat() {
         try {
-            // 1. Xử lý defeat (hồi máu nếu cần)
-            this.monsterHandler.handleDefeat(this.monster, this.player);
-    
-            // 2. Update UI
+            // 1. Xử lý defeat (hồi máu, lấy coin/exp)
+            const rewards = this.monsterHandler.handleDefeat(this.monster, this.player);
+            
+            console.log('[GameEngine] Monster defeated, rewards:', rewards);
+
+            // ✅ 2. Cộng coin và exp cho player (trong memory)
+            if (rewards.coinDropped > 0) {
+                this.player.coin = (this.player.coin || 0) + rewards.coinDropped;
+            }
+
+            if (rewards.expGained > 0) {
+                const oldExp = this.player.exp || 0;
+                const oldLevel = this.player.level || 1;
+                
+                this.player.exp = oldExp + rewards.expGained;
+
+                // ✅ 3. Check level up
+                const levelCheck = window.LevelUtil.checkLevelUp(this.player.exp, oldLevel);
+                
+                if (levelCheck.leveledUp) {
+                    console.log(`[GameEngine] Level up! ${oldLevel} -> ${levelCheck.newLevel}`);
+                    
+                    // Update player level và exp
+                    this.player.level = levelCheck.newLevel;
+                    this.player.exp = levelCheck.remainingExp;
+
+                    // ✅ 4. Hồi full máu khi level up
+                    const oldHp = this.player.hp_current;
+                    this.player.hp_current = this.player.max_hp;
+                    const healedAmount = this.player.hp_current - oldHp;
+
+                    // Delay để exp animation xong
+                    setTimeout(() => {
+                        // Hiệu ứng level up
+                        if (this.effectsUtil) {
+                            this.effectsUtil.showLevelUp('hero', levelCheck.newLevel);
+                        }
+
+                        // Hiệu ứng heal nếu có hồi máu
+                        if (healedAmount > 0 && this.effectsUtil) {
+                            setTimeout(() => {
+                                this.effectsUtil.showHealEffect('battleview', 'hero', healedAmount);
+                            }, 500);
+                        }
+
+                        // Toast notification
+                        if (this.effectsUtil) {
+                            this.effectsUtil.showToast(
+                                `🎉 LEVEL UP! Bạn đã lên Level ${levelCheck.newLevel}!`,
+                                'success',
+                                3000
+                            );
+                        }
+                    }, 1000);
+                }
+            }
+
+            // ✅ 5. Lưu coin và exp vào database
+            await this._savePlayerProgress();
+
+            // 6. Update UI
             this.uiManager.updateBattleStatus(this.player, this.monster);
-    
-            // 3. Delay trước khi tiến hành
+
+            // 7. Delay trước khi tiến hành
             await new Promise(r => setTimeout(r, GameConfig.TIMINGS.monsterDefeatDelay));
-    
-            // 4. Advance progression
+
+            // 8. Check unlock hero
+            await this.heroHandler.checkAndUnlockHero(this.currentStation.id, this.player.id);
+
+            // 9. Advance progression
             const progression = await this.progressionManager.advanceAfterMonsterDefeat(
                 this.currentLocation,
                 this.currentStation,
                 this.currentStep,
                 GameConfig.TOTAL_STEPS_PER_STATION
             );
-    
-            // ✅ 5. Check unlock hero CHỈ KHI HOÀN THÀNH STATION
-            // (Khi chuyển sang station mới = hoàn thành station cũ)
-            if (this.currentStep === GameConfig.TOTAL_STEPS_PER_STATION) {
-                await this.heroHandler.checkAndUnlockHero(
-                    this.currentStation.id,
-                    this.player.id // ← Truyền userId
-                );
-            }
-    
-            // 6. Kiểm tra game complete
+
+            // 10. Kiểm tra game complete
             if (progression.gameComplete) {
                 alert('🎉 Chúc mừng! Bạn đã hoàn thành toàn bộ cuộc phiêu lưu!');
                 this.showMainMenu();
                 return;
             }
-    
-            // 7. Update state
+
+            // 11. Update state
             this.currentLocation = progression.location;
             this.currentStation = progression.station;
             this.currentStep = progression.step;
-    
-            // 8. Spawn monster mới
+
+            // 12. Spawn monster mới
             if (progression.needsNewMonster) {
                 this.monster = await this.monsterHandler.spawnFromStep(
                     this.currentStation.id,
                     this.currentStep
                 );
             }
-    
-            // 9. Update UI
+
+            // 13. Update UI
             this.uiManager.updateAllUI(
                 this.player,
                 this.monster,
@@ -308,12 +360,45 @@ const GameEngine = {
                 this.currentStep,
                 GameConfig.TOTAL_STEPS_PER_STATION
             );
-    
-            // 10. Load question
+
+            // 14. Load question
             this.nextQuestion();
-    
+
         } catch (err) {
             console.error('[GameEngine] _handleMonsterDefeat error', err);
+        }
+    },
+
+    /**
+     * Lưu coin và exp của player vào database
+     * @private
+     */
+    async _savePlayerProgress() {
+        try {
+            if (!this.player || !this.player.id) return;
+
+            const { error } = await window.supabase
+                .from('profiles')
+                .update({
+                    coin: this.player.coin || 0,
+                    exp: this.player.exp || 0,
+                    level: this.player.level || 1,
+                    hp_current: this.player.hp_current || this.player.max_hp
+                })
+                .eq('id', this.player.id);
+
+            if (error) {
+                console.error('[GameEngine] Error saving player progress:', error);
+            } else {
+                console.log('[GameEngine] Player progress saved:', {
+                    coin: this.player.coin,
+                    exp: this.player.exp,
+                    level: this.player.level
+                });
+            }
+
+        } catch (err) {
+            console.error('[GameEngine] _savePlayerProgress error:', err);
         }
     },
 

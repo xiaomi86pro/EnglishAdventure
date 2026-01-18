@@ -311,6 +311,247 @@ class EffectsUtil {
             setTimeout(() => toast.remove(), 500);
         }, duration);
     }
+
+    /**
+ * Hiệu ứng coin rơi
+ * @param {string} containerId - 'battleview'
+ * @param {string} fromId - 'monster'
+ * @param {number} coinAmount 
+ */
+showCoinDrop(containerId, fromId, coinAmount) {
+    const container = DOMUtil.getById(containerId);
+    const fromEl = DOMUtil.getById(fromId);
+    if (!container || !fromEl) return;
+
+    // Lấy vị trí monster
+    const pos = DOMUtil.getRelativeCenter(fromId, containerId);
+    if (!pos) return;
+
+    // Tạo nhiều coin particles rơi xuống
+    const coinCount = Math.min(10, Math.ceil(coinAmount / 10)); // Max 10 coins
+    
+    for (let i = 0; i < coinCount; i++) {
+        const coin = DOMUtil.createElement('div', {
+            className: 'coin-particle',
+            innerText: '💰',
+            styles: {
+                position: 'absolute',
+                left: `${pos.x}px`,
+                top: `${pos.y}px`,
+                fontSize: '24px',
+                pointerEvents: 'none',
+                zIndex: '100'
+            }
+        });
+
+        // Random offset để coins không rơi cùng 1 chỗ
+        const offsetX = (Math.random() - 0.5) * 100;
+        const offsetY = Math.random() * 150 + 100;
+
+        coin.style.setProperty('--coin-tx', `${offsetX}px`);
+        coin.style.setProperty('--coin-ty', `${offsetY}px`);
+        coin.style.animation = 'coinDrop 1s ease-out forwards';
+
+        container.appendChild(coin);
+
+        // Xóa sau khi animation xong
+        setTimeout(() => coin.remove(), 1000);
+    }
+
+    // Hiển thị số coin to ở giữa
+    const coinText = DOMUtil.createElement('div', {
+        className: 'coin-amount-popup',
+        innerText: `+${coinAmount} 💰`,
+        styles: {
+            position: 'absolute',
+            left: `${pos.x}px`,
+            top: `${pos.y}px`,
+            transform: 'translate(-50%, -50%)',
+            fontSize: '32px',
+            fontWeight: '900',
+            color: '#fbbf24',
+            textShadow: '0 0 10px #000, 0 0 20px #fbbf24',
+            animation: 'floatUpFade 2s ease-out forwards',
+            pointerEvents: 'none',
+            zIndex: '101'
+        }
+    });
+
+    container.appendChild(coinText);
+    setTimeout(() => coinText.remove(), 2000);
+}
+
+/**
+ * Hiệu ứng exp bay vào hero
+ * @param {string} containerId - 'battleview'
+ * @param {string} fromId - 'monster'
+ * @param {string} toId - 'hero'
+ * @param {number} expAmount 
+ */
+showExpGain(containerId, fromId, toId, expAmount) {
+    const container = DOMUtil.getById(containerId);
+    if (!container) return;
+
+    const fromPos = DOMUtil.getRelativeCenter(fromId, containerId);
+    const toPos = DOMUtil.getRelativeCenter(toId, containerId);
+    if (!fromPos || !toPos) return;
+
+    // Tạo exp orbs bay về hero
+    const orbCount = Math.min(8, Math.ceil(expAmount / 10));
+
+    for (let i = 0; i < orbCount; i++) {
+        setTimeout(() => {
+            const orb = DOMUtil.createElement('div', {
+                className: 'exp-orb',
+                innerText: '✨',
+                styles: {
+                    position: 'absolute',
+                    left: `${fromPos.x}px`,
+                    top: `${fromPos.y}px`,
+                    fontSize: '20px',
+                    pointerEvents: 'none',
+                    zIndex: '100'
+                }
+            });
+
+            const deltaX = toPos.x - fromPos.x;
+            const deltaY = toPos.y - fromPos.y;
+
+            orb.style.setProperty('--exp-tx', `${deltaX}px`);
+            orb.style.setProperty('--exp-ty', `${deltaY}px`);
+            orb.style.animation = 'expFlyToHero 0.8s ease-in-out forwards';
+
+            container.appendChild(orb);
+
+            setTimeout(() => orb.remove(), 800);
+        }, i * 100); // Delay giữa các orbs
+    }
+
+    // Hiển thị số exp
+    const expText = DOMUtil.createElement('div', {
+        innerText: `+${expAmount} EXP`,
+        styles: {
+            position: 'absolute',
+            left: `${fromPos.x}px`,
+            top: `${fromPos.y - 30}px`,
+            transform: 'translate(-50%, 0)',
+            fontSize: '24px',
+            fontWeight: '900',
+            color: '#a78bfa',
+            textShadow: '0 0 10px #000, 0 0 20px #a78bfa',
+            animation: 'floatUpFade 2s ease-out forwards',
+            pointerEvents: 'none',
+            zIndex: '101'
+        }
+    });
+
+    container.appendChild(expText);
+    setTimeout(() => expText.remove(), 2000);
+}
+
+/**
+ * Hiệu ứng level up
+ * @param {string} heroId - 'hero'
+ * @param {number} newLevel 
+ */
+showLevelUp(heroId, newLevel) {
+    const heroEl = DOMUtil.getById(heroId);
+    if (!heroEl) return;
+
+    // Phát âm thanh level up (nếu có)
+    if (this.audioManager) {
+        // Tạm thời dùng heal sound, sau có thể thêm level up sound riêng
+        this.audioManager.playSfx('./sounds/Heal.mp3');
+    }
+
+    // Tạo cột sáng từ hero
+    const rect = heroEl.getBoundingClientRect();
+    const battleView = DOMUtil.getById('battleview');
+    const bvRect = battleView.getBoundingClientRect();
+
+    const centerX = rect.left - bvRect.left + rect.width / 2;
+    const centerY = rect.top - bvRect.top + rect.height / 2;
+
+    // Cột sáng chính
+    const lightBeam = DOMUtil.createElement('div', {
+        styles: {
+            position: 'absolute',
+            left: `${centerX}px`,
+            top: '0',
+            bottom: '0',
+            width: '100px',
+            transform: 'translateX(-50%)',
+            background: 'linear-gradient(to top, rgba(250,204,21,0) 0%, rgba(250,204,21,0.8) 50%, rgba(250,204,21,0) 100%)',
+            animation: 'levelUpBeam 2s ease-out forwards',
+            pointerEvents: 'none',
+            zIndex: '90'
+        }
+    });
+
+    battleView.appendChild(lightBeam);
+    setTimeout(() => lightBeam.remove(), 2000);
+
+    // Hero glow effect
+    heroEl.style.filter = 'brightness(2) drop-shadow(0 0 30px #fbbf24)';
+    heroEl.style.transform = 'scale(1.2)';
+    
+    setTimeout(() => {
+        heroEl.style.filter = '';
+        heroEl.style.transform = '';
+    }, 2000);
+
+    // Text "LEVEL UP!"
+    const levelUpText = DOMUtil.createElement('div', {
+        innerHTML: `
+            <div style="font-size: 48px; font-weight: 900; color: #fbbf24; text-shadow: 0 0 20px #000, 0 0 40px #fbbf24;">
+                LEVEL UP!
+            </div>
+            <div style="font-size: 32px; font-weight: 900; color: #fff; text-shadow: 0 0 10px #000; margin-top: 10px;">
+                Level ${newLevel}
+            </div>
+        `,
+        styles: {
+            position: 'absolute',
+            left: `${centerX}px`,
+            top: `${centerY - 100}px`,
+            transform: 'translate(-50%, -50%)',
+            textAlign: 'center',
+            animation: 'levelUpText 2s ease-out forwards',
+            pointerEvents: 'none',
+            zIndex: '100'
+        }
+    });
+
+    battleView.appendChild(levelUpText);
+    setTimeout(() => levelUpText.remove(), 2000);
+
+    // Particles xung quanh hero
+    for (let i = 0; i < 20; i++) {
+        const particle = DOMUtil.createElement('div', {
+            innerText: '⭐',
+            styles: {
+                position: 'absolute',
+                left: `${centerX}px`,
+                top: `${centerY}px`,
+                fontSize: '20px',
+                pointerEvents: 'none',
+                zIndex: '95'
+            }
+        });
+
+        const angle = (Math.PI * 2 / 20) * i;
+        const distance = 150;
+        const tx = Math.cos(angle) * distance;
+        const ty = Math.sin(angle) * distance;
+
+        particle.style.setProperty('--particle-tx', `${tx}px`);
+        particle.style.setProperty('--particle-ty', `${ty}px`);
+        particle.style.animation = 'levelUpParticle 1.5s ease-out forwards';
+
+        battleView.appendChild(particle);
+        setTimeout(() => particle.remove(), 1500);
+    }
+}
 }
 
 // Expose ra window

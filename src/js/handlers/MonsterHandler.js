@@ -97,25 +97,20 @@ class MonsterHandler {
      * Xử lý khi monster bị tiêu diệt
      * @param {Object} monster 
      * @param {Object} player 
-     * @returns {Object} - { hpRestored, actualRestore }
+     * @returns {Object} - { hpRestored, actualRestore, coinDropped, expGained }
      */
     handleDefeat(monster, player) {
         const monsterType = monster?.type;
-        let hpRestore = GameConfig.getHPRestore(monsterType);
         
-        // Dừng nhạc boss
-        if (this.effects) {
-            this.effects.stopBGM();
-        }
-
+        // 1. Hồi HP (logic cũ)
+        let hpRestore = GameConfig.getHPRestore(monsterType);
         let actualRestore = 0;
-
+    
         if (hpRestore > 0 && player) {
             const oldHp = player.hp_current;
             player.hp_current = Math.min(player.max_hp, player.hp_current + hpRestore);
             actualRestore = player.hp_current - oldHp;
             
-            // Hiển thị hiệu ứng hồi HP
             if (actualRestore > 0 && this.effects) {
                 this.effects.showHealEffect('battleview', 'hero', actualRestore);
                 this.effects.showToast(
@@ -125,10 +120,34 @@ class MonsterHandler {
                 );
             }
         }
-
+    
+        // ✅ 2. Lấy coin và exp từ monster
+        const coinDropped = monster?.coin || 0;
+        const expGained = monster?.exp_reward || 0;
+    
+        // ✅ 3. Hiển thị hiệu ứng coin drop
+        if (coinDropped > 0 && this.effects) {
+            this.effects.showCoinDrop('battleview', 'monster', coinDropped);
+        }
+    
+        // ✅ 4. Hiển thị hiệu ứng exp gain
+        if (expGained > 0 && this.effects) {
+            // Delay một chút để coin drop xong trước
+            setTimeout(() => {
+                this.effects.showExpGain('battleview', 'monster', 'hero', expGained);
+            }, 500);
+        }
+    
+        // Dừng nhạc boss
+        if (this.effects) {
+            this.effects.stopBGM();
+        }
+    
         return {
             hpRestored: hpRestore,
-            actualRestore: actualRestore
+            actualRestore: actualRestore,
+            coinDropped: coinDropped,
+            expGained: expGained
         };
     }
 
