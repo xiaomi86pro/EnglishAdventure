@@ -296,6 +296,7 @@ export class AssetManager {
             const atk = parseInt(document.getElementById('monster-atk').value) || 5;
             const def = parseInt(document.getElementById('monster-def').value) || 0;
             const exp = parseInt(document.getElementById('monster-exp').value) || 10;
+            const coin = parseInt(document.getElementById('monster-coin').value) || 1;
             const type = document.getElementById('monster-type').value;
             const locationId = document.getElementById('monster-location').value || null;
             const monsterFile = document.getElementById('monster-file').files[0];
@@ -322,6 +323,7 @@ export class AssetManager {
                         base_atk: atk,
                         base_def: def,
                         exp_reward: exp,
+                        coin: coin,
                         location_id: locationId
                     }]);
 
