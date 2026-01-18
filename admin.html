@@ -90,8 +90,25 @@
             <div id="tab-assets" class="hidden space-y-6">
                 <div class="bg-white p-8 rounded-3xl">
                     <h3 class="text-2xl font-bold text-purple-600 mb-6 uppercase text-center">Quản lý hình ảnh tài nguyên</h3>
+                    <!-- ASSET FORM BUTTONS -->
+                    <div id="asset-form-buttons" class="flex gap-3 mb-6">
+                        <button data-form="hero"
+                                class="px-4 py-2 rounded-xl font-bold bg-yellow-400 hover:bg-yellow-500">
+                        🦸 Nhập Hero
+                        </button>
                     
+                        <button data-form="monster"
+                                class="px-4 py-2 rounded-xl font-bold bg-red-400 hover:bg-red-500 text-white">
+                        👹 Nhập Quái vật
+                        </button>
+                    
+                        <button data-form="gear"
+                                class="px-4 py-2 rounded-xl font-bold bg-blue-400 hover:bg-blue-500 text-white">
+                        ⚔️ Nhập Vũ khí / Khiên
+                        </button>
+                    </div>
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                        <div id="form-hero" class="asset-form hidden">
                         <!-- Form nhập Hero -->
                         <div class="p-6 bg-yellow-50 rounded-2xl border-2 border-yellow-100">
                             <h3 class="font-bold text-gray-700 mb-4 flex items-center gap-2">
@@ -126,7 +143,8 @@
                                 <button id="save-hero-btn" class="w-full py-3 bg-blue-500 text-white rounded-xl font-bold hover:bg-blue-600 transition-colors shadow-lg shadow-blue-100">Lưu Hero</button>
                             </div>
                         </div>
-
+                    </div>        
+                    <div id="form-monster" class="asset-form hidden">
                         <!-- Form nhập Monster -->
                         <div class="p-6 bg-red-50 rounded-2xl border-2 border-red-100">
                             <h3 class="font-bold text-gray-700 mb-4 flex items-center gap-2">
@@ -167,7 +185,8 @@
                                 <button id="save-monster-btn" class="w-full py-3 bg-red-500 text-white rounded-xl font-bold hover:bg-red-600 transition-colors shadow-lg shadow-red-100">Lưu Quái vật</button>
                             </div>
                         </div>
-
+                    </div>  
+                    <div id="form-gear" class="asset-form hidden"> 
                         <!-- Form nhập Trang bị -->
                         <div class="p-6 bg-blue-50 rounded-2xl border-2 border-blue-100 md:col-span-2">
                             <h4 class="font-bold text-blue-700 mb-4 flex items-center gap-2 text-lg">
@@ -200,6 +219,7 @@
                             </div>
                             <button id="save-gear-btn" class="w-full mt-6 py-3 bg-blue-500 text-white font-bold rounded-xl shadow-[0_4px_0_#1e40af] hover:bg-blue-600 transition-all">Lưu Trang bị</button>
                         </div>
+                    </div>       
                     </div>
                 </div>
                 

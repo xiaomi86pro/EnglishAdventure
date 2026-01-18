@@ -10,6 +10,7 @@ export class AssetManager {
         this.setupMonsterForm();
         this.setupGearForm();
         this.setupTabSwitching();
+        this.setupAssetFormButtons();
         
         // Load dữ liệu ban đầu
         this.loadStationsForUnlock();
@@ -34,6 +35,33 @@ export class AssetManager {
 
         return urlData.publicUrl;
     }
+
+    // ===== ASSET FORM TOGGLING =====
+    setupAssetFormButtons() {
+        const buttons = document.querySelectorAll('#asset-form-buttons [data-form]');
+        if (!buttons.length) return;
+
+        buttons.forEach(btn => {
+            btn.addEventListener('click', () => {
+                const type = btn.dataset.form;
+                this.showAssetForm(type);
+            });
+        });
+    }
+
+    showAssetForm(type) {
+        const forms = ['hero', 'monster', 'gear'];
+
+        forms.forEach(f => {
+            const el = document.getElementById(`form-${f}`);
+            if (!el) return;
+
+            el.classList.toggle('hidden', f !== type);
+        });
+    }
+
+
+
 
     // ===== HERO MANAGEMENT =====
     setupHeroForm() {
