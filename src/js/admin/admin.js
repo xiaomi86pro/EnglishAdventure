@@ -1,6 +1,6 @@
 // admin.js - Main entry point
 import { createClient } from '@supabase/supabase-js'
-import * as XLSX from 'xlsx'
+//import * as XLSX from 'xlsx'
 import "@/css/admin.css";
 
 // Import các managers

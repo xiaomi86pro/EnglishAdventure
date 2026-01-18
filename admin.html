@@ -234,7 +234,7 @@
                 <div id="question-types-list" class="grid grid-cols-2 md:grid-cols-3 gap-4 mb-6">
                     <!-- Sẽ được load từ DB -->
                 </div>
-
+                
                 <!-- Form thêm câu hỏi mới -->
                 <div id="add-question-form" class="hidden mb-6 p-6 bg-blue-50 rounded-2xl border-2 border-blue-200">
                     <h4 class="font-bold text-lg mb-4">Thêm loại câu hỏi mới</h4>
@@ -263,6 +263,21 @@
                         <button onclick="cancelAddQuestionForm()" class="px-4 py-2 bg-gray-300 rounded-lg hover:bg-gray-400 font-bold">
                             Hủy
                         </button>
+                    </div>
+                </div>
+
+                <!-- Form sửa câu hỏi -->
+                <div id="edit-question-form" class="hidden bg-white p-4 rounded-xl shadow-md">
+                    <h3 class="font-bold mb-2">Chỉnh sửa loại câu hỏi</h3>
+                    <input id="edit-question-id" type="number" class="border p-2 w-full mb-2" readonly />
+                    <input id="edit-question-name" type="text" class="border p-2 w-full mb-2" placeholder="Tên" />
+                    <input id="edit-question-icon" type="text" class="border p-2 w-full mb-2" placeholder="Icon" />
+                    <textarea id="edit-question-desc" class="border p-2 w-full mb-2" placeholder="Mô tả"></textarea>
+                    <div class="flex gap-2">
+                      <button onclick="window.testQuestionManager.saveEditedQuestionType()" 
+                              class="bg-green-500 text-white px-4 py-2 rounded">💾 Lưu</button>
+                      <button onclick="window.testQuestionManager.cancelEditForm()" 
+                              class="bg-gray-400 text-white px-4 py-2 rounded">❌ Hủy</button>
                     </div>
                 </div>
 

@@ -78,7 +78,7 @@ class Question7 {
           </div>
 
           <div class="p-8 bg-slate-800 rounded-3xl text-center text-white shadow-2xl border border-slate-700 w-full max-w-2xl">
-              <div class="text-yellow-300 italic text-2xl mb-8 font-medium">
+              <div class="text-yellow-300 italic text-5xl mb-8 font-medium">
                   "${this.escapeHtml(vi)}"
               </div>
           

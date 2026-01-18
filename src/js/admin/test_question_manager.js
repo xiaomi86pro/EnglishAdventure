@@ -34,6 +34,10 @@ export class TestQuestionManager {
                                     <p class="text-xs text-gray-500">Type ${qt.id}</p>
                                 </div>
                             </div>
+                            <button onclick="window.testQuestionManager.showEditForm(${qt.id})" 
+                                    class="text-blue-500 hover:text-blue-700 text-sm mr-2">
+                                ✏️ Edit
+                            </button>
                             <button onclick="window.testQuestionManager.deleteQuestionType(${qt.id})" 
                                     class="text-red-500 hover:text-red-700 text-sm">
                                 🗑️
@@ -74,6 +78,67 @@ export class TestQuestionManager {
             document.getElementById('new-question-desc').value = '';
         }
     }
+
+    async showEditForm(id) {
+        const form = document.getElementById('edit-question-form');
+        if (!form) return;
+      
+        try {
+          const { data, error } = await this.supabase
+            .from('question_types')
+            .select('*')
+            .eq('id', id)
+            .single();
+      
+          if (error || !data) throw error || new Error('Không tìm thấy loại câu hỏi');
+      
+          // Điền dữ liệu vào form
+          document.getElementById('edit-question-id').value = data.id;
+          document.getElementById('edit-question-name').value = data.name;
+          document.getElementById('edit-question-icon').value = data.icon;
+          document.getElementById('edit-question-desc').value = data.description || '';
+      
+          form.classList.remove('hidden');
+        } catch (err) {
+          alert('Lỗi load dữ liệu: ' + err.message);
+        }
+      }
+      
+      async saveEditedQuestionType() {
+        const id = parseInt(document.getElementById('edit-question-id').value);
+        const name = document.getElementById('edit-question-name').value.trim();
+        const icon = document.getElementById('edit-question-icon').value.trim();
+        const desc = document.getElementById('edit-question-desc').value.trim();
+      
+        if (!id || !name || !icon) {
+          alert('Vui lòng điền đầy đủ Tên và Icon!');
+          return;
+        }
+      
+        try {
+          const { error } = await this.supabase
+            .from('question_types')
+            .update({
+              name: name,
+              icon: icon,
+              description: desc,
+            })
+            .eq('id', id);
+      
+          if (error) throw error;
+      
+          alert('✅ Đã cập nhật loại câu hỏi!');
+          this.cancelEditForm();
+          this.loadQuestionTypes();
+        } catch (err) {
+          alert('Lỗi: ' + err.message);
+        }
+      }
+
+      cancelEditForm() {
+        const form = document.getElementById('edit-question-form');
+        if (form) form.classList.add('hidden');
+      }
 
     // Ẩn form
     cancelAddForm() {
@@ -182,4 +247,22 @@ window.saveNewQuestionType = async function() {
     if (window.testQuestionManager) {
         await window.testQuestionManager.saveNewQuestionType();
     }
+    window.showEditQuestionForm = function(id) {
+        if (window.testQuestionManager) {
+          window.testQuestionManager.showEditForm(id);
+        }
+      };
+      
+      window.cancelEditQuestionForm = function() {
+        if (window.testQuestionManager) {
+          window.testQuestionManager.cancelEditForm();
+        }
+      };
+      
+      window.saveEditedQuestionType = async function() {
+        if (window.testQuestionManager) {
+          await window.testQuestionManager.saveEditedQuestionType();
+        }
+      };
+    
 };

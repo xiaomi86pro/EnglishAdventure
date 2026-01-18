@@ -12,7 +12,7 @@ export class AuthState {
         this.role = null;
         this.localUsers = []; // Users đã login trên máy này
         this.containerId = 'questionarea';
-        this.availableAvatars = ["🧑‍🚀", "👸", "🤖", "🧸", "🱠", "🶠", "🦊", "🦁"];
+        this.availableAvatars = ["🧑‍🚀", "👸", "🤖", "🧸", "❄️", "⛄", "🦊", "🦁"];
     }
 
     // ===== LOCAL STORAGE - LOCAL USERS =====
