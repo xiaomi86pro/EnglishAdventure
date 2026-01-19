@@ -4,6 +4,7 @@
  */
 
 import "@/css/game.css";
+import "@/css/effects.css";
 import GameConfig from './GameConfig.js';
 import DOMUtil from '../utils/DOMUtil.js';
 import EffectsUtil from '../utils/EffectsUtil.js';
@@ -13,6 +14,7 @@ import StateManager from '../managers/StateManager.js';
 import UIManager from '../managers/UIManager.js';
 import BattleManager from '../managers/BattleManager.js';
 import ProgressionManager from '../managers/ProgressionManager.js';
+import SaveGameService from '../services/SaveGameService.js';
 
 const GameEngine = {
     // Core state
@@ -31,6 +33,7 @@ const GameEngine = {
     uiManager: null,
     battleManager: null,
     progressionManager: null,
+    saveGameService: null,
 
     /**
      * Khởi tạo game với dữ liệu User từ Auth
@@ -59,17 +62,85 @@ const GameEngine = {
                 return;
             }
 
-            // 3. Setup player
+            
+            // 3. Setup player với level bonus
+            const playerLevel = userData.level || 1;
+
+            // Tính bonus từ level
+            const hpBonus = GameConfig.getLevelBonus(playerLevel, 'hp');
+            const atkBonus = GameConfig.getLevelBonus(playerLevel, 'atk');
+            const defBonus = GameConfig.getLevelBonus(playerLevel, 'def');
+
             this.player = {
-                ...userData,
+                id: userData.id,
+                display_name: userData.display_name,
+                avatar_key: userData.avatar_key,
+                level: playerLevel,
+                exp: userData.exp || 0,
+                coin: userData.coin || 0,
+                role: userData.role,
+                
+                // HP: hero base + level bonus + equipment bonus
                 base_hp: heroData.base_hp,
-                hp_bonus: userData.hp_current || 0,
-                max_hp: heroData.base_hp + (userData.hp_current || 0),
-                hp_current: heroData.base_hp + (userData.hp_current || 0),
-                atk: heroData.base_atk,
+                max_hp: heroData.base_hp + hpBonus + (userData.hp_bonus || 0),
+                hp_current: heroData.base_hp + hpBonus + (userData.hp_bonus || 0), // Sẽ override nếu có save game
+                
+                // ATK: hero base + level bonus + profile bonus
+                base_atk: heroData.base_atk,
+                atk: atkBonus + (userData.base_atk || 0),
+                
+                // DEF: hero base + level bonus + profile bonus  
+                base_def: heroData.base_def || 0,
+                def: defBonus + (userData.base_def || 0),
+                
                 sprite_url: heroData.image_url,
-                role: userData.role
+                selected_hero_id: userData.selected_hero_id,
+                equipped_weapon: userData.equipped_weapon,
+                equipped_armor: userData.equipped_armor,
+                password: userData.password
             };
+
+            // 4. Check có save game trên cloud không
+            const savedGame = await this.saveGameService.load(userData.id);
+
+            let startLocation, startStation, startStep;
+
+            if (savedGame.success && savedGame.data) {
+                console.log('[GameEngine] Found cloud save, restoring...');
+                
+                // Restore HP từ save
+                this.player.hp_current = savedGame.data.current_hp;
+                
+                // Restore location/station/step
+                const { data: location } = await window.supabase
+                    .from('locations')
+                    .select('*')
+                    .eq('id', savedGame.data.current_location_id)
+                    .single();
+                
+                const { data: station } = await window.supabase
+                    .from('stations')
+                    .select('*')
+                    .eq('id', savedGame.data.current_station_id)
+                    .single();
+                
+                startLocation = location;
+                startStation = station;
+                startStep = savedGame.data.current_step;
+                
+            } else {
+                console.log('[GameEngine] No save found, starting fresh');
+                
+                // Load first location & station
+                const { location, station } = await this.progressionManager.loadFirstLocation();
+                startLocation = location;
+                startStation = station;
+                startStep = 1;
+            }
+
+            this.currentLocation = startLocation;
+            this.currentStation = startStation;
+            this.currentStep = startStep;
 
             // 4. Load first location & station
             const { location, station } = await this.progressionManager.loadFirstLocation();
@@ -133,7 +204,8 @@ const GameEngine = {
         this.uiManager = new UIManager(this.effectsUtil);
         this.battleManager = new BattleManager(this.audioManager, this.effectsUtil, this.uiManager);
         this.progressionManager = new ProgressionManager(window.supabase, this.monsterHandler);
-
+        this.saveGameService = new SaveGameService(window.supabase); 
+        
         console.log('[GameEngine] All managers initialized');
     },
 
@@ -248,58 +320,118 @@ const GameEngine = {
     },
 
     /**
-     * Xử lý khi monster bị hạ gục
+     * Xử lý khi monster bị tiêu diệt
      * @private
      */
     async _handleMonsterDefeat() {
         try {
-            // 1. Xử lý defeat (hồi máu nếu cần)
-            this.monsterHandler.handleDefeat(this.monster, this.player);
-    
-            // 2. Update UI
+            // 1. Xử lý defeat (hồi máu, lấy coin/exp)
+            const rewards = this.monsterHandler.handleDefeat(this.monster, this.player);
+            
+            console.log('[GameEngine] Monster defeated, rewards:', rewards);
+
+            // ✅ 2. Cộng coin và exp cho player (trong memory)
+            if (rewards.coinDropped > 0) {
+                this.player.coin = (this.player.coin || 0) + rewards.coinDropped;
+            }
+
+            if (rewards.expGained > 0) {
+                const oldExp = this.player.exp || 0;
+                const oldLevel = this.player.level || 1;
+                
+                this.player.exp = oldExp + rewards.expGained;
+
+                // ✅ 3. Check level up
+                const levelCheck = window.LevelUtil.checkLevelUp(this.player.exp, oldLevel);
+
+                if (levelCheck.leveledUp) {
+                    console.log(`[GameEngine] Level up! ${oldLevel} -> ${levelCheck.newLevel}`);
+                    
+                    // ✅ Tính bonus stats từ level mới
+                    const levelsGained = levelCheck.newLevel - oldLevel;
+                    const hpGain = levelsGained * GameConfig.LEVEL_UP_BONUS.hp;
+                    const atkGain = levelsGained * GameConfig.LEVEL_UP_BONUS.atk;
+                    const defGain = levelsGained * GameConfig.LEVEL_UP_BONUS.def;
+                    
+                    // ✅ Cập nhật stats
+                    this.player.level = levelCheck.newLevel;
+                    this.player.exp = levelCheck.remainingExp;
+                    this.player.max_hp += hpGain;
+                    this.player.atk += atkGain;
+                    this.player.def += defGain;
+                    
+                    // ✅ Hồi full HP khi level up
+                    const oldHp = this.player.hp_current;
+                    this.player.hp_current = this.player.max_hp;
+                    const healedAmount = this.player.hp_current - oldHp;
+
+                    // Delay để exp animation xong
+                    setTimeout(() => {
+                        // Hiệu ứng level up
+                        if (this.effectsUtil) {
+                            this.effectsUtil.showLevelUp('hero', levelCheck.newLevel);
+                        }
+
+                        // Hiệu ứng heal
+                        if (healedAmount > 0 && this.effectsUtil) {
+                            setTimeout(() => {
+                                this.effectsUtil.showHealEffect('battleview', 'hero', healedAmount);
+                            }, 500);
+                        }
+
+                        // Toast với stats gained
+                        if (this.effectsUtil) {
+                            this.effectsUtil.showToast(
+                                `🎉 LEVEL UP! Level ${levelCheck.newLevel}! +${hpGain}HP +${atkGain}ATK +${defGain}DEF`,
+                                'success',
+                                3000
+                            );
+                        }
+                    }, 1000);
+                }
+            }
+
+            // ✅ 5. Lưu coin và exp vào database
+            await this._savePlayerProgress();
+
+            // 6. Update UI
             this.uiManager.updateBattleStatus(this.player, this.monster);
-    
-            // 3. Delay trước khi tiến hành
+
+            // 7. Delay trước khi tiến hành
             await new Promise(r => setTimeout(r, GameConfig.TIMINGS.monsterDefeatDelay));
-    
-            // 4. Advance progression
+
+            // 8. Check unlock hero
+            await this.heroHandler.checkAndUnlockHero(this.currentStation.id, this.player.id);
+
+            // 9. Advance progression
             const progression = await this.progressionManager.advanceAfterMonsterDefeat(
                 this.currentLocation,
                 this.currentStation,
                 this.currentStep,
                 GameConfig.TOTAL_STEPS_PER_STATION
             );
-    
-            // ✅ 5. Check unlock hero CHỈ KHI HOÀN THÀNH STATION
-            // (Khi chuyển sang station mới = hoàn thành station cũ)
-            if (this.currentStep === GameConfig.TOTAL_STEPS_PER_STATION) {
-                await this.heroHandler.checkAndUnlockHero(
-                    this.currentStation.id,
-                    this.player.id // ← Truyền userId
-                );
-            }
-    
-            // 6. Kiểm tra game complete
+
+            // 10. Kiểm tra game complete
             if (progression.gameComplete) {
                 alert('🎉 Chúc mừng! Bạn đã hoàn thành toàn bộ cuộc phiêu lưu!');
                 this.showMainMenu();
                 return;
             }
-    
-            // 7. Update state
+
+            // 11. Update state
             this.currentLocation = progression.location;
             this.currentStation = progression.station;
             this.currentStep = progression.step;
-    
-            // 8. Spawn monster mới
+
+            // 12. Spawn monster mới
             if (progression.needsNewMonster) {
                 this.monster = await this.monsterHandler.spawnFromStep(
                     this.currentStation.id,
                     this.currentStep
                 );
             }
-    
-            // 9. Update UI
+
+            // 13. Update UI
             this.uiManager.updateAllUI(
                 this.player,
                 this.monster,
@@ -308,12 +440,60 @@ const GameEngine = {
                 this.currentStep,
                 GameConfig.TOTAL_STEPS_PER_STATION
             );
-    
-            // 10. Load question
+
+            // 14. Load question
             this.nextQuestion();
-    
+
         } catch (err) {
             console.error('[GameEngine] _handleMonsterDefeat error', err);
+        }
+    },
+
+    /**
+     * Lưu coin, exp, level vào profiles + save game state lên cloud
+     * @private
+     */
+    async _savePlayerProgress() {
+        try {
+            if (!this.player || !this.player.id) return;
+
+            // 1. Lưu progression vào profiles (coin, exp, level - KHÔNG lưu HP)
+            const { error: profileError } = await window.supabase
+                .from('profiles')
+                .update({
+                    coin: this.player.coin || 0,
+                    exp: this.player.exp || 0,
+                    level: this.player.level || 1,
+                    base_atk: this.player.atk - GameConfig.getLevelBonus(this.player.level, 'atk'), // Lưu bonus thuần (không tính level)
+                    base_def: this.player.def - GameConfig.getLevelBonus(this.player.level, 'def')
+                })
+                .eq('id', this.player.id);
+
+            if (profileError) {
+                console.error('[GameEngine] Error saving profile:', profileError);
+            } else {
+                console.log('[GameEngine] Profile saved:', {
+                    coin: this.player.coin,
+                    exp: this.player.exp,
+                    level: this.player.level
+                });
+            }
+
+            // 2. Lưu game state lên cloud (HP, location, station, step)
+            const saveResult = await this.saveGameService.save(this.player.id, {
+                hp_current: this.player.hp_current,
+                location_id: this.currentLocation?.id,
+                station_id: this.currentStation?.id,
+                step: this.currentStep,
+                monster: this.monster
+            });
+
+            if (!saveResult.success) {
+                console.error('[GameEngine] Error saving game state:', saveResult.error);
+            }
+
+        } catch (err) {
+            console.error('[GameEngine] _savePlayerProgress error:', err);
         }
     },
 
@@ -322,30 +502,35 @@ const GameEngine = {
      * @private
      */
     async _handleHeroDefeat() {
-        await this.heroHandler.handleDefeat(() => {
-            this.showMainMenu(true);
-        });
-    },
-
-    /**
-     * Lưu trạng thái game
-     */
-    saveGameState() {
-        const success = this.stateManager.save({
-            player: this.player,
-            monster: this.monster,
-            currentLocation: this.currentLocation,
-            currentStation: this.currentStation,
-            currentStep: this.currentStep
-        });
-
-        if (success) {
-            this.effectsUtil.stopAllSounds();
+        // 1. Xóa save game trên cloud
+        if (this.player && this.player.id) {
+            await this.saveGameService.delete(this.player.id);
+            console.log('[GameEngine] Save game deleted (hero defeated)');
         }
+        
+        // 2. Xử lý defeat UI
+        await this.heroHandler.handleDefeat(() => {
+            this.showMainMenu(true); // skipSave = true vì đã xóa rồi
+        });
     },
 
     /**
-     * Khôi phục trạng thái game từ localStorage
+     * Lưu trạng thái game (gọi khi thoát game)
+     */
+    async saveGameState() {
+        if (!this.player || !this.player.id) return;
+        
+        // Lưu lên cloud
+        await this._savePlayerProgress();
+        
+        // Dừng sounds
+        this.effectsUtil.stopAllSounds();
+        
+        console.log('[GameEngine] Game state saved to cloud');
+    },
+
+    /**
+     * Khôi phục trạng thái game từ saved data
      */
     async restoreGameState(savedGame) {
         try {
@@ -354,16 +539,16 @@ const GameEngine = {
             // 1. Initialize managers
             this._initManagers();
 
-            // ✅ 2. Render leaderboard widget
+            // 2. Render leaderboard widget
             if (window.LeaderboardWidget) {
                 await window.LeaderboardWidget.render();
             }
 
-            // 2. Khôi phục player
+            // 3. Khôi phục player
             this.player = savedGame.player;
             this.currentStep = savedGame.currentStep || 1;
 
-            // 3. Khôi phục location & station
+            // 4. Khôi phục location & station
             if (savedGame.currentLocationId && savedGame.currentStationId) {
                 const { data: location } = await window.supabase
                     .from('locations')
@@ -385,33 +570,45 @@ const GameEngine = {
                 this.currentStation = station;
             }
 
-            // 4. Init UI
+            // 5. Init UI
             this.uiManager.initUI(GameConfig.TOTAL_STEPS_PER_STATION);
 
-            // 5. Render hero
+            // 6. Render hero
             this.uiManager.renderHeroSprite(this.player);
 
-            // 6. Khôi phục monster
-            if (savedGame.monster) {
-                this.monster = savedGame.monster;
-
-                if (this.monster.type === 'boss' || this.monster.type === 'final boss') {
-                    this.effectsUtil.playMonsterBGM(this.monster.type);
+            // 7. Khôi phục monster
+            if (savedGame.monster && savedGame.monster.id) {
+                // Load full monster data từ DB
+                const { data: monsterData } = await window.supabase
+                    .from('monsters')
+                    .select('*')
+                    .eq('id', savedGame.monster.id)
+                    .single();
+                
+                if (monsterData) {
+                    this.monster = {
+                        ...monsterData,
+                        hp: savedGame.monster.hp,
+                        max_hp: monsterData.base_hp,
+                        atk: monsterData.base_atk,
+                        def: monsterData.base_def || 0,
+                        state: 'idle',
+                        isDead: false,
+                        sprite_url: monsterData.image_url,
+                        questionType: GameConfig.getDefaultQuestionType(monsterData.type)
+                    };
+                    
+                    this.uiManager.renderMonsterSprite(this.monster);
                 }
-
-                if (!this.monster.questionType) {
-                    this.monster.questionType = GameConfig.getDefaultQuestionType(this.monster.type);
-                }
-
-                this.uiManager.renderMonsterSprite(this.monster);
             } else {
+                // Spawn monster mới từ step
                 this.monster = await this.monsterHandler.spawnFromStep(
                     this.currentStation.id,
                     this.currentStep
                 );
             }
 
-            // 7. Update UI
+            // 8. Update UI
             this.uiManager.updateAllUI(
                 this.player,
                 this.monster,
@@ -424,9 +621,8 @@ const GameEngine = {
             await new Promise(r => setTimeout(r, 100));
             this.uiManager.renderAdminButtons();
 
-            // 8. Load question
+            // 9. Load question
             this.nextQuestion();
-            
 
             console.log('[GameEngine] Game restored successfully');
 
@@ -439,7 +635,7 @@ const GameEngine = {
     /**
      * Hiển thị lại menu chính
      */
-    showMainMenu(skipSave = false) {
+    async showMainMenu(skipSave = false) {
         // Dừng game
         this.battleManager.reset();
 
@@ -455,9 +651,9 @@ const GameEngine = {
 
         // Lưu game nếu cần
         if (!skipSave) {
-            this.saveGameState();
+            await this.saveGameState();  // ← Thêm await
         } else {
-            this.clearSaveState();
+            await this.clearSaveState();  // ← Thêm await
         }
 
         // Clear UI
@@ -477,9 +673,15 @@ const GameEngine = {
     /**
      * Xóa save state
      */
-    clearSaveState() {
+    async clearSaveState() {
         if (this.player && this.player.id) {
+            // Xóa trên cloud
+            await this.saveGameService.delete(this.player.id);
+            
+            // Xóa localStorage (backup cũ)
             this.stateManager.clear(this.player.id);
+            
+            console.log('[GameEngine] Save state cleared');
         }
     },
 

@@ -4,6 +4,7 @@ import { AuthUI } from './auth_ui.js';
 import { UserService } from './user_service.js';
 import { HeroService } from './hero_service.js';
 import LeaderboardWidget from '@/js/LeaderboardWidget.js';
+import SaveGameService from '../services/SaveGameService.js'; 
 
 /**
  * Component xử lý giao diện chọn User đầu game
@@ -15,6 +16,7 @@ class AuthComponent {
         this.ui = new AuthUI(this.state.containerId);
         this.userService = null;
         this.heroService = null;
+        this.saveGameService = null;
     }
 
     /**
@@ -31,6 +33,7 @@ class AuthComponent {
         // Khởi tạo services
         this.userService = new UserService(window.supabase);
         this.heroService = new HeroService(window.supabase);
+        this.saveGameService = new SaveGameService(window.supabase);
 
         // ✅ Khởi tạo và render LeaderboardWidget
         if (!window.LeaderboardWidget) {
@@ -176,19 +179,32 @@ class AuthComponent {
                 }
                 return;
             }
-
+        
             console.log("Đăng nhập thành công:", result.user);
             
             // Lưu user vào localStorage
             this.state.saveLocalUser(result.user);
             this.state.setSelectedUserId(result.user.id);
-
-            // Kiểm tra có game đã lưu không
-            const savedGame = this.state.checkSavedGame(result.user.id);
+        
+            // ✅ Kiểm tra có game đã lưu trên CLOUD không
+            const savedGameResult = await this.saveGameService.load(result.user.id);
             
-            if (savedGame) {
-                // Có game đã lưu → Hiện menu Continue/New
-                this.ui.displayContinueOrNewMenu(savedGame);
+            if (savedGameResult.success && savedGameResult.data) {
+                // Có save game → Hiện menu Continue/New
+                // Format lại data để khớp với UI
+                const formattedSave = {
+                    player: {
+                        id: result.user.id,
+                        display_name: result.user.display_name,
+                        avatar_key: result.user.avatar_key,
+                        sprite: result.user.avatar_key,
+                        level: result.user.level || 1
+                    },
+                    currentStationName: 'Saved Game',  // Có thể load tên station nếu cần
+                    currentStep: savedGameResult.data.current_step || 1
+                };
+                
+                this.ui.displayContinueOrNewMenu(formattedSave);
             } else {
                 // Chưa có game → Chọn hero
                 this.ui.displayHeroSelection();
@@ -208,25 +224,101 @@ class AuthComponent {
     /**
      * Continue game đã lưu
      */
-    continueGame() {
-        const savedGame = this.state.checkSavedGame(this.state.getSelectedUserId());
-        if (!savedGame) {
-            alert('Không tìm thấy game đã lưu!');
+    async continueGame() {
+        const userId = this.state.getSelectedUserId();
+        
+        try {
+            // 1. Load saved game từ cloud
+            const saveResult = await this.saveGameService.load(userId);
+            
+            if (!saveResult.success || !saveResult.data) {
+                alert('Không tìm thấy game đã lưu!');
+                this.displayLoginMenu();
+                return;
+            }
+            
+            const cloudSave = saveResult.data;
+            
+            // 2. Load full user data từ profiles
+            const userData = await this.userService.getUserWithHero(userId);
+            
+            // 3. Load hero data
+            const { data: heroData } = await window.supabase
+                .from('heroes')
+                .select('*')
+                .eq('id', userData.selected_hero_id)
+                .single();
+            
+            // 4. Tính stats với level bonus
+            const playerLevel = userData.level || 1;
+            const hpBonus = window.GameConfig.getLevelBonus(playerLevel, 'hp');
+            const atkBonus = window.GameConfig.getLevelBonus(playerLevel, 'atk');
+            const defBonus = window.GameConfig.getLevelBonus(playerLevel, 'def');
+            
+            // 5. Format savedGame object theo cấu trúc GameEngine.restoreGameState() cần
+            const formattedSave = {
+                player: {
+                    id: userData.id,
+                    display_name: userData.display_name,
+                    avatar_key: userData.avatar_key,
+                    level: playerLevel,
+                    exp: userData.exp || 0,
+                    coin: userData.coin || 0,
+                    role: userData.role,
+                    
+                    // HP
+                    base_hp: heroData.base_hp,
+                    max_hp: heroData.base_hp + hpBonus + (userData.hp_bonus || 0),
+                    hp_current: cloudSave.current_hp,  // ← Restore HP từ save
+                    
+                    // ATK
+                    base_atk: heroData.base_atk,
+                    atk: atkBonus + (userData.base_atk || 0),
+                    
+                    // DEF
+                    base_def: heroData.base_def || 0,
+                    def: defBonus + (userData.base_def || 0),
+                    
+                    sprite_url: heroData.image_url,
+                    selected_hero_id: userData.selected_hero_id,
+                    equipped_weapon: userData.equipped_weapon,
+                    equipped_armor: userData.equipped_armor,
+                    password: userData.password
+                },
+                currentLocationId: cloudSave.current_location_id,
+                currentStationId: cloudSave.current_station_id,
+                currentStep: cloudSave.current_step,
+                monster: cloudSave.monster_id ? {
+                    id: cloudSave.monster_id,
+                    hp: cloudSave.monster_hp
+                } : null
+            };
+            
+            // 6. Restore game
+            if (window.GameEngine) {
+                await window.GameEngine.restoreGameState(formattedSave);
+            }
+            
+        } catch (err) {
+            console.error('Lỗi continueGame:', err);
+            alert('Lỗi khi tiếp tục game: ' + err.message);
             this.displayLoginMenu();
-            return;
-        }
-        if (window.GameEngine) {
-            window.GameEngine.restoreGameState(savedGame);
         }
     }
 
     /**
      * Bắt đầu game mới (xóa save cũ)
      */
-    startNewGame() {
+    async startNewGame() {
         if (!confirm('Bạn có chắc muốn chơi lại từ đầu? Game cũ sẽ bị xóa!')) return;
         
-        this.state.clearSavedGame(this.state.getSelectedUserId());
+        const userId = this.state.getSelectedUserId();
+        
+        // Xóa save trên cloud
+        await this.saveGameService.delete(userId);
+        
+        // Xóa localStorage (backup)
+        this.state.clearSavedGame(userId);
         
         // Hiển thị màn hình chọn hero
         this.ui.displayHeroSelection();

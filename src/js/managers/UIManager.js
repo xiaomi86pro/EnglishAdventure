@@ -102,16 +102,38 @@ class UIManager {
         const slot = DOMUtil.getById('user-info-slot');
         if (!slot || !player) return;
 
-        // ✅ Show slot
+        // Show slot
         slot.classList.remove('hidden');
 
-        // ✅ Update nội dung
+        // ✅ Tính % exp progress
+        const expProgress = window.LevelUtil 
+            ? window.LevelUtil.getLevelProgress(player.exp || 0, player.level || 1)
+            : 0;
+
+        const expNeeded = window.LevelUtil 
+            ? window.LevelUtil.getExpForNextLevel(player.level || 1)
+            : 100;
+
+        // Update nội dung
         slot.innerHTML = `
-            <div class="flex flex-col items-center gap-3">
+            <div class="flex flex-col items-center gap-3 w-full">
                 <div class="text-5xl">${player.avatar_key || '👤'}</div>
-                <div class="text-center">
+                <div class="text-center w-full">
                     <p class="font-black text-xl text-blue-700">${player.display_name}</p>
                     <p class="text-sm font-bold text-gray-500">Level ${player.level || 1}</p>
+                    
+                    <!-- EXP Progress Bar -->
+                    <div class="w-full bg-gray-200 rounded-full h-3 mt-2 overflow-hidden border border-gray-300">
+                        <div class="bg-gradient-to-r from-purple-500 to-blue-500 h-full transition-all duration-500" 
+                            style="width: ${expProgress}%"></div>
+                    </div>
+                    <p class="text-xs text-gray-500 mt-1">${player.exp || 0} / ${expNeeded} EXP</p>
+                    
+                    <!-- Coin Display -->
+                    <div class="mt-3 bg-yellow-100 rounded-full px-3 py-1 inline-flex items-center gap-1">
+                        <span class="text-xl">💰</span>
+                        <span class="font-black text-yellow-700">${player.coin || 0}</span>
+                    </div>
                 </div>
             </div>
         `;

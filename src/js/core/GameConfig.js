@@ -6,6 +6,7 @@
 const GameConfig = {
     // Gameplay constants
     TOTAL_STEPS_PER_STATION: 10,
+    MIN_DAMAGE: 1,
     
     // HP restore khi đánh bại monster
     HP_RESTORE: {
@@ -71,6 +72,7 @@ const GameConfig = {
         hp: 50,
         max_hp: 50,
         atk: 5,
+        def: 0,
         type: "normal",
         state: 'idle',
         isDead: false,
@@ -78,6 +80,20 @@ const GameConfig = {
         questionType: 1
     },
     
+    // Level up bonuses
+    LEVEL_UP_BONUS: {
+        hp: 1,
+        atk: 1,
+        def: 1
+    },
+
+    // Helper: Tính stats bonus từ level
+    getLevelBonus(level, statType) {
+        const baseLevel = 1;
+        const levelsGained = Math.max(0, level - baseLevel);
+        return levelsGained * (this.LEVEL_UP_BONUS[statType] || 0);
+    },
+
     // Debug mode
     DEBUG: false,
     

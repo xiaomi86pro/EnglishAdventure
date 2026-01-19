@@ -10,6 +10,7 @@ export class AssetManager {
         this.setupMonsterForm();
         this.setupGearForm();
         this.setupTabSwitching();
+        this.setupAssetFormButtons();
         
         // Load dữ liệu ban đầu
         this.loadStationsForUnlock();
@@ -34,6 +35,33 @@ export class AssetManager {
 
         return urlData.publicUrl;
     }
+
+    // ===== ASSET FORM TOGGLING =====
+    setupAssetFormButtons() {
+        const buttons = document.querySelectorAll('#asset-form-buttons [data-form]');
+        if (!buttons.length) return;
+
+        buttons.forEach(btn => {
+            btn.addEventListener('click', () => {
+                const type = btn.dataset.form;
+                this.showAssetForm(type);
+            });
+        });
+    }
+
+    showAssetForm(type) {
+        const forms = ['hero', 'monster', 'gear'];
+
+        forms.forEach(f => {
+            const el = document.getElementById(`form-${f}`);
+            if (!el) return;
+
+            el.classList.toggle('hidden', f !== type);
+        });
+    }
+
+
+
 
     // ===== HERO MANAGEMENT =====
     setupHeroForm() {
@@ -268,6 +296,7 @@ export class AssetManager {
             const atk = parseInt(document.getElementById('monster-atk').value) || 5;
             const def = parseInt(document.getElementById('monster-def').value) || 0;
             const exp = parseInt(document.getElementById('monster-exp').value) || 10;
+            const coin = parseInt(document.getElementById('monster-coin').value) || 1;
             const type = document.getElementById('monster-type').value;
             const locationId = document.getElementById('monster-location').value || null;
             const monsterFile = document.getElementById('monster-file').files[0];
@@ -294,6 +323,7 @@ export class AssetManager {
                         base_atk: atk,
                         base_def: def,
                         exp_reward: exp,
+                        coin: coin,
                         location_id: locationId
                     }]);
 
@@ -394,6 +424,11 @@ export class AssetManager {
                     <input type="number" id="monster-exp-${monster.id}" value="${monster.exp_reward || 10}" 
                            class="w-full p-2 border rounded-lg text-center font-bold text-purple-600">
                 </div>
+                <div>
+                    <label class="text-xs text-gray-500 font-bold">🪙 Coin</label>
+                    <input type="number" id="monster-coin-${monster.id}" value="${monster.coin || 5}" 
+                        class="w-full p-2 border rounded-lg text-center font-bold text-yellow-600">
+                </div
             </div>
 
             <div class="grid grid-cols-2 gap-2">
@@ -440,6 +475,7 @@ export class AssetManager {
         const atk = parseInt(document.getElementById(`monster-atk-${id}`).value);
         const def = parseInt(document.getElementById(`monster-def-${id}`).value);
         const exp = parseInt(document.getElementById(`monster-exp-${id}`).value);
+        const coin = parseInt(document.getElementById(`monster-coin-${id}`).value); 
         const type = document.getElementById(`monster-type-${id}`).value;
         const locationId = document.getElementById(`monster-location-${id}`).value || null;
 
@@ -451,6 +487,7 @@ export class AssetManager {
                 base_atk: atk,
                 base_def: def,
                 exp_reward: exp,
+                coin: coin,
                 type,
                 location_id: locationId
             })
@@ -650,23 +687,20 @@ export class AssetManager {
         const btnHeroes = document.getElementById('btn-show-heroes');
         const btnMonsters = document.getElementById('btn-show-monsters');
         const btnGears = document.getElementById('btn-show-gears');
-
+    
         if (btnHeroes) {
             btnHeroes.addEventListener('click', () => {
                 this.setActiveAssetTab('heroes');
-                this.loadHeroes();
             });
         }
         if (btnMonsters) {
             btnMonsters.addEventListener('click', () => {
                 this.setActiveAssetTab('monsters');
-                this.loadMonsters();
             });
         }
         if (btnGears) {
             btnGears.addEventListener('click', () => {
                 this.setActiveAssetTab('gears');
-                this.loadGears();
             });
         }
     }
@@ -729,4 +763,200 @@ export class AssetManager {
             toast.classList.add("hidden");
         }, duration);
     }
-}
+
+    /**
+     * Hiển thị search filters khi chọn tab
+     */
+    setActiveAssetTab(tabName) {
+        const tabs = ['heroes', 'monsters', 'gears'];
+        tabs.forEach(tab => {
+            const btn = document.getElementById(`btn-show-${tab}`);
+            if (btn) {
+                if (tab === tabName) {
+                    btn.className = 'asset-tab px-6 py-2 rounded-lg bg-blue-500 text-white font-bold transition-all';
+                } else {
+                    btn.className = 'asset-tab px-6 py-2 rounded-lg text-gray-500 font-bold hover:bg-gray-200 transition-all';
+                }
+            }
+        });
+
+        // ✅ Hiển thị search filters
+        const searchArea = document.getElementById('asset-search-filters');
+        if (searchArea) {
+            searchArea.classList.remove('hidden');
+        }
+
+        // ✅ Hiển thị monster filters nếu là tab monster
+        const monsterFilters = document.getElementById('monster-filters');
+        if (monsterFilters) {
+            if (tabName === 'monsters') {
+                monsterFilters.classList.remove('hidden');
+                this.loadLocationsForFilter(); // Load locations vào dropdown
+            } else {
+                monsterFilters.classList.add('hidden');
+            }
+        }
+
+        // ✅ Clear grid và đặt lại current tab
+        const container = document.getElementById('asset-grid-container');
+        if (container) {
+            container.innerHTML = '<p class="text-gray-400 italic text-center col-span-full">📋 Nhập từ khóa và nhấn "Tìm kiếm"</p>';
+        }
+
+        this.currentAssetTab = tabName;
+    }
+
+    /**
+     * Load locations vào filter dropdown
+     */
+    async loadLocationsForFilter() {
+        const { data: locations } = await this.supabase
+            .from('locations')
+            .select('id, name')
+            .order('order_index');
+        
+        const select = document.getElementById('filter-monster-location');
+        if (select && locations) {
+            select.innerHTML = '<option value="">-- Tất cả vùng --</option>' +
+                locations.map(loc => `<option value="${loc.id}">${loc.name}</option>`).join('');
+        }
+    }
+
+    /**
+     * Tìm kiếm assets
+     */
+    async search() {
+        if (!this.currentAssetTab) {
+            alert('Vui lòng chọn tab (Heroes/Monsters/Gears) trước!');
+            return;
+        }
+
+        const keyword = document.getElementById('search-asset-name')?.value.toLowerCase().trim() || '';
+
+        if (this.currentAssetTab === 'heroes') {
+            await this.searchHeroes(keyword);
+        } else if (this.currentAssetTab === 'monsters') {
+            await this.searchMonsters(keyword);
+        } else if (this.currentAssetTab === 'gears') {
+            await this.searchGears(keyword);
+        }
+    }
+
+    /**
+     * Tìm kiếm Heroes
+     */
+    async searchHeroes(keyword) {
+        let query = this.supabase
+            .from('heroes')
+            .select(`*, stations:unlock_station_id (id, name, order_index, locations(name))`);
+
+        if (keyword) {
+            query = query.ilike('name', `%${keyword}%`);
+        }
+
+        const { data: heroes, error } = await query.order('created_at', { ascending: false });
+
+        if (error) {
+            this.showToast('Lỗi: ' + error.message);
+            return;
+        }
+
+        const { data: allStations } = await this.supabase
+            .from('stations')
+            .select('id, name, order_index, locations(name)')
+            .order('order_index');
+
+        const container = document.getElementById('asset-grid-container');
+        container.innerHTML = '';
+
+        if (heroes.length === 0) {
+            container.innerHTML = '<p class="text-gray-400 italic col-span-full text-center">Không tìm thấy Hero nào</p>';
+            return;
+        }
+
+        heroes.forEach(hero => {
+            const card = this.createHeroCard(hero, allStations);
+            container.appendChild(card);
+        });
+    }
+
+    /**
+     * Tìm kiếm Monsters (có filters)
+     */
+    async searchMonsters(keyword) {
+        const typeFilter = document.getElementById('filter-monster-type')?.value || '';
+        const locationFilter = document.getElementById('filter-monster-location')?.value || '';
+
+        let query = this.supabase
+            .from('monsters')
+            .select(`*, locations:location_id (name)`);
+
+        if (keyword) {
+            query = query.ilike('name', `%${keyword}%`);
+        }
+
+        if (typeFilter) {
+            query = query.eq('type', typeFilter);
+        }
+
+        if (locationFilter) {
+            query = query.eq('location_id', locationFilter);
+        }
+
+        const { data: monsters, error } = await query.order('created_at', { ascending: false });
+
+        if (error) {
+            this.showToast('Lỗi: ' + error.message);
+            return;
+        }
+
+        const { data: allLocations } = await this.supabase
+            .from('locations')
+            .select('id, name, order_index')
+            .order('order_index');
+
+        const container = document.getElementById('asset-grid-container');
+        container.innerHTML = '';
+
+        if (monsters.length === 0) {
+            container.innerHTML = '<p class="text-gray-400 italic col-span-full text-center">Không tìm thấy Monster nào</p>';
+            return;
+        }
+
+        monsters.forEach(monster => {
+            const card = this.createMonsterCard(monster, allLocations);
+            container.appendChild(card);
+        });
+    }
+
+    /**
+     * Tìm kiếm Gears
+     */
+    async searchGears(keyword) {
+        let query = this.supabase.from('gear').select('*');
+
+        if (keyword) {
+            query = query.ilike('name', `%${keyword}%`);
+        }
+
+        const { data: gears, error } = await query.order('created_at', { ascending: false });
+
+        if (error) {
+            this.showToast('Lỗi: ' + error.message);
+            return;
+        }
+
+        const container = document.getElementById('asset-grid-container');
+        container.innerHTML = '';
+
+        if (gears.length === 0) {
+            container.innerHTML = '<p class="text-gray-400 italic col-span-full text-center">Không tìm thấy Gear nào</p>';
+            return;
+        }
+
+        gears.forEach(gear => {
+            const card = this.createGearCard(gear);
+            container.appendChild(card);
+        });
+    }
+}   
