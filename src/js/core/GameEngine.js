@@ -62,14 +62,33 @@ const GameEngine = {
 
             // 3. Setup player
             this.player = {
-                ...userData,
+                id: userData.id,
+                display_name: userData.display_name,
+                avatar_key: userData.avatar_key,
+                level: userData.level || 1,
+                exp: userData.exp || 0,
+                coin: userData.coin || 0,
+                role: userData.role,
+                
+                // HP từ hero + bonus từ profile
                 base_hp: heroData.base_hp,
-                hp_bonus: userData.hp_current || 0,
-                max_hp: heroData.base_hp + (userData.hp_current || 0),
-                hp_current: heroData.base_hp + (userData.hp_current || 0),
-                atk: heroData.base_atk,
+                max_hp: heroData.base_hp + (userData.base_hp || 0),
+                hp_current: heroData.base_hp + (userData.base_hp || 0),
+                
+                // ATK: hero base + profile bonus
+                base_atk: heroData.base_atk,
+                atk: userData.base_atk || 0,  // ← ATK từ profiles
+                
+                // DEF: hero base + profile bonus  
+                base_def: heroData.base_def || 0,
+                def: userData.base_def || 0,  // ← DEF từ profiles
+                
                 sprite_url: heroData.image_url,
-                role: userData.role
+                selected_hero_id: userData.selected_hero_id,
+                
+                // Thêm các field khác nếu cần
+                equipped_weapon: userData.equipped_weapon,
+                equipped_armor: userData.equipped_armor,
             };
 
             // 4. Load first location & station
@@ -383,7 +402,7 @@ const GameEngine = {
                     coin: this.player.coin || 0,
                     exp: this.player.exp || 0,
                     level: this.player.level || 1,
-                    hp_current: this.player.hp_current || this.player.max_hp
+                    base_hp: this.player.hp_current || this.player.max_hp
                 })
                 .eq('id', this.player.id);
 

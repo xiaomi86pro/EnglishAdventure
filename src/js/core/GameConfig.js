@@ -6,6 +6,7 @@
 const GameConfig = {
     // Gameplay constants
     TOTAL_STEPS_PER_STATION: 10,
+    MIN_DAMAGE: 1,
     
     // HP restore khi đánh bại monster
     HP_RESTORE: {
@@ -71,6 +72,7 @@ const GameConfig = {
         hp: 50,
         max_hp: 50,
         atk: 5,
+        def: 0,
         type: "normal",
         state: 'idle',
         isDead: false,

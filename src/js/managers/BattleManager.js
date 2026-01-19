@@ -38,14 +38,11 @@ class BattleManager {
 
             this.isBattling = true;
 
-            const heroAtk = Number(player.atk || 5);
-            const monsterAtk = Number(monster.atk || 5);
-
             // Hero attacks
             for (let i = 0; i < correctCount; i++) {
                 if (monster.hp <= 0) break;
                 
-                await this._executeAttack(player, monster, heroAtk, 'hero');
+                await this._executeAttack(player, monster, 'hero');
                 await this._delay(GameConfig.TIMINGS.damageDelay);
             }
 
@@ -60,7 +57,7 @@ class BattleManager {
             for (let j = 0; j < wrongCount; j++) {
                 if (player.hp_current <= 0) break;
                 
-                await this._executeAttack(monster, player, monsterAtk, 'monster');
+                await this._executeAttack(monster, player, 'monster');
                 await this._delay(GameConfig.TIMINGS.damageDelay);
             }
 
@@ -94,12 +91,55 @@ class BattleManager {
      * Thực hiện một đòn tấn công
      * @param {Object} attacker 
      * @param {Object} defender 
-     * @param {number} damage 
+     * @param {number} actualDamage 
      * @param {string} attackerType - 'hero' hoặc 'monster'
      * @private
      */
-    async _executeAttack(attacker, defender, damage, attackerType) {
+    async _executeAttack(attacker, defender, attackerType) {
         try {
+            
+            let actualDamage;
+        
+        if (attackerType === 'hero') {
+            // Hero damage = atk_profile + atk_hero - def_monster
+            const heroBaseAtk = Number(attacker.base_atk || 0);
+            const heroAtk = Number(attacker.atk || 0);
+            const monsterDef = Number(defender.def || 0);
+
+            console.log('[BattleManager] Hero attack calc:', {
+                base_atk: heroBaseAtk,
+                profile_atk: heroAtk,
+                monster_def: monsterDef,
+                attacker,  // ← Xem toàn bộ attacker object
+                defender   // ← Xem toàn bộ defender object
+            })
+
+            actualDamage = Math.max(
+                GameConfig.MIN_DAMAGE, 
+                heroBaseAtk + heroAtk - monsterDef
+            );
+        } else {
+            // Monster damage = atk_monster - (def_hero + def_profile)
+            const monsterAtk = Number(attacker.atk || 0);
+            const heroDef = Number(defender.base_def || 0);
+            const profileDef = Number(defender.def || 0);
+
+            console.log('[BattleManager] Monster attack calc:', {
+                monster_atk: monsterAtk,
+                hero_base_def: heroDef,
+                profile_def: profileDef,
+                attacker,
+                defender
+            });
+
+            actualDamage = Math.max(
+                GameConfig.MIN_DAMAGE,
+                monsterAtk - (heroDef + profileDef)
+            );
+        }
+
+        console.log('[BattleManager] Final damage:', actualDamage);
+
             // Phát âm thanh
             if (this.effects) {
                 this.effects.playAttackSound(attackerType);
@@ -123,15 +163,15 @@ class BattleManager {
             if (defender.hp_current !== undefined) {
                 // Defender là player
                 const cur = Number.isFinite(defender.hp_current) ? defender.hp_current : Number(defender.max_hp || 0);
-                defender.hp_current = Math.max(0, cur - damage);
+                defender.hp_current = Math.max(0, cur - actualDamage);
             } else {
                 // Defender là monster
                 const cur = Number.isFinite(defender.hp) ? defender.hp : Number(defender.max_hp || 0);
-                defender.hp = Math.max(0, cur - damage);
+                defender.hp = Math.max(0, cur - actualDamage);
             }
 
             // Hiển thị damage number
-            this._showDamageNumber(defenderElId, damage);
+            this._showDamageNumber(defenderElId, actualDamage);
 
             // Cập nhật UI
             if (this.uiManager) {
@@ -141,7 +181,7 @@ class BattleManager {
                 );
             }
 
-            console.log('[BattleManager] Attack applied', { attacker: attackerType, damage });
+            console.log('[BattleManager] Attack applied', { attacker: attackerType, actualDamage });
 
         } catch (e) {
             console.warn('[BattleManager] _executeAttack error', e);
@@ -151,14 +191,14 @@ class BattleManager {
     /**
      * Hiển thị số damage bay lên
      * @param {string} targetElId 
-     * @param {number} damage 
+     * @param {number} actualDamage 
      * @private
      */
-    _showDamageNumber(targetElId, damage) {
+    _showDamageNumber(targetElId, actualDamage) {
         const pos = DOMUtil.getRelativeCenter(targetElId, 'battleview');
         if (!pos || !this.effects) return;
 
-        this.effects.showDamage('battleview', pos.x, pos.y, damage);
+        this.effects.showDamage('battleview', pos.x, pos.y, actualDamage);
 
         // Tạo hiệu ứng sao
         this.effects.createStars('battleview', pos.x, pos.y, 8);

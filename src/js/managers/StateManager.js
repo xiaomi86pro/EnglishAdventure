@@ -27,7 +27,11 @@ class StateManager {
                     avatar_key: gameState.player.avatar_key,
                     level: gameState.player.level,
                     exp: gameState.player.exp,
-                    coin: gameState.player.coin, // ✅ Thêm coin
+                    coin: gameState.player.coin, 
+                    base_atk: gameState.player.base_atk, 
+                    base_def: gameState.player.base_def, 
+                    atk: gameState.player.atk,            
+                    def: gameState.player.def,   
                     max_hp: gameState.player.max_hp,
                     hp_current: gameState.player.hp_current,
                     atk: gameState.player.atk,

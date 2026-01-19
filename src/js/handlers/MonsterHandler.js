@@ -44,6 +44,7 @@ class MonsterHandler {
                 hp: monsterData.base_hp,
                 max_hp: monsterData.base_hp,
                 atk: monsterData.base_atk,
+                def: monsterData.base_def,
                 state: 'idle',
                 isDead: false,
                 sprite_url: monsterData.image_url,
