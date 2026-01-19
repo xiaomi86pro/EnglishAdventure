@@ -226,7 +226,7 @@ class AuthComponent {
      */
     async continueGame() {
         const userId = this.state.getSelectedUserId();
-        
+     
         try {
             // 1. Load saved game từ cloud
             const saveResult = await this.saveGameService.load(userId);
@@ -288,6 +288,7 @@ class AuthComponent {
                 currentLocationId: cloudSave.current_location_id,
                 currentStationId: cloudSave.current_station_id,
                 currentStep: cloudSave.current_step,
+                isEndlessMode: cloudSave.is_endless_mode || false,
                 monster: cloudSave.monster_id ? {
                     id: cloudSave.monster_id,
                     hp: cloudSave.monster_hp
@@ -297,6 +298,17 @@ class AuthComponent {
             // 6. Restore game
             if (window.GameEngine) {
                 await window.GameEngine.restoreGameState(formattedSave);
+            }
+
+               // Nếu endless mode → Ẩn progress bar, hiện text "Luyện Tập"
+            if (window.GameEngine?.isEndlessMode) {
+                // Ẩn progress bar
+                const progressBar = document.getElementById('progress-bar');
+                if (progressBar) progressBar.style.display = 'none';
+                
+                // Hiện text "Luyện Tập"
+                const stationName = document.getElementById('station-name');
+                if (stationName) stationName.textContent = '⚔️ LUYỆN TẬP';
             }
             
         } catch (err) {

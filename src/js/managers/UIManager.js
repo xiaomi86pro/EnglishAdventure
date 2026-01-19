@@ -74,15 +74,6 @@ class UIManager {
      * @param {number} totalSteps 
      */
     updateAllUI(player, monster, location, station, currentStep, totalSteps = 10) {
-        if (window.GameEngine?.isEndlessMode) {
-            // Ẩn progress bar
-            const progressBar = document.getElementById('progress-bar');
-            if (progressBar) progressBar.style.display = 'none';
-            
-            // Hiện text "Luyện Tập"
-            const stationName = document.getElementById('station-name');
-            if (stationName) stationName.textContent = '⚔️ LUYỆN TẬP';
-        }
 
         // 1. Cập nhật player info card
         this.updatePlayerCard(player);
@@ -96,6 +87,18 @@ class UIManager {
         // 4. Cập nhật HP bars
         this.updateBattleStatus(player, monster);
 
+        if (window.GameEngine?.isEndlessMode) {
+            console.log('[UIManager] Endless mode detected, hiding progress bar');
+
+            // Ẩn progress bar
+            const progressBar = document.getElementById('progress-bar');
+            if (progressBar) progressBar.style.display = 'none';
+            
+            // Hiện text "Luyện Tập"
+            const stationName = document.getElementById('station-name');
+            if (stationName) stationName.textContent = '⚔️ LUYỆN TẬP';
+        }
+
         // 5. Thêm nút Exit
         this.addExitButton();
 
@@ -103,6 +106,7 @@ class UIManager {
 
         // 6. Render admin buttons (nếu là admin)
         this.renderAdminButtons();
+
     }
 
     /**

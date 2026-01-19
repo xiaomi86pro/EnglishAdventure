@@ -16,9 +16,10 @@ class SaveGameService {
             const saveData = {
                 profile_id: profileId,
                 current_hp: gameState.hp_current,
-                current_location_id: gameState.location_id,
-                current_station_id: gameState.station_id,
+                current_location_id: gameState.isEndlessMode ? null : gameState.location_id,  // ← NULL nếu endless
+                current_station_id: gameState.isEndlessMode ? null : gameState.station_id,    // ← NULL nếu endless
                 current_step: gameState.step,
+                is_endless_mode: gameState.isEndlessMode || false,
                 monster_id: gameState.monster?.id || null,
                 monster_hp: gameState.monster?.hp || null,
                 saved_at: new Date().toISOString()
