@@ -74,6 +74,16 @@ class UIManager {
      * @param {number} totalSteps 
      */
     updateAllUI(player, monster, location, station, currentStep, totalSteps = 10) {
+        if (window.GameEngine?.isEndlessMode) {
+            // Ẩn progress bar
+            const progressBar = document.getElementById('progress-bar');
+            if (progressBar) progressBar.style.display = 'none';
+            
+            // Hiện text "Luyện Tập"
+            const stationName = document.getElementById('station-name');
+            if (stationName) stationName.textContent = '⚔️ LUYỆN TẬP';
+        }
+
         // 1. Cập nhật player info card
         this.updatePlayerCard(player);
 
