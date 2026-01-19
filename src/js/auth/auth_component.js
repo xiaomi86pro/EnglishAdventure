@@ -228,26 +228,80 @@ class AuthComponent {
         const userId = this.state.getSelectedUserId();
         
         try {
-            // Load saved game từ cloud
-            const result = await this.saveGameService.load(userId);
+            // 1. Load saved game từ cloud
+            const saveResult = await this.saveGameService.load(userId);
             
-            if (!result.success || !result.data) {
+            if (!saveResult.success || !saveResult.data) {
                 alert('Không tìm thấy game đã lưu!');
                 this.displayLoginMenu();
                 return;
             }
             
-            // Load full user data
+            const cloudSave = saveResult.data;
+            
+            // 2. Load full user data từ profiles
             const userData = await this.userService.getUserWithHero(userId);
             
-            // Start game với save data
+            // 3. Load hero data
+            const { data: heroData } = await window.supabase
+                .from('heroes')
+                .select('*')
+                .eq('id', userData.selected_hero_id)
+                .single();
+            
+            // 4. Tính stats với level bonus
+            const playerLevel = userData.level || 1;
+            const hpBonus = window.GameConfig.getLevelBonus(playerLevel, 'hp');
+            const atkBonus = window.GameConfig.getLevelBonus(playerLevel, 'atk');
+            const defBonus = window.GameConfig.getLevelBonus(playerLevel, 'def');
+            
+            // 5. Format savedGame object theo cấu trúc GameEngine.restoreGameState() cần
+            const formattedSave = {
+                player: {
+                    id: userData.id,
+                    display_name: userData.display_name,
+                    avatar_key: userData.avatar_key,
+                    level: playerLevel,
+                    exp: userData.exp || 0,
+                    coin: userData.coin || 0,
+                    role: userData.role,
+                    
+                    // HP
+                    base_hp: heroData.base_hp,
+                    max_hp: heroData.base_hp + hpBonus + (userData.hp_bonus || 0),
+                    hp_current: cloudSave.current_hp,  // ← Restore HP từ save
+                    
+                    // ATK
+                    base_atk: heroData.base_atk,
+                    atk: atkBonus + (userData.base_atk || 0),
+                    
+                    // DEF
+                    base_def: heroData.base_def || 0,
+                    def: defBonus + (userData.base_def || 0),
+                    
+                    sprite_url: heroData.image_url,
+                    selected_hero_id: userData.selected_hero_id,
+                    equipped_weapon: userData.equipped_weapon,
+                    equipped_armor: userData.equipped_armor,
+                    password: userData.password
+                },
+                currentLocationId: cloudSave.current_location_id,
+                currentStationId: cloudSave.current_station_id,
+                currentStep: cloudSave.current_step,
+                monster: cloudSave.monster_id ? {
+                    id: cloudSave.monster_id,
+                    hp: cloudSave.monster_hp
+                } : null
+            };
+            
+            // 6. Restore game
             if (window.GameEngine) {
-                await window.GameEngine.start(userData);
+                await window.GameEngine.restoreGameState(formattedSave);
             }
             
         } catch (err) {
             console.error('Lỗi continueGame:', err);
-            alert('Lỗi khi tiếp tục game!');
+            alert('Lỗi khi tiếp tục game: ' + err.message);
             this.displayLoginMenu();
         }
     }

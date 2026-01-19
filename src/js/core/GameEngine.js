@@ -530,25 +530,25 @@ const GameEngine = {
     },
 
     /**
-     * Khôi phục trạng thái game từ localStorage
+     * Khôi phục trạng thái game từ saved data
      */
-    async restoreGameStateDeprecated(savedGame) {
+    async restoreGameState(savedGame) {
         try {
             console.log('[GameEngine] Restoring game:', savedGame);
 
             // 1. Initialize managers
             this._initManagers();
 
-            // ✅ 2. Render leaderboard widget
+            // 2. Render leaderboard widget
             if (window.LeaderboardWidget) {
                 await window.LeaderboardWidget.render();
             }
 
-            // 2. Khôi phục player
+            // 3. Khôi phục player
             this.player = savedGame.player;
             this.currentStep = savedGame.currentStep || 1;
 
-            // 3. Khôi phục location & station
+            // 4. Khôi phục location & station
             if (savedGame.currentLocationId && savedGame.currentStationId) {
                 const { data: location } = await window.supabase
                     .from('locations')
@@ -570,33 +570,45 @@ const GameEngine = {
                 this.currentStation = station;
             }
 
-            // 4. Init UI
+            // 5. Init UI
             this.uiManager.initUI(GameConfig.TOTAL_STEPS_PER_STATION);
 
-            // 5. Render hero
+            // 6. Render hero
             this.uiManager.renderHeroSprite(this.player);
 
-            // 6. Khôi phục monster
-            if (savedGame.monster) {
-                this.monster = savedGame.monster;
-
-                if (this.monster.type === 'boss' || this.monster.type === 'final boss') {
-                    this.effectsUtil.playMonsterBGM(this.monster.type);
+            // 7. Khôi phục monster
+            if (savedGame.monster && savedGame.monster.id) {
+                // Load full monster data từ DB
+                const { data: monsterData } = await window.supabase
+                    .from('monsters')
+                    .select('*')
+                    .eq('id', savedGame.monster.id)
+                    .single();
+                
+                if (monsterData) {
+                    this.monster = {
+                        ...monsterData,
+                        hp: savedGame.monster.hp,
+                        max_hp: monsterData.base_hp,
+                        atk: monsterData.base_atk,
+                        def: monsterData.base_def || 0,
+                        state: 'idle',
+                        isDead: false,
+                        sprite_url: monsterData.image_url,
+                        questionType: GameConfig.getDefaultQuestionType(monsterData.type)
+                    };
+                    
+                    this.uiManager.renderMonsterSprite(this.monster);
                 }
-
-                if (!this.monster.questionType) {
-                    this.monster.questionType = GameConfig.getDefaultQuestionType(this.monster.type);
-                }
-
-                this.uiManager.renderMonsterSprite(this.monster);
             } else {
+                // Spawn monster mới từ step
                 this.monster = await this.monsterHandler.spawnFromStep(
                     this.currentStation.id,
                     this.currentStep
                 );
             }
 
-            // 7. Update UI
+            // 8. Update UI
             this.uiManager.updateAllUI(
                 this.player,
                 this.monster,
@@ -609,9 +621,8 @@ const GameEngine = {
             await new Promise(r => setTimeout(r, 100));
             this.uiManager.renderAdminButtons();
 
-            // 8. Load question
+            // 9. Load question
             this.nextQuestion();
-            
 
             console.log('[GameEngine] Game restored successfully');
 
