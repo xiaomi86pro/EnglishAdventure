@@ -14,6 +14,7 @@ import StateManager from '../managers/StateManager.js';
 import UIManager from '../managers/UIManager.js';
 import BattleManager from '../managers/BattleManager.js';
 import ProgressionManager from '../managers/ProgressionManager.js';
+import SaveGameService from '../services/SaveGameService.js';
 
 const GameEngine = {
     // Core state
@@ -32,6 +33,7 @@ const GameEngine = {
     uiManager: null,
     battleManager: null,
     progressionManager: null,
+    saveGameService: null,
 
     /**
      * Khởi tạo game với dữ liệu User từ Auth
@@ -60,36 +62,85 @@ const GameEngine = {
                 return;
             }
 
-            // 3. Setup player
+            
+            // 3. Setup player với level bonus
+            const playerLevel = userData.level || 1;
+
+            // Tính bonus từ level
+            const hpBonus = GameConfig.getLevelBonus(playerLevel, 'hp');
+            const atkBonus = GameConfig.getLevelBonus(playerLevel, 'atk');
+            const defBonus = GameConfig.getLevelBonus(playerLevel, 'def');
+
             this.player = {
                 id: userData.id,
                 display_name: userData.display_name,
                 avatar_key: userData.avatar_key,
-                level: userData.level || 1,
+                level: playerLevel,
                 exp: userData.exp || 0,
                 coin: userData.coin || 0,
                 role: userData.role,
                 
-                // HP từ hero + bonus từ profile
+                // HP: hero base + level bonus + equipment bonus
                 base_hp: heroData.base_hp,
-                max_hp: heroData.base_hp + (userData.base_hp || 0),
-                hp_current: heroData.base_hp + (userData.base_hp || 0),
+                max_hp: heroData.base_hp + hpBonus + (userData.hp_bonus || 0),
+                hp_current: heroData.base_hp + hpBonus + (userData.hp_bonus || 0), // Sẽ override nếu có save game
                 
-                // ATK: hero base + profile bonus
+                // ATK: hero base + level bonus + profile bonus
                 base_atk: heroData.base_atk,
-                atk: userData.base_atk || 0,  // ← ATK từ profiles
+                atk: atkBonus + (userData.base_atk || 0),
                 
-                // DEF: hero base + profile bonus  
+                // DEF: hero base + level bonus + profile bonus  
                 base_def: heroData.base_def || 0,
-                def: userData.base_def || 0,  // ← DEF từ profiles
+                def: defBonus + (userData.base_def || 0),
                 
                 sprite_url: heroData.image_url,
                 selected_hero_id: userData.selected_hero_id,
-                
-                // Thêm các field khác nếu cần
                 equipped_weapon: userData.equipped_weapon,
                 equipped_armor: userData.equipped_armor,
+                password: userData.password
             };
+
+            // 4. Check có save game trên cloud không
+            const savedGame = await this.saveGameService.load(userData.id);
+
+            let startLocation, startStation, startStep;
+
+            if (savedGame.success && savedGame.data) {
+                console.log('[GameEngine] Found cloud save, restoring...');
+                
+                // Restore HP từ save
+                this.player.hp_current = savedGame.data.current_hp;
+                
+                // Restore location/station/step
+                const { data: location } = await window.supabase
+                    .from('locations')
+                    .select('*')
+                    .eq('id', savedGame.data.current_location_id)
+                    .single();
+                
+                const { data: station } = await window.supabase
+                    .from('stations')
+                    .select('*')
+                    .eq('id', savedGame.data.current_station_id)
+                    .single();
+                
+                startLocation = location;
+                startStation = station;
+                startStep = savedGame.data.current_step;
+                
+            } else {
+                console.log('[GameEngine] No save found, starting fresh');
+                
+                // Load first location & station
+                const { location, station } = await this.progressionManager.loadFirstLocation();
+                startLocation = location;
+                startStation = station;
+                startStep = 1;
+            }
+
+            this.currentLocation = startLocation;
+            this.currentStation = startStation;
+            this.currentStep = startStep;
 
             // 4. Load first location & station
             const { location, station } = await this.progressionManager.loadFirstLocation();
@@ -153,7 +204,8 @@ const GameEngine = {
         this.uiManager = new UIManager(this.effectsUtil);
         this.battleManager = new BattleManager(this.audioManager, this.effectsUtil, this.uiManager);
         this.progressionManager = new ProgressionManager(window.supabase, this.monsterHandler);
-
+        this.saveGameService = new SaveGameService(window.supabase); 
+        
         console.log('[GameEngine] All managers initialized');
     },
 
@@ -291,15 +343,24 @@ const GameEngine = {
 
                 // ✅ 3. Check level up
                 const levelCheck = window.LevelUtil.checkLevelUp(this.player.exp, oldLevel);
-                
+
                 if (levelCheck.leveledUp) {
                     console.log(`[GameEngine] Level up! ${oldLevel} -> ${levelCheck.newLevel}`);
                     
-                    // Update player level và exp
+                    // ✅ Tính bonus stats từ level mới
+                    const levelsGained = levelCheck.newLevel - oldLevel;
+                    const hpGain = levelsGained * GameConfig.LEVEL_UP_BONUS.hp;
+                    const atkGain = levelsGained * GameConfig.LEVEL_UP_BONUS.atk;
+                    const defGain = levelsGained * GameConfig.LEVEL_UP_BONUS.def;
+                    
+                    // ✅ Cập nhật stats
                     this.player.level = levelCheck.newLevel;
                     this.player.exp = levelCheck.remainingExp;
-
-                    // ✅ 4. Hồi full máu khi level up
+                    this.player.max_hp += hpGain;
+                    this.player.atk += atkGain;
+                    this.player.def += defGain;
+                    
+                    // ✅ Hồi full HP khi level up
                     const oldHp = this.player.hp_current;
                     this.player.hp_current = this.player.max_hp;
                     const healedAmount = this.player.hp_current - oldHp;
@@ -311,17 +372,17 @@ const GameEngine = {
                             this.effectsUtil.showLevelUp('hero', levelCheck.newLevel);
                         }
 
-                        // Hiệu ứng heal nếu có hồi máu
+                        // Hiệu ứng heal
                         if (healedAmount > 0 && this.effectsUtil) {
                             setTimeout(() => {
                                 this.effectsUtil.showHealEffect('battleview', 'hero', healedAmount);
                             }, 500);
                         }
 
-                        // Toast notification
+                        // Toast với stats gained
                         if (this.effectsUtil) {
                             this.effectsUtil.showToast(
-                                `🎉 LEVEL UP! Bạn đã lên Level ${levelCheck.newLevel}!`,
+                                `🎉 LEVEL UP! Level ${levelCheck.newLevel}! +${hpGain}HP +${atkGain}ATK +${defGain}DEF`,
                                 'success',
                                 3000
                             );
@@ -389,31 +450,46 @@ const GameEngine = {
     },
 
     /**
-     * Lưu coin và exp của player vào database
+     * Lưu coin, exp, level vào profiles + save game state lên cloud
      * @private
      */
     async _savePlayerProgress() {
         try {
             if (!this.player || !this.player.id) return;
 
-            const { error } = await window.supabase
+            // 1. Lưu progression vào profiles (coin, exp, level - KHÔNG lưu HP)
+            const { error: profileError } = await window.supabase
                 .from('profiles')
                 .update({
                     coin: this.player.coin || 0,
                     exp: this.player.exp || 0,
                     level: this.player.level || 1,
-                    base_hp: this.player.hp_current || this.player.max_hp
+                    base_atk: this.player.atk - GameConfig.getLevelBonus(this.player.level, 'atk'), // Lưu bonus thuần (không tính level)
+                    base_def: this.player.def - GameConfig.getLevelBonus(this.player.level, 'def')
                 })
                 .eq('id', this.player.id);
 
-            if (error) {
-                console.error('[GameEngine] Error saving player progress:', error);
+            if (profileError) {
+                console.error('[GameEngine] Error saving profile:', profileError);
             } else {
-                console.log('[GameEngine] Player progress saved:', {
+                console.log('[GameEngine] Profile saved:', {
                     coin: this.player.coin,
                     exp: this.player.exp,
                     level: this.player.level
                 });
+            }
+
+            // 2. Lưu game state lên cloud (HP, location, station, step)
+            const saveResult = await this.saveGameService.save(this.player.id, {
+                hp_current: this.player.hp_current,
+                location_id: this.currentLocation?.id,
+                station_id: this.currentStation?.id,
+                step: this.currentStep,
+                monster: this.monster
+            });
+
+            if (!saveResult.success) {
+                console.error('[GameEngine] Error saving game state:', saveResult.error);
             }
 
         } catch (err) {
@@ -426,32 +502,37 @@ const GameEngine = {
      * @private
      */
     async _handleHeroDefeat() {
+        // 1. Xóa save game trên cloud
+        if (this.player && this.player.id) {
+            await this.saveGameService.delete(this.player.id);
+            console.log('[GameEngine] Save game deleted (hero defeated)');
+        }
+        
+        // 2. Xử lý defeat UI
         await this.heroHandler.handleDefeat(() => {
-            this.showMainMenu(true);
+            this.showMainMenu(true); // skipSave = true vì đã xóa rồi
         });
     },
 
     /**
-     * Lưu trạng thái game
+     * Lưu trạng thái game (gọi khi thoát game)
      */
-    saveGameState() {
-        const success = this.stateManager.save({
-            player: this.player,
-            monster: this.monster,
-            currentLocation: this.currentLocation,
-            currentStation: this.currentStation,
-            currentStep: this.currentStep
-        });
-
-        if (success) {
-            this.effectsUtil.stopAllSounds();
-        }
+    async saveGameState() {
+        if (!this.player || !this.player.id) return;
+        
+        // Lưu lên cloud
+        await this._savePlayerProgress();
+        
+        // Dừng sounds
+        this.effectsUtil.stopAllSounds();
+        
+        console.log('[GameEngine] Game state saved to cloud');
     },
 
     /**
      * Khôi phục trạng thái game từ localStorage
      */
-    async restoreGameState(savedGame) {
+    async restoreGameStateDeprecated(savedGame) {
         try {
             console.log('[GameEngine] Restoring game:', savedGame);
 
@@ -543,7 +624,7 @@ const GameEngine = {
     /**
      * Hiển thị lại menu chính
      */
-    showMainMenu(skipSave = false) {
+    async showMainMenu(skipSave = false) {
         // Dừng game
         this.battleManager.reset();
 
@@ -559,9 +640,9 @@ const GameEngine = {
 
         // Lưu game nếu cần
         if (!skipSave) {
-            this.saveGameState();
+            await this.saveGameState();  // ← Thêm await
         } else {
-            this.clearSaveState();
+            await this.clearSaveState();  // ← Thêm await
         }
 
         // Clear UI
@@ -581,9 +662,15 @@ const GameEngine = {
     /**
      * Xóa save state
      */
-    clearSaveState() {
+    async clearSaveState() {
         if (this.player && this.player.id) {
+            // Xóa trên cloud
+            await this.saveGameService.delete(this.player.id);
+            
+            // Xóa localStorage (backup cũ)
             this.stateManager.clear(this.player.id);
+            
+            console.log('[GameEngine] Save state cleared');
         }
     },
 
