@@ -149,6 +149,7 @@ class UIManager {
         if (!container) return;
 
         container.classList.remove('hidden');
+        this.showhistory();
 
         // ✅ Chỉ update nội dung, không tạo wrapper mới
         container.innerHTML = `
@@ -254,7 +255,6 @@ class UIManager {
             const confirm = window.confirm('Bạn có muốn lưu game và thoát ra menu?');
             if (confirm && window.GameEngine) {
                 window.GameEngine.saveGameState();
-                //this.clearAllUI();
                 window.GameEngine.showMainMenu();
             }
         };
