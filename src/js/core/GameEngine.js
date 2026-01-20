@@ -697,7 +697,7 @@ const GameEngine = {
     async _startEndlessMode() {
         try {
             // 1. Thông báo
-            if (this.effectsUtil) {
+            if (!this.isEndlessMode && this.effectsUtil) {
                 this.effectsUtil.showToast(
                     '🎉 Chúc mừng! Bạn đã hoàn thành! Giờ là chế độ LUYỆN TẬP!',
                     'success',
