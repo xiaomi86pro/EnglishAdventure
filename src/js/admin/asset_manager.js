@@ -381,8 +381,8 @@ export class AssetManager {
 
     createMonsterCard(monster, allLocations) {
         const card = document.createElement('div');
-        card.className = "bg-white p-4 rounded-2xl border-2 border-red-200 shadow-sm space-y-3";
-        
+        card.className = "bg-white p-4 rounded-2xl border-2 border-red-200 shadow-sm space-y-3 w-full min-w-[250px] flex-shrink-0";
+
         const typeColors = {
             'normal': 'bg-gray-100 text-gray-700',
             'elite': 'bg-yellow-100 text-yellow-700',
@@ -403,7 +403,7 @@ export class AssetManager {
                 </div>
             </div>
 
-            <div class="grid grid-cols-4 gap-2">
+            <div class="grid grid-cols-3 gap-3">
                 <div>
                     <label class="text-xs text-gray-500 font-bold">❤️ HP</label>
                     <input type="number" id="monster-hp-${monster.id}" value="${monster.base_hp || 50}" 
@@ -419,8 +419,10 @@ export class AssetManager {
                     <input type="number" id="monster-def-${monster.id}" value="${monster.base_def || 0}" 
                            class="w-full p-2 border rounded-lg text-center font-bold text-blue-600">
                 </div>
+            </div>
+            <div class="grid grid-cols-3 gap-3">    
                 <div>
-                    <label class="text-xs text-gray-500 font-bold">💰 EXP</label>
+                    <label class="text-xs text-gray-500 font-bold">✨ EXP</label>
                     <input type="number" id="monster-exp-${monster.id}" value="${monster.exp_reward || 10}" 
                            class="w-full p-2 border rounded-lg text-center font-bold text-purple-600">
                 </div>
@@ -428,7 +430,7 @@ export class AssetManager {
                     <label class="text-xs text-gray-500 font-bold">🪙 Coin</label>
                     <input type="number" id="monster-coin-${monster.id}" value="${monster.coin || 5}" 
                         class="w-full p-2 border rounded-lg text-center font-bold text-yellow-600">
-                </div
+                </div>
             </div>
 
             <div class="grid grid-cols-2 gap-2">

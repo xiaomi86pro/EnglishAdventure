@@ -44,6 +44,7 @@ class StateManager {
                 currentStationId: gameState.currentStation?.id,
                 currentStationName: gameState.currentStation?.name,
                 currentStep: gameState.currentStep || 1,
+                isEndlessMode: gameState.isEndlessMode || false,
                 monster: gameState.monster ? {
                     name: gameState.monster.name,
                     hp: gameState.monster.hp,

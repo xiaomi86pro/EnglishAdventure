@@ -34,6 +34,7 @@ const GameEngine = {
     battleManager: null,
     progressionManager: null,
     saveGameService: null,
+    isEndlessMode: false,
 
     /**
      * Khởi tạo game với dữ liệu User từ Auth
@@ -41,6 +42,7 @@ const GameEngine = {
     async start(userData) {
         try {
             console.log('[GameEngine] Starting game with user:', userData);
+            this.isEndlessMode = false; 
 
             // 1. Initialize managers
             this._initManagers();
@@ -400,6 +402,12 @@ const GameEngine = {
             // 7. Delay trước khi tiến hành
             await new Promise(r => setTimeout(r, GameConfig.TIMINGS.monsterDefeatDelay));
 
+            // ✅ 7.1. Nếu đang ở Endless Mode → Spawn boss mới
+            if (this.isEndlessMode) {
+                await this._startEndlessMode(); // Spawn boss mới
+                return;
+            }
+
             // 8. Check unlock hero
             await this.heroHandler.checkAndUnlockHero(this.currentStation.id, this.player.id);
 
@@ -413,8 +421,7 @@ const GameEngine = {
 
             // 10. Kiểm tra game complete
             if (progression.gameComplete) {
-                alert('🎉 Chúc mừng! Bạn đã hoàn thành toàn bộ cuộc phiêu lưu!');
-                this.showMainMenu();
+                await this._startEndlessMode();
                 return;
             }
 
@@ -485,6 +492,7 @@ const GameEngine = {
                 location_id: this.currentLocation?.id,
                 station_id: this.currentStation?.id,
                 step: this.currentStep,
+                isEndlessMode: this.isEndlessMode,
                 monster: this.monster
             });
 
@@ -547,28 +555,7 @@ const GameEngine = {
             // 3. Khôi phục player
             this.player = savedGame.player;
             this.currentStep = savedGame.currentStep || 1;
-
-            // 4. Khôi phục location & station
-            if (savedGame.currentLocationId && savedGame.currentStationId) {
-                const { data: location } = await window.supabase
-                    .from('locations')
-                    .select('*')
-                    .eq('id', savedGame.currentLocationId)
-                    .single();
-
-                const { data: station } = await window.supabase
-                    .from('stations')
-                    .select('*')
-                    .eq('id', savedGame.currentStationId)
-                    .single();
-
-                this.currentLocation = location;
-                this.currentStation = station;
-            } else {
-                const { location, station } = await this.progressionManager.loadFirstLocation();
-                this.currentLocation = location;
-                this.currentStation = station;
-            }
+            this.isEndlessMode = savedGame.isEndlessMode || false; 
 
             // 5. Init UI
             this.uiManager.initUI(GameConfig.TOTAL_STEPS_PER_STATION);
@@ -663,6 +650,7 @@ const GameEngine = {
         this.player = null;
         this.monster = null;
         this.currentStep = 1;
+        this.isEndlessMode = false; 
 
         // Quay về màn hình chọn profiles
         if (window.AuthComponent) {
@@ -699,6 +687,92 @@ const GameEngine = {
         // Xóa nội dung các vùng
         DOMUtil.clearChildren('questionarea');
         DOMUtil.clearChildren('battleview');
+    },
+
+    /**
+     * Bắt đầu chế độ luyện tập (Endless Mode)
+     * Spawn random boss/final boss sau khi hoàn thành map
+     * @private
+     */
+    async _startEndlessMode() {
+        try {
+            // 1. Thông báo
+            if (this.effectsUtil) {
+                this.effectsUtil.showToast(
+                    '🎉 Chúc mừng! Bạn đã hoàn thành! Giờ là chế độ LUYỆN TẬP!',
+                    'success',
+                    4000
+                );
+            }
+
+            // Delay để toast hiện
+            await new Promise(r => setTimeout(r, 2000));
+
+            // 2. Set endless mode flag
+            this.isEndlessMode = true;
+            this.currentLocation = { name: 'Endless Mode' };
+            this.currentStation = { name: 'Luyện Tập' };
+            this.currentStep = 0; // Không có step
+
+            // 3. Random spawn boss hoặc final boss
+            const bossTypes = ['boss', 'final boss'];
+            const randomType = bossTypes[Math.floor(Math.random() * bossTypes.length)];
+
+            // Lấy random monster theo type
+            const { data: monsters, error } = await window.supabase
+                .from('monsters')
+                .select('*')
+                .eq('type', randomType);
+
+            if (error || !monsters || monsters.length === 0) {
+                console.error('[GameEngine] No boss found for endless mode');
+                ('Lỗi: Không tìm thấy boss!');
+                this.showMainMenu();
+                return;
+            }
+
+            const randomMonster = monsters[Math.floor(Math.random() * monsters.length)];
+
+            this.monster = {
+                ...randomMonster,
+                hp: randomMonster.base_hp,
+                max_hp: randomMonster.base_hp,
+                atk: randomMonster.base_atk,
+                def: randomMonster.base_def || 0,
+                state: 'idle',
+                isDead: false,
+                sprite_url: randomMonster.image_url,
+                questionType: GameConfig.getDefaultQuestionType(randomMonster.type)
+            };
+
+            // 4. Render monster
+            this.uiManager.renderMonsterSprite(this.monster);
+
+            // 5. Phát BGM boss
+            if (this.effectsUtil) {
+                this.effectsUtil.playMonsterBGM(this.monster.type);
+            }
+
+            // 6. Update UI
+            this.uiManager.updateAllUI(
+                this.player,
+                this.monster,
+                this.currentLocation,
+                this.currentStation,
+                this.currentStep,
+                GameConfig.TOTAL_STEPS_PER_STATION
+            );
+
+            // 7. Load question
+            this.nextQuestion();
+
+            console.log('[GameEngine] Endless mode started, spawned:', this.monster.name);
+
+        } catch (err) {
+            console.error('[GameEngine] _startEndlessMode error:', err);
+            alert('Lỗi khi bắt đầu chế độ luyện tập!');
+            this.showMainMenu();
+        }
     }
 };
 

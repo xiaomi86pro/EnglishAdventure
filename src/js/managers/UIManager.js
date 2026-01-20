@@ -74,6 +74,7 @@ class UIManager {
      * @param {number} totalSteps 
      */
     updateAllUI(player, monster, location, station, currentStep, totalSteps = 10) {
+
         // 1. Cập nhật player info card
         this.updatePlayerCard(player);
 
@@ -93,6 +94,7 @@ class UIManager {
 
         // 6. Render admin buttons (nếu là admin)
         this.renderAdminButtons();
+
     }
 
     /**
@@ -391,10 +393,11 @@ class UIManager {
         const battleView = DOMUtil.getById('battleview');
         if (battleView) {
             battleView.innerHTML = `
-                <div class="flex justify-between items-center h-full">
-                    <div id="hero" class="sprite"></div>
-                    <div id="monster" class="sprite"></div>
-                </div>
+            <div id="station-name"></div>
+            <div class="flex justify-between items-center h-full">
+                <div id="hero" class="sprite"></div>
+                <div id="monster" class="sprite"></div>
+            </div>
             `;
         }
 
