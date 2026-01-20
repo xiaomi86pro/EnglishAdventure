@@ -234,32 +234,29 @@ class UIManager {
     }
 
     /**
-     * Thêm nút Exit vào action-buttons-slot
+     * Xác nhận trước khi thoát game
      */
-    addExitButton() {
-        const slot = DOMUtil.getById('action-buttons-slot');
-        if (!slot) return;
-
-        // Xóa nút cũ nếu có
-        const oldExitBtn = DOMUtil.getById('exit-menu-btn');
-        if (oldExitBtn) oldExitBtn.remove();
-
-        // Tạo nút mới
-        const exitBtn = DOMUtil.createElement('button', {
-            id: 'exit-menu-btn',
-            className: 'w-full p-3 rounded-2xl bg-red-400 hover:bg-red-500 text-white font-bold transition-all shadow-md',
-            innerHTML: '🚪 Thoát ra Menu'
-        });
-
-        exitBtn.onclick = () => {
-            const confirm = window.confirm('Bạn có muốn lưu game và thoát ra menu?');
-            if (confirm && window.GameEngine) {
-                window.GameEngine.saveGameState();
-                window.GameEngine.showMainMenu();
+    async confirmExit() {
+        // ✅ Check nếu monster đã chết → Không cho save, bắt buộc chờ spawn monster mới
+        if (this.monster && this.monster.hp <= 0) {
+            if (this.effectsUtil) {
+                this.effectsUtil.showToast(
+                    '⚠️ Đang xử lý chiến thắng, vui lòng chờ...',
+                    'warning',
+                    2000
+                );
             }
-        };
+            return; // Không cho thoát
+        }
 
-        slot.appendChild(exitBtn);
+        // ✅ Hiện confirm dialog
+        const userConfirmed = confirm('Bạn có chắc muốn thoát? Tiến trình sẽ được lưu.');
+        
+        if (userConfirmed) {
+            // User click OK → Lưu và thoát
+            await this.showMainMenu(false); // skipSave = false
+        }
+        // User click Cancel → Không làm gì, tiếp tục chơi
     }
 
     /**
