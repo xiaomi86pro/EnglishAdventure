@@ -250,27 +250,36 @@ class UIManager {
     addExitButton() {
         const slot = DOMUtil.getById('action-buttons-slot');
         if (!slot) return;
-
+    
         // Xóa nút cũ nếu có
         const oldExitBtn = DOMUtil.getById('exit-menu-btn');
         if (oldExitBtn) oldExitBtn.remove();
-
+    
         // Tạo nút mới
         const exitBtn = DOMUtil.createElement('button', {
             id: 'exit-menu-btn',
             className: 'w-full p-3 rounded-2xl bg-red-400 hover:bg-red-500 text-white font-bold transition-all shadow-md',
             innerHTML: '🚪 Thoát ra Menu'
         });
-
-        exitBtn.onclick = () => {
-            const confirm = window.confirm('Bạn có muốn lưu game và thoát ra menu?');
-            if (confirm && window.GameEngine) {
-                window.GameEngine.saveGameState();
-                //this.clearAllUI();
+    
+        exitBtn.onclick = async () => {
+            // ✅ Check nếu monster đã chết → Không cho thoát
+            if (window.GameEngine?.monster?.hp <= 0) {
+                alert('⚠️ Đang xử lý chiến thắng, vui lòng chờ!');
+                return;
+            }
+    
+            // ✅ Hiện confirm
+            const userConfirmed = window.confirm('Bạn có muốn lưu game và thoát ra menu?');
+            
+            if (userConfirmed && window.GameEngine) {
+                // User click OK → Lưu và thoát
+                await window.GameEngine.saveGameState();
                 window.GameEngine.showMainMenu();
             }
+            // User click Cancel → Không làm gì, tiếp tục chơi
         };
-
+    
         slot.appendChild(exitBtn);
     }
 
