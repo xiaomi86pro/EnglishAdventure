@@ -90,7 +90,7 @@ export class LeaderboardWidget {
                         <p class="text-black font-bold text-1xl truncate">${player.display_name}</p>
                         <div class="flex items-center gap-2 text-[10px]">
                             <span class="text-blue-300 font-bold text-2xl">⚡${player.level}</span>
-                            <span class="text-yellow-300 font-bold text-2xl" style="-webkit-text-stroke: 1px black;">💰${player.coin || 0}</span>
+                            <span class="text-yellow-300 font-bold text-2xl" style="text-shadow: 2px 2px 0 #000, -2px -2px 0 #000, 2px -2px 0 #000, -2px 2px 0 #000, 0 2px 0 #000, 2px 0 0 #000, 0 -2px 0 #000, -2px 0 0 #000;"">💰${player.coin || 0}</span>
                         </div>
                     </div>
                 </div>
