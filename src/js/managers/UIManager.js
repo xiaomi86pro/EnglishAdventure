@@ -273,9 +273,7 @@ class UIManager {
             const userConfirmed = window.confirm('Bạn có muốn lưu game và thoát ra menu?');
             
             if (userConfirmed && window.GameEngine) {
-                // User click OK → Lưu và thoát
-                await window.GameEngine.saveGameState();
-                window.GameEngine.showMainMenu();
+                await window.GameEngine.showMainMenu(false);
             }
             // User click Cancel → Không làm gì, tiếp tục chơi
         };

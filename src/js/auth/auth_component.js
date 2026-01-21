@@ -251,9 +251,12 @@ class AuthComponent {
             
             // 4. Tính stats với level bonus
             const playerLevel = userData.level || 1;
-            const hpBonus = window.GameConfig.getLevelBonus(playerLevel, 'hp');
-            const atkBonus = window.GameConfig.getLevelBonus(playerLevel, 'atk');
-            const defBonus = window.GameConfig.getLevelBonus(playerLevel, 'def');
+            const hpBonus = userData.hp_bonus || 0;  // ✅ Từ profiles
+            const atkBonus = userData.base_atk || 0;
+            const defBonus = userData.base_def || 0;
+
+            // ✅ max_hp = hero_base_hp + hp_bonus (KHÔNG tính lại từ level)
+            const maxHP = heroData.base_hp + hpBonus;
             
             // 5. Format savedGame object theo cấu trúc GameEngine.restoreGameState() cần
             const formattedSave = {
@@ -265,19 +268,21 @@ class AuthComponent {
                     exp: userData.exp || 0,
                     coin: userData.coin || 0,
                     role: userData.role,
-                    
-                    // HP
+
                     base_hp: heroData.base_hp,
-                    max_hp: heroData.base_hp + hpBonus + (userData.hp_bonus || 0),
-                    hp_current: cloudSave.current_hp,  // ← Restore HP từ save
+                    hp_bonus: userData.hp_bonus || 0,  // ✅ THÊM DÒNG NÀY
+                    max_hp: heroData.base_hp + (userData.hp_bonus || 0),  // ✅ SỬA
+                    hp_current: cloudSave.current_hp,
                     
                     // ATK
                     base_atk: heroData.base_atk,
                     atk: atkBonus + (userData.base_atk || 0),
+                    hero_base_atk: heroData.base_atk,
                     
                     // DEF
                     base_def: heroData.base_def || 0,
                     def: defBonus + (userData.base_def || 0),
+                    hero_base_def: heroData.base_def || 0,
                     
                     sprite_url: heroData.image_url,
                     selected_hero_id: userData.selected_hero_id,

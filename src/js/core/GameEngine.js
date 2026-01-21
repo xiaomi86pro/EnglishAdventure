@@ -481,6 +481,11 @@ const GameEngine = {
         try {
             if (!this.player || !this.player.id) return;
 
+            console.log('=== SAVING TO DATABASE ===');
+            console.log('Will save hp_bonus:', this.player.hp_bonus);
+            console.log('Will save base_atk:', this.player.base_atk);
+            console.log('Will save base_def:', this.player.base_def);
+
             // ✅ 1. Lưu progression + BONUS STATS vào profiles
             const { error: profileError } = await window.supabase
                 .from('profiles')
