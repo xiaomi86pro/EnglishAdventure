@@ -68,10 +68,10 @@ const GameEngine = {
             // 3. Setup player với level bonus
             const playerLevel = userData.level || 1;
 
-            // Tính bonus từ level
-            const hpBonus = GameConfig.getLevelBonus(playerLevel, 'hp');
-            const atkBonus = GameConfig.getLevelBonus(playerLevel, 'atk');
-            const defBonus = GameConfig.getLevelBonus(playerLevel, 'def');
+            // ✅ Bonus từ profiles (đã lưu từ level up trước)
+            const hpBonus = userData.hp_bonus || 0;
+            const atkBonus = userData.base_atk || 0;  // base_atk trong profiles là bonus
+            const defBonus = userData.base_def || 0;  // base_def trong profiles là bonus
 
             this.player = {
                 id: userData.id,
@@ -82,18 +82,21 @@ const GameEngine = {
                 coin: userData.coin || 0,
                 role: userData.role,
                 
-                // HP: hero base + level bonus + equipment bonus
+                // HP: hero base + bonus từ profiles
                 base_hp: heroData.base_hp,
-                max_hp: heroData.base_hp + hpBonus + (userData.hp_bonus || 0),
-                hp_current: heroData.base_hp + hpBonus + (userData.hp_bonus || 0), // Sẽ override nếu có save game
+                hp_bonus: hpBonus,
+                max_hp: heroData.base_hp + hpBonus,
+                hp_current: heroData.base_hp + hpBonus, // Sẽ override nếu có save game
                 
-                // ATK: hero base + level bonus + profile bonus
-                base_atk: heroData.base_atk,
-                atk: atkBonus + (userData.base_atk || 0),
+                // ATK: hero base (dùng trong tính damage) + bonus từ profiles
+                base_atk: atkBonus,  // Lưu bonus từ profiles (dùng để save lại)
+                atk: atkBonus,       // ATK hiện tại (dùng trong battle)
+                hero_base_atk: heroData.base_atk,  // Lưu base của hero để tính damage
                 
-                // DEF: hero base + level bonus + profile bonus  
-                base_def: heroData.base_def || 0,
-                def: defBonus + (userData.base_def || 0),
+                // DEF: hero base + bonus từ profiles  
+                base_def: defBonus,  // Lưu bonus từ profiles
+                def: defBonus,       // DEF hiện tại (dùng trong battle)
+                hero_base_def: heroData.base_def || 0,  // Lưu base của hero để tính damage
                 
                 sprite_url: heroData.image_url,
                 selected_hero_id: userData.selected_hero_id,
@@ -349,23 +352,37 @@ const GameEngine = {
                 if (levelCheck.leveledUp) {
                     console.log(`[GameEngine] Level up! ${oldLevel} -> ${levelCheck.newLevel}`);
                     
-                    // ✅ Tính bonus stats từ level mới
+                    // ✅ Tính số stats bonus cần THÊM vào profiles
                     const levelsGained = levelCheck.newLevel - oldLevel;
-                    const hpGain = levelsGained * GameConfig.LEVEL_UP_BONUS.hp;
-                    const atkGain = levelsGained * GameConfig.LEVEL_UP_BONUS.atk;
-                    const defGain = levelsGained * GameConfig.LEVEL_UP_BONUS.def;
+                    const hpGainPerLevel = GameConfig.LEVEL_UP_BONUS.hp;
+                    const atkGainPerLevel = GameConfig.LEVEL_UP_BONUS.atk;
+                    const defGainPerLevel = GameConfig.LEVEL_UP_BONUS.def;
                     
-                    // ✅ Cập nhật stats
+                    const hpGain = levelsGained * hpGainPerLevel;
+                    const atkGain = levelsGained * atkGainPerLevel;
+                    const defGain = levelsGained * defGainPerLevel;
+                    
+                    // ✅ Cập nhật stats trong memory
                     this.player.level = levelCheck.newLevel;
                     this.player.exp = levelCheck.remainingExp;
-                    this.player.max_hp += hpGain;
-                    this.player.atk += atkGain;
-                    this.player.def += defGain;
+                    
+                    // ✅ Cộng bonus vào profiles (sẽ lưu vào DB)
+                    this.player.hp_bonus = (this.player.hp_bonus || 0) + hpGain;
+                    this.player.base_atk = (this.player.base_atk || 0) + atkGain;  // base_atk trong profiles là bonus
+                    this.player.base_def = (this.player.base_def || 0) + defGain;  // base_def trong profiles là bonus
+                    
+                    // ✅ Tính lại max_hp và stats hiện tại
+                    this.player.max_hp += hpGain;  // Tăng max HP
+                    this.player.atk += atkGain;    // Tăng ATK hiện tại (dùng trong battle)
+                    this.player.def += defGain;    // Tăng DEF hiện tại (dùng trong battle)
                     
                     // ✅ Hồi full HP khi level up
                     const oldHp = this.player.hp_current;
                     this.player.hp_current = this.player.max_hp;
                     const healedAmount = this.player.hp_current - oldHp;
+
+                    // ✅ LƯU NGAY VÀO DATABASE (bao gồm cả bonus stats)
+                    await this._savePlayerProgress();
 
                     // Delay để exp animation xong
                     setTimeout(() => {
@@ -457,22 +474,23 @@ const GameEngine = {
     },
 
     /**
-     * Lưu coin, exp, level vào profiles + save game state lên cloud
+     * Lưu coin, exp, level, bonus stats vào profiles + save game state lên cloud
      * @private
      */
     async _savePlayerProgress() {
         try {
             if (!this.player || !this.player.id) return;
 
-            // 1. Lưu progression vào profiles (coin, exp, level - KHÔNG lưu HP)
+            // ✅ 1. Lưu progression + BONUS STATS vào profiles
             const { error: profileError } = await window.supabase
                 .from('profiles')
                 .update({
                     coin: this.player.coin || 0,
                     exp: this.player.exp || 0,
                     level: this.player.level || 1,
-                    base_atk: this.player.atk - GameConfig.getLevelBonus(this.player.level, 'atk'), // Lưu bonus thuần (không tính level)
-                    base_def: this.player.def - GameConfig.getLevelBonus(this.player.level, 'def')
+                    hp_bonus: this.player.hp_bonus || 0,      // ✅ Lưu HP bonus
+                    base_atk: this.player.base_atk || 0,      // ✅ Lưu ATK bonus
+                    base_def: this.player.base_def || 0       // ✅ Lưu DEF bonus
                 })
                 .eq('id', this.player.id);
 
@@ -482,7 +500,10 @@ const GameEngine = {
                 console.log('[GameEngine] Profile saved:', {
                     coin: this.player.coin,
                     exp: this.player.exp,
-                    level: this.player.level
+                    level: this.player.level,
+                    hp_bonus: this.player.hp_bonus,
+                    base_atk: this.player.base_atk,
+                    base_def: this.player.base_def
                 });
             }
 
@@ -493,7 +514,7 @@ const GameEngine = {
                 station_id: this.currentStation?.id,
                 step: this.currentStep,
                 isEndlessMode: this.isEndlessMode,
-                monster: this.monster
+                monster: this.monster && this.monster.hp > 0 ? this.monster : null
             });
 
             if (!saveResult.success) {

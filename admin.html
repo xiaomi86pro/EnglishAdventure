@@ -259,6 +259,11 @@
                                     class="px-6 py-3 bg-blue-500 text-white rounded-xl font-bold hover:bg-blue-600">
                                 Tìm kiếm
                             </button>
+                            <button id="save-all-btn" 
+                                    onclick="window.assetManager.saveAll()" 
+                                    class="px-6 py-3 bg-green-500 text-white rounded-xl font-bold hover:bg-green-600 transition-all">
+                                💾 Lưu Tất Cả
+                            </button>
                         </div>
 
                         <!-- ✅ Monster-specific filters (chỉ hiện khi chọn Monster tab) -->
@@ -441,8 +446,8 @@
                             <select id="sort-profiles" onchange="ProfileManager.load()" 
                                     class="px-4 py-2 border-2 rounded-xl focus:border-blue-400 outline-none">
                                 <option value="level">⚡ Sort by Level</option>
-                                <option value="coin">🪙 Sort by Coin</option>
-                                <option value="exp">📊 Sort by EXP</option>
+                                <option value="coin">💰 Sort by Coin</option>
+                                <option value="base_atk">⚔️ Sort by ATK</option>
                                 <option value="name">🔤 Sort by Name</option>
                             </select>
                             

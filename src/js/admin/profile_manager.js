@@ -17,8 +17,8 @@ export class ProfileManager {
             case 'coin':
                 query = query.order('coin', { ascending: false });
                 break;
-            case 'exp':
-                query = query.order('exp', { ascending: false });
+            case 'base_atk':
+                query = query.order('base_atk', { ascending: false });
                 break;
             case 'name':
                 query = query.order('display_name', { ascending: true });
@@ -46,9 +46,11 @@ export class ProfileManager {
                     <p class="font-bold text-lg">${p.display_name}</p>
                     <div class="flex gap-4 text-sm text-gray-600">
                         <span>Lv.${p.level || 1}</span>
+                        <span>Atk.${p.base_atk || 1}</span>
+                        <span>Def.${p.base_def || 1}</span>
                         <span>EXP: ${p.exp || 0}</span>
                         <span>💰 ${p.coin || 0}</span>
-                        <span>❤️ ${p.hp_current || 100}</span>
+                        <span>❤️ ${p.hp_bonus || 0}</span>
                     </div>
                 </div>
                 <button onclick="ProfileManager.edit('${p.id}')" 
@@ -114,9 +116,21 @@ export class ProfileManager {
                     </div>
 
                     <div>
-                        <label class="block text-sm font-bold mb-2">❤️ HP hiện tại</label>
-                        <input type="number" id="edit-hp" value="${profile.hp_current || 100}" 
+                        <label class="block text-sm font-bold mb-2">❤️ HP </label>
+                        <input type="number" id="edit-hp" value="${profile.hp_bonus || 0}" 
                             class="w-full p-3 border-2 rounded-xl focus:border-blue-400 outline-none">
+                    </div>
+
+                    <div>
+                        <label class="text-xs text-gray-500 font-bold">⚔️ ATK Bonus</label>
+                        <input type="number" id="edit-atk" value="${profile.base_atk || 0}" 
+                            class="w-full p-2 border rounded-lg text-center font-bold text-orange-600">
+                    </div>
+
+                    <div>
+                        <label class="text-xs text-gray-500 font-bold">🛡️ DEF Bonus</label>
+                        <input type="number" id="edit-def" value="${profile.base_def || 0}" 
+                            class="w-full p-2 border rounded-lg text-center font-bold text-blue-600">
                     </div>
 
                     <div>
@@ -126,6 +140,14 @@ export class ProfileManager {
                             <option value="admin" ${profile.role === 'admin' ? 'selected' : ''}>Admin</option>
                         </select>
                     </div>
+                </div>
+
+                <div class="bg-yellow-50 p-3 rounded-lg">
+                    <label class="text-xs text-gray-500 font-bold">🔑 Đổi mật khẩu</label>
+                    <input type="password" id="edit-pws" 
+                        placeholder="Để trống nếu không đổi..." 
+                        class="w-full p-2 border rounded-lg text-sm">
+                    <p class="text-xs text-gray-400 mt-1">Chỉ nhập nếu muốn thay đổi</p>
                 </div>
 
                 <div class="flex gap-3">
@@ -159,9 +181,16 @@ export class ProfileManager {
             level: parseInt(document.getElementById('edit-level').value) || 1,
             exp: parseInt(document.getElementById('edit-exp').value) || 0,
             coin: parseInt(document.getElementById('edit-coin').value) || 0,
-            hp_current: parseInt(document.getElementById('edit-hp').value) || 100,
-            role: document.getElementById('edit-role').value
+            hp_bonus: parseInt(document.getElementById('edit-hp').value) || 0,
+            base_atk: parseInt(document.getElementById('edit-atk').value) || 0,
+            base_def: parseInt(document.getElementById('edit-def').value) || 0,
+            role: document.getElementById('edit-role').value,
         };
+
+        const newPassword = document.getElementById(`edit-pws`)?.value.trim();
+        if (newPassword && newPassword.length >= 4) {
+            data.password = newPassword;
+        }
 
         const { error } = await this.supabase
             .from('profiles')

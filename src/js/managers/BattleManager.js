@@ -100,43 +100,27 @@ class BattleManager {
             
             let actualDamage;
         
-        if (attackerType === 'hero') {
-            // Hero damage = atk_profile + atk_hero - def_monster
-            const heroBaseAtk = Number(attacker.base_atk || 0);
-            const heroAtk = Number(attacker.atk || 0);
-            const monsterDef = Number(defender.def || 0);
-
-            console.log('[BattleManager] Hero attack calc:', {
-                base_atk: heroBaseAtk,
-                profile_atk: heroAtk,
-                monster_def: monsterDef,
-                attacker,  // ← Xem toàn bộ attacker object
-                defender   // ← Xem toàn bộ defender object
-            })
-
-            actualDamage = Math.max(
-                GameConfig.MIN_DAMAGE, 
-                heroBaseAtk + heroAtk - monsterDef
-            );
-        } else {
-            // Monster damage = atk_monster - (def_hero + def_profile)
-            const monsterAtk = Number(attacker.atk || 0);
-            const heroDef = Number(defender.base_def || 0);
-            const profileDef = Number(defender.def || 0);
-
-            console.log('[BattleManager] Monster attack calc:', {
-                monster_atk: monsterAtk,
-                hero_base_def: heroDef,
-                profile_def: profileDef,
-                attacker,
-                defender
-            });
-
-            actualDamage = Math.max(
-                GameConfig.MIN_DAMAGE,
-                monsterAtk - (heroDef + profileDef)
-            );
-        }
+            if (attackerType === 'hero') {
+                // Hero damage = hero_base_atk + atk_bonus - def_monster
+                const heroBaseAtk = Number(attacker.hero_base_atk || 0);  // ✅ Từ heroes table
+                const heroAtkBonus = Number(attacker.atk || 0);          // ✅ Từ profiles bonus
+                const monsterDef = Number(defender.def || 0);
+                
+                actualDamage = Math.max(
+                    GameConfig.MIN_DAMAGE, 
+                    heroBaseAtk + heroAtkBonus - monsterDef
+                );
+            } else {
+                // Monster damage = atk_monster - (hero_base_def + def_bonus)
+                const monsterAtk = Number(attacker.atk || 0);
+                const heroBaseDef = Number(defender.hero_base_def || 0);  // ✅ Từ heroes table
+                const heroDefBonus = Number(defender.def || 0);          // ✅ Từ profiles bonus
+                
+                actualDamage = Math.max(
+                    GameConfig.MIN_DAMAGE,
+                    monsterAtk - (heroBaseDef + heroDefBonus)
+                );
+            }
 
         console.log('[BattleManager] Final damage:', actualDamage);
 

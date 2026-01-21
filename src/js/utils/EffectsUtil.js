@@ -300,7 +300,7 @@ class EffectsUtil {
         };
 
         const toast = DOMUtil.createElement('div', {
-            className: `fixed top-20 left-1/2 transform -translate-x-1/2 ${bgColors[type]} text-white px-6 py-3 rounded-full font-bold shadow-lg z-50 animate-bounce`,
+            className: `fixed top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 ${bgColors[type]} text-white px-6 py-3 rounded-full font-bold shadow-lg z-50`,
             innerText: message
         });
 

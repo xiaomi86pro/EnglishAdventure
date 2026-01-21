@@ -87,6 +87,18 @@ class UIManager {
         // 4. Cập nhật HP bars
         this.updateBattleStatus(player, monster);
 
+        if (window.GameEngine?.isEndlessMode) {
+            console.log('[UIManager] Endless mode detected, hiding progress bar');
+
+            // Ẩn progress bar
+            const progressBar = document.getElementById('progress-bar');
+            if (progressBar) progressBar.style.display = 'none';
+            
+            // Hiện text "Luyện Tập"
+            const stationName = document.getElementById('station-name');
+            if (stationName) stationName.textContent = '⚔️ LUYỆN TẬP';
+        }
+
         // 5. Thêm nút Exit
         this.addExitButton();
 
@@ -149,7 +161,6 @@ class UIManager {
         if (!container) return;
 
         container.classList.remove('hidden');
-        this.showhistory();
 
         // ✅ Chỉ update nội dung, không tạo wrapper mới
         container.innerHTML = `
@@ -234,29 +245,42 @@ class UIManager {
     }
 
     /**
-     * Xác nhận trước khi thoát game
+     * Thêm nút Exit vào action-buttons-slot
      */
-    async confirmExit() {
-        // ✅ Check nếu monster đã chết → Không cho save, bắt buộc chờ spawn monster mới
-        if (this.monster && this.monster.hp <= 0) {
-            if (this.effectsUtil) {
-                this.effectsUtil.showToast(
-                    '⚠️ Đang xử lý chiến thắng, vui lòng chờ...',
-                    'warning',
-                    2000
-                );
+    addExitButton() {
+        const slot = DOMUtil.getById('action-buttons-slot');
+        if (!slot) return;
+    
+        // Xóa nút cũ nếu có
+        const oldExitBtn = DOMUtil.getById('exit-menu-btn');
+        if (oldExitBtn) oldExitBtn.remove();
+    
+        // Tạo nút mới
+        const exitBtn = DOMUtil.createElement('button', {
+            id: 'exit-menu-btn',
+            className: 'w-full p-3 rounded-2xl bg-red-400 hover:bg-red-500 text-white font-bold transition-all shadow-md',
+            innerHTML: '🚪 Thoát ra Menu'
+        });
+    
+        exitBtn.onclick = async () => {
+            // ✅ Check nếu monster đã chết → Không cho thoát
+            if (window.GameEngine?.monster?.hp <= 0) {
+                this.effects.showToast('⚠️ Đang xử lý chiến thắng, vui lòng chờ!','error',1000);
+                return;
             }
-            return; // Không cho thoát
-        }
-
-        // ✅ Hiện confirm dialog
-        const userConfirmed = confirm('Bạn có chắc muốn thoát? Tiến trình sẽ được lưu.');
-        
-        if (userConfirmed) {
-            // User click OK → Lưu và thoát
-            await this.showMainMenu(false); // skipSave = false
-        }
-        // User click Cancel → Không làm gì, tiếp tục chơi
+    
+            // ✅ Hiện confirm
+            const userConfirmed = window.confirm('Bạn có muốn lưu game và thoát ra menu?');
+            
+            if (userConfirmed && window.GameEngine) {
+                // User click OK → Lưu và thoát
+                await window.GameEngine.saveGameState();
+                window.GameEngine.showMainMenu();
+            }
+            // User click Cancel → Không làm gì, tiếp tục chơi
+        };
+    
+        slot.appendChild(exitBtn);
     }
 
     /**
@@ -390,11 +414,10 @@ class UIManager {
         const battleView = DOMUtil.getById('battleview');
         if (battleView) {
             battleView.innerHTML = `
-            <div id="station-name"></div>
-            <div class="flex justify-between items-center h-full">
-                <div id="hero" class="sprite"></div>
-                <div id="monster" class="sprite"></div>
-            </div>
+                <div class="flex justify-between items-center h-full">
+                    <div id="hero" class="sprite"></div>
+                    <div id="monster" class="sprite"></div>
+                </div>
             `;
         }
 

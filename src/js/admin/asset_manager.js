@@ -961,4 +961,221 @@ export class AssetManager {
             container.appendChild(card);
         });
     }
+
+    /**
+     * Lưu tất cả thay đổi trong grid hiện tại
+     */
+    async saveAll() {
+        const saveBtn = document.getElementById('save-all-btn');
+        if (!saveBtn) return;
+
+        if (!this.currentAssetTab) {
+            alert('Vui lòng chọn tab (Heroes/Monsters/Gears) trước!');
+            return;
+        }
+
+        const container = document.getElementById('asset-grid-container');
+        if (!container || !container.children.length) {
+            alert('Không có dữ liệu để lưu!');
+            return;
+        }
+
+        // Confirm trước khi lưu
+        const confirm = window.confirm(`Bạn có chắc muốn lưu TẤT CẢ ${container.children.length} thay đổi?`);
+        if (!confirm) return;
+
+        try {
+            saveBtn.innerText = '⏳ Đang lưu...';
+            saveBtn.disabled = true;
+
+            let successCount = 0;
+            let errorCount = 0;
+
+            // Lưu theo từng card
+            if (this.currentAssetTab === 'heroes') {
+                const results = await this.saveAllHeroes(container);
+                successCount = results.success;
+                errorCount = results.errors;
+            } else if (this.currentAssetTab === 'monsters') {
+                const results = await this.saveAllMonsters(container);
+                successCount = results.success;
+                errorCount = results.errors;
+            } else if (this.currentAssetTab === 'gears') {
+                const results = await this.saveAllGears(container);
+                successCount = results.success;
+                errorCount = results.errors;
+            }
+
+            // Thông báo kết quả
+            if (errorCount === 0) {
+                this.showToast(`✅ Đã lưu thành công ${successCount} mục!`, 3000);
+            } else {
+                this.showToast(`⚠️ Lưu xong: ${successCount} thành công, ${errorCount} lỗi`, 4000);
+            }
+
+            // Reload lại data
+            await this.search();
+
+        } catch (err) {
+            console.error('[AssetManager] saveAll error:', err);
+            this.showToast('❌ Lỗi khi lưu: ' + err.message);
+        } finally {
+            saveBtn.innerText = '💾 Lưu Tất Cả';
+            saveBtn.disabled = false;
+        }
+    }
+
+    /**
+     * Lưu tất cả Heroes
+     */
+    async saveAllHeroes(container) {
+        let successCount = 0;
+        let errorCount = 0;
+
+        const cards = Array.from(container.children);
+
+        for (const card of cards) {
+            try {
+                // Lấy ID từ input đầu tiên
+                const nameInput = card.querySelector('input[id^="hero-name-"]');
+                if (!nameInput) continue;
+
+                const id = nameInput.id.replace('hero-name-', '');
+
+                const name = document.getElementById(`hero-name-${id}`)?.value;
+                const hp = parseInt(document.getElementById(`hero-hp-${id}`)?.value);
+                const atk = parseInt(document.getElementById(`hero-atk-${id}`)?.value);
+                const def = parseInt(document.getElementById(`hero-def-${id}`)?.value);
+                const isLocked = document.getElementById(`hero-locked-${id}`)?.checked;
+                const unlockStationId = document.getElementById(`hero-unlock-${id}`)?.value || null;
+
+                const { error } = await this.supabase
+                    .from('heroes')
+                    .update({
+                        name,
+                        base_hp: hp,
+                        base_atk: atk,
+                        base_def: def,
+                        is_locked: isLocked,
+                        unlock_station_id: unlockStationId
+                    })
+                    .eq('id', id);
+
+                if (error) {
+                    console.error(`Error updating hero ${id}:`, error);
+                    errorCount++;
+                } else {
+                    successCount++;
+                }
+
+            } catch (err) {
+                console.error('Error in hero card:', err);
+                errorCount++;
+            }
+        }
+
+        return { success: successCount, errors: errorCount };
+    }
+
+    /**
+     * Lưu tất cả Monsters
+     */
+    async saveAllMonsters(container) {
+        let successCount = 0;
+        let errorCount = 0;
+
+        const cards = Array.from(container.children);
+
+        for (const card of cards) {
+            try {
+                const nameInput = card.querySelector('input[id^="monster-name-"]');
+                if (!nameInput) continue;
+
+                const id = nameInput.id.replace('monster-name-', '');
+
+                const name = document.getElementById(`monster-name-${id}`)?.value;
+                const hp = parseInt(document.getElementById(`monster-hp-${id}`)?.value);
+                const atk = parseInt(document.getElementById(`monster-atk-${id}`)?.value);
+                const def = parseInt(document.getElementById(`monster-def-${id}`)?.value);
+                const exp = parseInt(document.getElementById(`monster-exp-${id}`)?.value);
+                const coin = parseInt(document.getElementById(`monster-coin-${id}`)?.value);
+                const type = document.getElementById(`monster-type-${id}`)?.value;
+                const locationId = document.getElementById(`monster-location-${id}`)?.value || null;
+
+                const { error } = await this.supabase
+                    .from('monsters')
+                    .update({
+                        name,
+                        base_hp: hp,
+                        base_atk: atk,
+                        base_def: def,
+                        exp_reward: exp,
+                        coin: coin,
+                        type,
+                        location_id: locationId
+                    })
+                    .eq('id', id);
+
+                if (error) {
+                    console.error(`Error updating monster ${id}:`, error);
+                    errorCount++;
+                } else {
+                    successCount++;
+                }
+
+            } catch (err) {
+                console.error('Error in monster card:', err);
+                errorCount++;
+            }
+        }
+
+        return { success: successCount, errors: errorCount };
+    }
+
+    /**
+     * Lưu tất cả Gears
+     */
+    async saveAllGears(container) {
+        let successCount = 0;
+        let errorCount = 0;
+
+        const cards = Array.from(container.children);
+
+        for (const card of cards) {
+            try {
+                const nameInput = card.querySelector('input[id^="gear-name-"]');
+                if (!nameInput) continue;
+
+                const id = nameInput.id.replace('gear-name-', '');
+
+                const name = document.getElementById(`gear-name-${id}`)?.value;
+                const type = document.getElementById(`gear-type-${id}`)?.value;
+                const frameIndex = parseInt(document.getElementById(`gear-frame-${id}`)?.value);
+                const imageUrl = document.getElementById(`gear-url-${id}`)?.value;
+
+                const { error } = await this.supabase
+                    .from('gear')
+                    .update({
+                        name,
+                        type,
+                        frame_index: frameIndex,
+                        image_url: imageUrl
+                    })
+                    .eq('id', id);
+
+                if (error) {
+                    console.error(`Error updating gear ${id}:`, error);
+                    errorCount++;
+                } else {
+                    successCount++;
+                }
+
+            } catch (err) {
+                console.error('Error in gear card:', err);
+                errorCount++;
+            }
+        }
+
+        return { success: successCount, errors: errorCount };
+    }
 }   
