@@ -23,6 +23,9 @@
             <button onclick="switchTab('vocab')" id="btn-tab-vocab" class="px-8 py-3 rounded-2xl font-black uppercase transition-all bg-blue-500 text-white shadow-lg">
                 📚 Nhập từ vựng
             </button>
+            <button onclick="switchTab('grammar')" id="btn-tab-grammar" class="px-8 py-3 rounded-2xl font-black uppercase transition-all bg-gray-200 text-gray-700 hover:bg-gray-300">
+                📝 Grammar
+            </button>
             <button onclick="switchTab('assets')" id="btn-tab-assets" class="px-8 py-3 rounded-2xl font-black uppercase transition-all bg-gray-200 text-gray-700 hover:bg-gray-300">
                 🎨 Assets
             </button>
@@ -88,6 +91,52 @@
                     </div>                  
                 </div>
             </div>
+
+            <!-- GRAMMAR UPLOAD TAB -->
+            <div id="tab-grammar" style="display:none; margin-top:24px;">
+
+                <h2 class="text-xl font-bold mb-4">Grammar Data Upload</h2>
+            
+                <div class="bg-white p-6 rounded-xl shadow space-y-4 max-w-xl">
+            
+                <!-- Select grammar type -->
+                <div>
+                    <label class="block font-semibold mb-1">Data type</label>
+                    <select id="grammar-data-type" class="w-full border rounded px-3 py-2">
+                    <option value="">-- Select type --</option>
+                    <option value="nouns">Nouns</option>
+                    <option value="verbs">Verbs</option>
+                    </select>
+                </div>
+            
+                <!-- File input -->
+                <div>
+                    <label class="block font-semibold mb-1">Excel file (.xlsx)</label>
+                    <input
+                    type="file"
+                    id="grammar-excel-file"
+                    accept=".xlsx,.xls"
+                    class="w-full border rounded px-3 py-2"
+                    />
+                </div>
+            
+                <!-- Upload button -->
+                <button
+                    id="grammar-upload-btn"
+                    class="w-full bg-blue-600 text-white font-bold py-2 rounded hover:bg-blue-700"
+                >
+                    Upload Excel
+                </button>
+            
+                <!-- Status -->
+                <div
+                    id="grammar-upload-status"
+                    class="text-sm mt-2"
+                ></div>
+            
+                </div>
+            </div>
+  
 
             <!-- CONTENT: TAB NHẬP ẢNH & TÀI NGUYÊN -->
             <div id="tab-assets" class="hidden space-y-6">
