@@ -7,6 +7,8 @@ import "@/css/admin.css";
 import { VocabManager } from './vocab_manager.js';
 import { AssetManager } from './asset_manager.js';
 import { TestQuestionManager } from './test_question_manager.js';
+import { GrammarManager } from './grammar_manager.js';
+
 
 // Khởi tạo Supabase
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL
@@ -23,11 +25,14 @@ if (window.AuthComponent) {
 const vocabManager = new VocabManager(supabase);
 const assetManager = new AssetManager(supabase);
 const testQuestionManager = new TestQuestionManager(supabase);
+const grammarManager = new GrammarManager(supabase);
 
 // Expose ra window để có thể gọi từ HTML onclick
 window.vocabManager = vocabManager;
 window.assetManager = assetManager;
 window.testQuestionManager = testQuestionManager;
+window.grammarManager = new GrammarManager(supabase);
+
 
 // ===== XỬ LÝ UPLOAD EXCEL =====
 const fileInput = document.getElementById('excel-file');
@@ -52,7 +57,7 @@ if (uploadBtn && fileInput) {
 // ===== TAB SWITCHING =====
 window.switchTab = function(tabName) {
     // Danh sách tất cả các tab
-    const tabs = ['vocab', 'assets', 'questions', 'locations', 'stations', 'steps', 'profiles'];
+    const tabs = ['vocab', 'grammar', 'assets', 'questions', 'locations', 'stations', 'steps', 'profiles'];
     
     // Ẩn tất cả tab
     tabs.forEach(tab => {
@@ -81,7 +86,11 @@ window.switchTab = function(tabName) {
         case 'vocab':
             vocabManager.init();
             break;
-            
+        
+        case 'grammar':
+            grammarManager.init();
+            break;
+
         case 'assets':
             assetManager.loadHeroes();
             break;
