@@ -7,8 +7,7 @@ import "@/css/admin.css";
 import { VocabManager } from './vocab_manager.js';
 import { AssetManager } from './asset_manager.js';
 import { TestQuestionManager } from './test_question_manager.js';
-import { GrammarManager } from './grammar_manager.js';
-
+import { QuizGrammarManager } from './quiz_grammar_manager.js';
 
 // Khởi tạo Supabase
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL
@@ -25,13 +24,13 @@ if (window.AuthComponent) {
 const vocabManager = new VocabManager(supabase);
 const assetManager = new AssetManager(supabase);
 const testQuestionManager = new TestQuestionManager(supabase);
-const grammarManager = new GrammarManager(supabase);
+const quizGrammarMgr = new QuizGrammarManager(supabase);
 
 // Expose ra window để có thể gọi từ HTML onclick
 window.vocabManager = vocabManager;
 window.assetManager = assetManager;
 window.testQuestionManager = testQuestionManager;
-window.grammarManager = new GrammarManager(supabase);
+window.quizGrammarMgr = quizGrammarMgr;
 
 
 // ===== XỬ LÝ UPLOAD EXCEL =====
@@ -57,7 +56,10 @@ if (uploadBtn && fileInput) {
 // ===== TAB SWITCHING =====
 window.switchTab = function(tabName) {
     // Danh sách tất cả các tab
-    const tabs = ['vocab', 'grammar', 'assets', 'questions', 'locations', 'stations', 'steps', 'profiles'];
+    const tabs = [
+    'vocab', 'assets', 'questions', 'locations', 'stations', 'steps', 'profiles',
+    'nouns', 'verbs', 'adjectives', 'prepositions', 'templates', 'compatibility'
+    ];
     
     // Ẩn tất cả tab
     tabs.forEach(tab => {
@@ -116,6 +118,24 @@ window.switchTab = function(tabName) {
                 window.ProfileManager.init();
                 window.ProfileManager.load();
             }
+            break;
+        case 'nouns':
+                window.quizGrammarMgr?.loadNouns();
+            break;
+        case 'verbs':
+                window.quizGrammarMgr?.loadVerbs();
+            break;
+        case 'adjectives':  
+                window.quizGrammarMgr?.loadAdjectives();
+            break; 
+        case 'prepositions':  
+                window.quizGrammarMgr?.loadPrepositions();
+            break;       
+        case 'templates':
+                window.quizGrammarMgr?.loadTemplates();
+            break;
+        case 'compatibility':  
+                window.quizGrammarMgr?.loadCompatibility();
             break;
     }
 };

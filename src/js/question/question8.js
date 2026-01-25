@@ -12,26 +12,51 @@ class Question8 {
   
     async load(enemyType = "normal") {
       this._destroyed = false;
-  
-      // Chọn ngẫu nhiên subject, verb, noun
+    
       const subjects = ["He", "She", "They", "We", "I"];
       const subject = subjects[Math.floor(Math.random() * subjects.length)];
-  
+    
+      // Chọn verb ngẫu nhiên
       const verb = this.verbs[Math.floor(Math.random() * this.verbs.length)];
-      const noun = this.nouns[Math.floor(Math.random() * this.nouns.length)];
-  
+      if (!verb) {
+        console.error("Không có verb nào trong dữ liệu.");
+        return;
+      }
+    
+      // Lấy allowed categories từ verbRules
+      const allowedCategories = (this.verbRules && this.verbRules[verb.id]) || [];
+    
+      // Nếu verb cần object nhưng chưa có rule → retry verb khác
+      if (verb.transitive && !allowedCategories.length) {
+        console.warn(`Verb ${verb.word} (id=${verb.id}) chưa có allowedCategories, retry verb khác.`);
+        return this.load(enemyType); // gọi lại load để chọn verb khác
+      }
+    
+      // Lọc nouns theo allowed_category
+      let noun = null;
+      if (verb.transitive) {
+        const validNouns = this.nouns.filter(n => allowedCategories.includes(n.semantic_category));
+        if (!validNouns.length) {
+          console.warn(`Verb ${verb.word} cần object nhưng không tìm thấy noun hợp lệ, retry verb khác.`);
+          return this.load(enemyType); // retry verb khác
+        }
+        noun = validNouns[Math.floor(Math.random() * validNouns.length)];
+      }
+    
       // Xác định article đúng
-      const correctArticle = this.chooseArticle(noun);
-  
+      const correctArticle = noun ? this.chooseArticle(noun) : "";
+    
       // Sinh câu
-      const sentence = `${subject} ${verb.base_form || verb.word} ___ ${noun.word}.`;
-  
+      const sentence = noun
+        ? `${subject} ${verb.base_form || verb.word} ___ ${noun.word}.`
+        : `${subject} ${verb.base_form || verb.word}.`;
+    
       this.currentData = {
         sentence,
         correctAnswer: correctArticle,
         options: ["a", "an", "the"]
       };
-  
+    
       this.renderQuestionUI();
     }
   

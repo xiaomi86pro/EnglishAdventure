@@ -1,0 +1,524 @@
+import * as XLSX from 'xlsx';
+
+export class QuizGrammarManager {
+    constructor(supabase) {
+        this.supabase = supabase;
+        this.initEventListeners();
+    }
+
+    initEventListeners() {
+        // Nouns
+        document.getElementById('nouns-upload-btn')?.addEventListener('click', () => this.uploadNouns());
+        
+        // Verbs
+        document.getElementById('verbs-upload-btn')?.addEventListener('click', () => this.uploadVerbs());
+        
+        //Adjectives
+        document.getElementById('adjectives-upload-btn')?.addEventListener('click', () => this.uploadAdjectives());
+
+        //Prepositions
+        document.getElementById('prepositions-upload-btn')?.addEventListener('click', () => this.uploadPrepositions());
+
+        // Templates
+        document.getElementById('add-template-btn')?.addEventListener('click', () => this.addTemplate());
+        
+        // Compatibility
+        document.getElementById('compat-upload-btn')?.addEventListener('click', () => this.uploadCompatibility());
+        document.getElementById('add-compat-btn')?.addEventListener('click', () => this.addCompatibilityQuick());
+    }
+
+    // ==================== NOUNS ====================
+    async uploadNouns() {
+        const fileInput = document.getElementById('nouns-excel-file');
+        const file = fileInput.files[0];
+        if (!file) {
+            this.setStatus('nouns-status', '❌ Chưa chọn file!');
+            return;
+        }
+
+        try {
+            const rows = await this.readExcel(file);
+            
+            // Convert Excel data
+            const nouns = rows.map(row => ({
+                word: row.word,
+                type: row.type,
+                countable: row.countable === true || row.countable === 'TRUE',
+                plural_form: row.plural_form || null,
+                starts_with_vowel: row.starts_with_vowel === true || row.starts_with_vowel === 'TRUE',
+                difficulty: row.difficulty || 'A1'
+            }));
+
+            const { error } = await this.supabase.from('nouns').insert(nouns);
+            
+            if (error) throw error;
+            
+            this.setStatus('nouns-status', `✅ Đã upload ${nouns.length} nouns!`);
+            this.loadNouns(); // Refresh table
+            
+        } catch (err) {
+            console.error(err);
+            this.setStatus('nouns-status', '❌ Lỗi: ' + err.message);
+        }
+    }
+
+    async loadNouns() {
+        const { data, error } = await this.supabase
+            .from('nouns')
+            .select('*')
+            .order('word');
+
+        if (error) {
+            console.error(error);
+            return;
+        }
+
+        const tbody = document.getElementById('nouns-tbody');
+        tbody.innerHTML = data.map(noun => `
+            <tr class="border-b hover:bg-gray-50">
+                <td class="p-3 font-bold">${noun.word}</td>
+                <td class="p-3">${noun.type}</td>
+                <td class="p-3">${noun.countable ? '✅' : '❌'}</td>
+                <td class="p-3">${noun.plural_form || '-'}</td>
+                <td class="p-3">${noun.starts_with_vowel ? '✅' : '❌'}</td>
+                <td class="p-3"><span class="px-2 py-1 bg-blue-100 rounded">${noun.difficulty}</span></td>
+                <td class="p-3">
+                    <button onclick="deleteNoun(${noun.id})" class="text-red-500 hover:text-red-700">🗑️</button>
+                </td>
+            </tr>
+        `).join('');
+    }
+
+    // ==================== VERBS ====================
+    async uploadVerbs() {
+        const fileInput = document.getElementById('verbs-excel-file');
+        const file = fileInput.files[0];
+        if (!file) {
+            this.setStatus('verbs-status', '❌ Chưa chọn file!');
+            return;
+        }
+
+        try {
+            const rows = await this.readExcel(file);
+            
+            const verbs = rows.map(row => ({
+                base_form: row.base_form,
+                third_person: row.third_person,
+                past_simple: row.past_simple,
+                past_participle: row.past_participle,
+                gerund: row.gerund,
+                is_regular: row.is_regular === true || row.is_regular === 'TRUE',
+                is_stative: row.is_stative === true || row.is_stative === 'TRUE',
+                transitivity: row.transitivity || 'transitive',
+                common_preposition: row.common_preposition || null,
+                difficulty: row.difficulty || 'A1'
+            }));
+
+            const { error } = await this.supabase.from('verbs').insert(verbs);
+            
+            if (error) throw error;
+            
+            this.setStatus('verbs-status', `✅ Đã upload ${verbs.length} verbs!`);
+            this.loadVerbs();
+            
+        } catch (err) {
+            console.error(err);
+            this.setStatus('verbs-status', '❌ Lỗi: ' + err.message);
+        }
+    }
+
+    async loadVerbs() {
+        const { data, error } = await this.supabase
+            .from('verbs')
+            .select('*')
+            .order('base_form');
+
+        if (error) return;
+
+        const tbody = document.getElementById('verbs-tbody');
+        tbody.innerHTML = data.map(v => `
+            <tr class="border-b hover:bg-gray-50 text-xs">
+                <td class="p-2 font-bold">${v.base_form}</td>
+                <td class="p-2">${v.third_person}</td>
+                <td class="p-2">${v.past_simple}</td>
+                <td class="p-2">${v.past_participle}</td>
+                <td class="p-2">${v.gerund}</td>
+                <td class="p-2">${v.is_regular ? '✅' : '❌'}</td>
+                <td class="p-2">${v.is_stative ? '⚠️' : '-'}</td>
+                <td class="p-2"><span class="px-2 py-1 bg-green-100 rounded">${v.difficulty}</span></td>
+                <td class="p-2">
+                    <button onclick="deleteVerb(${v.id})" class="text-red-500">🗑️</button>
+                </td>
+            </tr>
+        `).join('');
+    }
+
+    // ==================== ADJECTIVES ====================
+    async uploadAdjectives() {
+        const fileInput = document.getElementById('adjectives-excel-file');
+        const file = fileInput.files[0];
+        if (!file) {
+            this.setStatus('adjectives-status', '❌ Chưa chọn file!');
+            return;
+        }
+
+        try {
+            const rows = await this.readExcel(file);
+            
+            // Convert Excel data
+            const adjectives = rows.map(row => ({
+                word: row.word,
+                type: row.type, // size, color, emotion, quality, age
+                difficulty: row.difficulty || 'A1'
+            }));
+
+            const { error } = await this.supabase.from('adjectives').insert(adjectives);
+            
+            if (error) throw error;
+            
+            this.setStatus('adjectives-status', `✅ Đã upload ${adjectives.length} adjectives!`);
+            this.loadAdjectives(); // Refresh table
+            
+        } catch (err) {
+            console.error(err);
+            this.setStatus('adjectives-status', '❌ Lỗi: ' + err.message);
+        }
+    }
+
+    async loadAdjectives() {
+        const { data, error } = await this.supabase
+            .from('adjectives')
+            .select('*')
+            .order('word');
+
+        if (error) {
+            console.error(error);
+            return;
+        }
+
+        const tbody = document.getElementById('adjectives-tbody');
+        tbody.innerHTML = data.map(adj => `
+            <tr class="border-b hover:bg-gray-50">
+                <td class="p-3 font-bold">${adj.word}</td>
+                <td class="p-3">
+                    <span class="px-3 py-1 rounded-full text-xs font-bold ${this.getTypeColor(adj.type)}">
+                        ${adj.type}
+                    </span>
+                </td>
+                <td class="p-3">
+                    <span class="px-2 py-1 bg-pink-100 rounded">${adj.difficulty}</span>
+                </td>
+                <td class="p-3">
+                    <button onclick="deleteAdjective(${adj.id})" class="text-red-500 hover:text-red-700">🗑️</button>
+                </td>
+            </tr>
+        `).join('');
+    }
+
+    // Helper function cho màu type
+    getTypeColor(type) {
+        const colors = {
+            'size': 'bg-blue-100 text-blue-700',
+            'color': 'bg-red-100 text-red-700',
+            'emotion': 'bg-yellow-100 text-yellow-700',
+            'quality': 'bg-green-100 text-green-700',
+            'age': 'bg-purple-100 text-purple-700',
+            'shape': 'bg-orange-100 text-orange-700',
+            'condition': 'bg-gray-100 text-gray-700'
+        };
+        return colors[type] || 'bg-gray-100 text-gray-700';
+    }
+
+    // ==================== PREPOSITIONS ====================
+    async uploadPrepositions() {
+        const fileInput = document.getElementById('prepositions-excel-file');
+        const file = fileInput.files[0];
+        if (!file) {
+            this.setStatus('prepositions-status', '❌ Chưa chọn file!');
+            return;
+        }
+
+        try {
+            const rows = await this.readExcel(file);
+            
+            // Convert Excel data
+            const prepositions = rows.map(row => ({
+                word: row.word,
+                usage_type: row.usage_type, // time, place, both
+                difficulty: row.difficulty || 'A1'
+            }));
+
+            const { error } = await this.supabase.from('prepositions').insert(prepositions);
+            
+            if (error) throw error;
+            
+            this.setStatus('prepositions-status', `✅ Đã upload ${prepositions.length} prepositions!`);
+            this.loadPrepositions(); // Refresh table
+            
+        } catch (err) {
+            console.error(err);
+            this.setStatus('prepositions-status', '❌ Lỗi: ' + err.message);
+        }
+    }
+
+    async loadPrepositions() {
+        const filterType = document.getElementById('filter-prep-type')?.value;
+        
+        let query = this.supabase
+            .from('prepositions')
+            .select('*');
+        
+        if (filterType) {
+            query = query.eq('usage_type', filterType);
+        }
+        
+        const { data, error } = await query.order('word');
+
+        if (error) {
+            console.error(error);
+            return;
+        }
+
+        const tbody = document.getElementById('prepositions-tbody');
+        tbody.innerHTML = data.map(prep => `
+            <tr class="border-b hover:bg-gray-50">
+                <td class="p-3 font-bold text-lg">${prep.word}</td>
+                <td class="p-3">
+                    <span class="px-3 py-1 rounded-full text-xs font-bold ${this.getUsageTypeColor(prep.usage_type)}">
+                        ${prep.usage_type}
+                    </span>
+                </td>
+                <td class="p-3">
+                    <span class="px-2 py-1 bg-orange-100 rounded">${prep.difficulty}</span>
+                </td>
+                <td class="p-3">
+                    <button onclick="deletePreposition(${prep.id})" class="text-red-500 hover:text-red-700">🗑️</button>
+                </td>
+            </tr>
+        `).join('');
+    }
+
+    // Helper function cho màu usage_type
+    getUsageTypeColor(type) {
+        const colors = {
+            'time': 'bg-blue-100 text-blue-700',
+            'place': 'bg-green-100 text-green-700',
+            'both': 'bg-purple-100 text-purple-700'
+        };
+        return colors[type] || 'bg-gray-100 text-gray-700';
+    }
+
+    // ==================== TEMPLATES ====================
+    async addTemplate() {
+        const pattern = document.getElementById('template-pattern').value;
+        const blank = document.getElementById('template-blank').value;
+        const focus = document.getElementById('template-focus').value;
+        const example = document.getElementById('template-example').value;
+
+        if (!pattern || !blank || !focus) {
+            this.setStatus('template-status', '❌ Vui lòng điền đầy đủ!');
+            return;
+        }
+
+        const { error } = await this.supabase.from('templates').insert({
+            pattern,
+            blank_position: blank,
+            grammar_focus: focus,
+            example,
+            difficulty: 'A1'
+        });
+
+        if (error) {
+            this.setStatus('template-status', '❌ Lỗi: ' + error.message);
+        } else {
+            this.setStatus('template-status', '✅ Đã thêm template!');
+            this.loadTemplates();
+            // Clear form
+            document.getElementById('template-pattern').value = '';
+            document.getElementById('template-example').value = '';
+        }
+    }
+
+    async loadTemplates() {
+        const { data } = await this.supabase.from('templates').select('*').order('id');
+        const list = document.getElementById('templates-list');
+        
+        list.innerHTML = data.map(t => `
+            <div class="p-4 border rounded-xl bg-gray-50 hover:bg-gray-100">
+                <div class="font-mono text-sm text-blue-600">${t.pattern}</div>
+                <div class="text-xs text-gray-500 mt-1">
+                    Blank: <b>${t.blank_position}</b> | Focus: <b>${t.grammar_focus}</b>
+                </div>
+                <div class="text-xs mt-2 italic">Example: ${t.example || '-'}</div>
+            </div>
+        `).join('');
+    }
+
+    
+    // ==================== COMPATIBILITY ====================
+    async loadCompatibility() {
+        const { data, error } = await this.supabase
+            .from('compatibility')
+            .select('*')
+            .order('id', { ascending: false })
+            .limit(100); // Limit để tránh load quá nhiều
+
+        if (error) {
+            console.error(error);
+            this.setStatus('compat-status', '❌ Lỗi load data');
+            return;
+        }
+
+        // Render table
+        const container = document.getElementById('compatibility-list');
+        if (!container) return;
+
+        if (!data || data.length === 0) {
+            container.innerHTML = '<p class="text-gray-400 italic text-center py-8">Chưa có compatibility rules nào</p>';
+            return;
+        }
+
+        container.innerHTML = `
+            <div class="overflow-x-auto">
+                <table class="w-full text-sm">
+                    <thead class="bg-gray-100">
+                        <tr>
+                            <th class="p-2 text-left">Type</th>
+                            <th class="p-2 text-left">Word 1</th>
+                            <th class="p-2 text-left">Table 1</th>
+                            <th class="p-2 text-left">Word 2</th>
+                            <th class="p-2 text-left">Table 2</th>
+                            <th class="p-2 text-left">Score</th>
+                            <th class="p-2 text-left">Note</th>
+                            <th class="p-2">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${data.map(c => `
+                            <tr class="border-b hover:bg-gray-50">
+                                <td class="p-2">
+                                    <span class="px-2 py-1 rounded text-xs font-bold ${this.getCompatTypeColor(c.compatibility_type)}">
+                                        ${c.compatibility_type}
+                                    </span>
+                                </td>
+                                <td class="p-2 font-bold">${c.word1_id}</td>
+                                <td class="p-2 text-xs text-gray-500">${c.word1_table}</td>
+                                <td class="p-2 font-bold">${c.word2_id}</td>
+                                <td class="p-2 text-xs text-gray-500">${c.word2_table}</td>
+                                <td class="p-2">
+                                    <span class="px-2 py-1 rounded ${this.getScoreColor(c.score)}">
+                                        ${c.score}
+                                    </span>
+                                </td>
+                                <td class="p-2 text-xs italic">${c.note || '-'}</td>
+                                <td class="p-2">
+                                    <button onclick="deleteCompatibility(${c.id})" 
+                                            class="text-red-500 hover:text-red-700">🗑️</button>
+                                </td>
+                            </tr>
+                        `).join('')}
+                    </tbody>
+                </table>
+            </div>
+        `;
+    }
+
+    // Helper functions cho màu sắc
+    getCompatTypeColor(type) {
+        const colors = {
+            'verb_object': 'bg-green-100 text-green-700',
+            'subject_verb': 'bg-blue-100 text-blue-700',
+            'prep_noun': 'bg-purple-100 text-purple-700',
+            'adj_noun': 'bg-pink-100 text-pink-700'
+        };
+        return colors[type] || 'bg-gray-100 text-gray-700';
+    }
+
+    getScoreColor(score) {
+        if (score >= 0.8) return 'bg-green-100 text-green-700 font-bold';
+        if (score >= 0.5) return 'bg-yellow-100 text-yellow-700';
+        return 'bg-red-100 text-red-700';
+    }
+
+    async uploadCompatibility() {
+        const fileInput = document.getElementById('compat-excel-file');
+        const file = fileInput.files[0];
+        if (!file) {
+            this.setStatus('compat-status', '❌ Chưa chọn file!');
+            return;
+        }
+
+        try {
+            const rows = await this.readExcel(file);
+            
+            const { error } = await this.supabase.from('compatibility').insert(rows);
+            
+            if (error) throw error;
+            
+            this.setStatus('compat-status', `✅ Đã upload ${rows.length} rules!`);
+            
+        } catch (err) {
+            this.setStatus('compat-status', '❌ Lỗi: ' + err.message);
+        }
+    }
+
+    async addCompatibilityQuick() {
+    const type = document.getElementById('compat-type').value;
+    const word1Id = parseInt(document.getElementById('compat-word1-id').value);
+    const word1Table = document.getElementById('compat-word1-table').value;
+    const word2Id = parseInt(document.getElementById('compat-word2-id').value);
+    const word2Table = document.getElementById('compat-word2-table').value;
+    const score = parseFloat(document.getElementById('compat-score').value);
+    const note = document.getElementById('compat-note').value;
+
+    if (!word1Id || !word1Table || !word2Id || !word2Table) {
+        this.setStatus('compat-add-status', '❌ Vui lòng điền đầy đủ!');
+        return;
+    }
+
+    const { error } = await this.supabase.from('compatibility').insert({
+        compatibility_type: type,
+        word1_id: word1Id,
+        word1_table: word1Table,
+        word2_id: word2Id,
+        word2_table: word2Table,
+        score: score,
+        note: note || null
+    });
+
+    if (error) {
+        this.setStatus('compat-add-status', '❌ Lỗi: ' + error.message);
+    } else {
+        this.setStatus('compat-add-status', '✅ Đã thêm rule!');
+        this.loadCompatibility();
+        
+        // Clear form
+        document.getElementById('compat-word1-id').value = '';
+        document.getElementById('compat-word1-table').value = '';
+        document.getElementById('compat-word2-id').value = '';
+        document.getElementById('compat-word2-table').value = '';
+        document.getElementById('compat-note').value = '';
+    }
+}
+
+    // ==================== HELPERS ====================
+    async readExcel(file) {
+        return new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                const data = new Uint8Array(e.target.result);
+                const workbook = XLSX.read(data, { type: 'array' });
+                const sheet = workbook.Sheets[workbook.SheetNames[0]];
+                const rows = XLSX.utils.sheet_to_json(sheet);
+                resolve(rows);
+            };
+            reader.onerror = reject;
+            reader.readAsArrayBuffer(file);
+        });
+    }
+
+    setStatus(elId, msg) {
+        const el = document.getElementById(elId);
+        if (el) el.textContent = msg;
+    }
+}

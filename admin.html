@@ -16,15 +16,13 @@
                 🏠 Quay lại game
             </a>
         </div>
-
+    </div>    
+    <div class="flex gap-4">   
         <!-- TAB NAVIGATION -->
-        <div class="flex gap-6">
+        <div class="flex-col">
             <div class="w-64 shrink-0 bg-white rounded-3xl p-4 space-y-3 shadow">
             <button onclick="switchTab('vocab')" id="btn-tab-vocab" class="px-8 py-3 rounded-2xl font-black uppercase transition-all bg-blue-500 text-white shadow-lg">
                 📚 Nhập từ vựng
-            </button>
-            <button onclick="switchTab('grammar')" id="btn-tab-grammar" class="px-8 py-3 rounded-2xl font-black uppercase transition-all bg-gray-200 text-gray-700 hover:bg-gray-300">
-                📝 Grammar
             </button>
             <button onclick="switchTab('assets')" id="btn-tab-assets" class="px-8 py-3 rounded-2xl font-black uppercase transition-all bg-gray-200 text-gray-700 hover:bg-gray-300">
                 🎨 Assets
@@ -44,461 +42,801 @@
             <button onclick="switchTab('profiles')" id="btn-tab-profiles" class="px-8 py-3 rounded-2xl font-black uppercase transition-all bg-gray-200 text-gray-700 hover:bg-gray-300">
             <span>👤</span> <span>Profiles</span>
             </button>
+            <button onclick="switchTab('nouns')" id="btn-tab-nouns" 
+            class="px-8 py-3 rounded-2xl font-black uppercase transition-all bg-gray-200 text-gray-700 hover:bg-gray-300">
+            📦 Nouns
+            </button>
+            <button onclick="switchTab('verbs')" id="btn-tab-verbs" 
+            class="px-8 py-3 rounded-2xl font-black uppercase transition-all bg-gray-200 text-gray-700 hover:bg-gray-300">
+            🏃 Verbs
+            </button>
+            <button onclick="switchTab('adjectives')" id="btn-tab-adjectives" 
+            class="px-8 py-3 rounded-2xl font-black uppercase transition-all bg-gray-200 text-gray-700 hover:bg-gray-300">
+            🎨 Adjectives
+            </button>
+            <button onclick="switchTab('prepositions')" id="btn-tab-prepositions" 
+            class="px-8 py-3 rounded-2xl font-black uppercase transition-all bg-gray-200 text-gray-700 hover:bg-gray-300">
+            🔗 Prepositions
+            </button>
+            <button onclick="switchTab('templates')" id="btn-tab-templates" 
+            class="px-8 py-3 rounded-2xl font-black uppercase transition-all bg-gray-200 text-gray-700 hover:bg-gray-300">
+            📋 Templates
+            </button>
+            <button onclick="switchTab('compatibility')" id="btn-tab-compatibility" 
+            class="px-8 py-3 rounded-2xl font-black uppercase transition-all bg-gray-200 text-gray-700 hover:bg-gray-300">
+            🔗 Compatibility
+            </button>
             </div>
+        </div> 
+
         <div id='conten-area' class="flex-1">
-            <!-- CONTENT: TAB NHẬP TỪ -->
-            <div id="tab-vocab" class="space-y-6">
-                <!-- Upload Excel Section -->
-                <div class="bg-blue-100 p-6 rounded-3xl">
-                    <h3 class="text-xl font-bold text-blue-700 mb-4 uppercase">1. Tải lên từ Excel</h3>
-                    <div class="flex flex-wrap gap-4 items-center">
-                        <input type="file" id="excel-file" accept=".xlsx, .xls" 
-                            class="block w-full md:w-auto text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 cursor-pointer"/>
-                        <button id="upload-btn" class="px-8 py-2 bg-green-500 text-white font-bold rounded-xl shadow-[0_4px_0_#15803d] hover:translate-y-0.5 active:shadow-none transition-all">
-                            Tải lên Supabase
-                        </button>
-                    </div>
-                    <div id="status" class="mt-4 p-3 bg-white/50 rounded-xl text-sm italic text-blue-600">
-                        Sẵn sàng xử lý file...
-                    </div>
-                </div>
-
-                <!-- Edit Grid Section -->
-                <div class="bg-white p-6 rounded-3xl">
-                    <h3 class="text-xl font-bold text-gray-700 mb-6 uppercase">2. Tìm kiếm & Chỉnh sửa nhanh</h3>
-                    
-                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
-                        <div class="flex flex-col">
-                            <label class="text-xs font-bold text-gray-400 uppercase ml-2 mb-1">Tiếng Anh</label>
-                            <input type="text" id="search-en" placeholder="Tìm từ tiếng Anh..." class="p-3 rounded-xl border-2 border-gray-100 outline-none focus:border-blue-400">
+                <!-- CONTENT: TAB NHẬP TỪ -->
+                <div id="tab-vocab" class="space-y-6">
+                    <!-- Upload Excel Section -->
+                    <div class="bg-blue-100 p-6 rounded-3xl">
+                        <h3 class="text-xl font-bold text-blue-700 mb-4 uppercase">1. Tải lên từ Excel</h3>
+                        <div class="flex flex-wrap gap-4 items-center">
+                            <input type="file" id="excel-file" accept=".xlsx, .xls" 
+                                class="block w-full md:w-auto text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 cursor-pointer"/>
+                            <button id="upload-btn" class="px-8 py-2 bg-green-500 text-white font-bold rounded-xl shadow-[0_4px_0_#15803d] hover:translate-y-0.5 active:shadow-none transition-all">
+                                Tải lên Supabase
+                            </button>
                         </div>
-                        <div class="flex flex-col">
-                            <label class="text-xs font-bold text-gray-400 uppercase ml-2 mb-1">Tiếng Việt</label>
-                            <input type="text" id="search-vi" placeholder="Tìm từ tiếng Việt..." class="p-3 rounded-xl border-2 border-gray-100 outline-none focus:border-blue-400">
-                        </div>
-                        <div class="flex flex-col">
-                            <label class="text-xs font-bold text-gray-400 uppercase ml-2 mb-1">Loại (Category)</label>
-                            <select id="category-select" class="p-3 rounded-xl border-2 border-gray-100 outline-none focus:border-blue-400 bg-white">
-                                <option value="">-- Tất cả loại --</option>
-                            </select>
+                        <div id="status" class="mt-4 p-3 bg-white/50 rounded-xl text-sm italic text-blue-600">
+                            Sẵn sàng xử lý file...
                         </div>
                     </div>
 
-                    <div class="overflow-x-auto">
-                        <div id="edit-grid" class="min-w-[600px] grid grid-cols-[1.2fr_1.2fr_1fr_150px] gap-4 items-center">
-                            <!-- Grid sẽ được tạo động -->
-                        </div>
-                    </div>                  
-                </div>
-            </div>
-
-            <!-- GRAMMAR UPLOAD TAB -->
-            <div id="tab-grammar" class="hidden space-y-6">
-
-                <h2 class="text-xl font-bold mb-4">Grammar Data Upload</h2>
-            
-                <div class="bg-white p-6 rounded-xl shadow space-y-4 max-w-xl">
-            
-    
-                <!-- File input -->
-                <div>
-                    <label class="block font-semibold mb-1">Excel file (.xlsx)</label>
-                    <input
-                    type="file"
-                    id="grammar-excel-file"
-                    accept=".xlsx,.xls"
-                    class="w-full border rounded px-3 py-2"
-                    />
-                </div>
-            
-                <!-- Upload button -->
-                <button
-                    id="grammar-upload-btn"
-                    class="w-full bg-blue-600 text-white font-bold py-2 rounded hover:bg-blue-700"
-                >
-                    Upload Excel
-                </button>
-            
-                <!-- Status -->
-                <div
-                    id="grammar-upload-status"
-                    class="text-sm mt-2"
-                ></div>
-            
-                </div>
-            </div>
-  
-
-            <!-- CONTENT: TAB NHẬP ẢNH & TÀI NGUYÊN -->
-            <div id="tab-assets" class="hidden space-y-6">
-                <div class="bg-white p-8 rounded-3xl">
-                    <h3 class="text-2xl font-bold text-purple-600 mb-6 uppercase text-center">Quản lý hình ảnh tài nguyên</h3>
-                    <!-- ASSET FORM BUTTONS -->
-                    <div id="asset-form-buttons" class="flex gap-3 mb-6">
-                        <button data-form="hero"
-                                class="px-4 py-2 rounded-xl font-bold bg-yellow-400 hover:bg-yellow-500">
-                        🦸 Nhập Hero
-                        </button>
-                    
-                        <button data-form="monster"
-                                class="px-4 py-2 rounded-xl font-bold bg-red-400 hover:bg-red-500 text-white">
-                        👹 Nhập Quái vật
-                        </button>
-                    
-                        <button data-form="gear"
-                                class="px-4 py-2 rounded-xl font-bold bg-blue-400 hover:bg-blue-500 text-white">
-                        ⚔️ Nhập Vũ khí / Khiên
-                        </button>
-                    </div>
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
-                        <div id="form-hero" class="asset-form hidden">
-                        <!-- Form nhập Hero -->
-                        <div class="p-6 bg-yellow-50 rounded-2xl border-2 border-yellow-100">
-                            <h3 class="font-bold text-gray-700 mb-4 flex items-center gap-2">
-                                <span class="w-8 h-8 bg-blue-100 text-blue-600 rounded-lg flex items-center justify-center text-sm">01</span>
-                                Nhập Hero
-                            </h3>
-                            <div class="space-y-4">
-                                <input type="text" id="hero-name" placeholder="Tên Hero..." class="w-full p-3 rounded-xl border-2 border-gray-100 outline-none focus:border-blue-400">
-                                <div class="grid grid-cols-3 gap-2">
-                                    <div>
-                                        <label class="text-xs text-gray-500 font-bold block mb-1">❤️ HP</label>
-                                        <input type="number" id="hero-hp" value="100" class="w-full p-2 border rounded-lg text-center">
-                                    </div>
-                                    <div>
-                                        <label class="text-xs text-gray-500 font-bold block mb-1">⚔️ ATK</label>
-                                        <input type="number" id="hero-atk" value="10" class="w-full p-2 border rounded-lg text-center">
-                                    </div>
-                                    <div>
-                                        <label class="text-xs text-gray-500 font-bold block mb-1">🛡️ DEF</label>
-                                        <input type="number" id="hero-def" value="5" class="w-full p-2 border rounded-lg text-center">
-                                    </div>
-                                </div>
-                                <div class="flex items-center gap-2">
-                                    <input type="checkbox" id="hero-locked" class="w-5 h-5">
-                                    <label for="hero-locked" class="font-bold text-sm">🔒 Khóa hero này</label>
-                                </div>
-                                <select id="hero-unlock-station" class="w-full p-3 rounded-xl border-2 border-gray-100 outline-none focus:border-blue-400 bg-white">
-                                    <option value="">Hero mặc định (không khóa)</option>
+                    <!-- Edit Grid Section -->
+                    <div class="bg-white p-6 rounded-3xl">
+                        <h3 class="text-xl font-bold text-gray-700 mb-6 uppercase">2. Tìm kiếm & Chỉnh sửa nhanh</h3>
+                        
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
+                            <div class="flex flex-col">
+                                <label class="text-xs font-bold text-gray-400 uppercase ml-2 mb-1">Tiếng Anh</label>
+                                <input type="text" id="search-en" placeholder="Tìm từ tiếng Anh..." class="p-3 rounded-xl border-2 border-gray-100 outline-none focus:border-blue-400">
+                            </div>
+                            <div class="flex flex-col">
+                                <label class="text-xs font-bold text-gray-400 uppercase ml-2 mb-1">Tiếng Việt</label>
+                                <input type="text" id="search-vi" placeholder="Tìm từ tiếng Việt..." class="p-3 rounded-xl border-2 border-gray-100 outline-none focus:border-blue-400">
+                            </div>
+                            <div class="flex flex-col">
+                                <label class="text-xs font-bold text-gray-400 uppercase ml-2 mb-1">Loại (Category)</label>
+                                <select id="category-select" class="p-3 rounded-xl border-2 border-gray-100 outline-none focus:border-blue-400 bg-white">
+                                    <option value="">-- Tất cả loại --</option>
                                 </select>
-                                <input type="file" id="hero-file" class="w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100">
-                                <input type="text" id="hero-url" placeholder="Hoặc dán URL ảnh sprite..." class="w-full p-3 rounded-xl border-2 border-gray-100 outline-none focus:border-blue-400">
-                                <button id="save-hero-btn" class="w-full py-3 bg-blue-500 text-white rounded-xl font-bold hover:bg-blue-600 transition-colors shadow-lg shadow-blue-100">Lưu Hero</button>
                             </div>
                         </div>
-                    </div>        
-                    <div id="form-monster" class="asset-form hidden">
-                        <!-- Form nhập Monster -->
-                        <div class="p-6 bg-red-50 rounded-2xl border-2 border-red-100">
-                            <h3 class="font-bold text-gray-700 mb-4 flex items-center gap-2">
-                                <span class="w-8 h-8 bg-red-100 text-red-600 rounded-lg flex items-center justify-center text-sm">02</span>
-                                Nhập Quái vật
-                            </h3>
-                            <div class="space-y-4">
-                                <input type="text" id="monster-name" placeholder="Tên quái vật..." class="w-full p-3 rounded-xl border-2 border-gray-100 outline-none focus:border-red-400">
-                                <div class="grid grid-cols-5 gap-x-1.5 gap-y-2 justify-items-center">
-                                    <div>
-                                        <label class="text-[10px] text-gray-500 font-bold block mb-1 text-center">❤️ HP</label>
-                                        <input type="number" id="monster-hp" value="50" class="w-full p-1.5 border rounded-lg text-center text-sm">
+
+                        <div class="overflow-x-auto">
+                            <div id="edit-grid" class="min-w-[600px] grid grid-cols-[1.2fr_1.2fr_1fr_150px] gap-4 items-center">
+                                <!-- Grid sẽ được tạo động -->
+                            </div>
+                        </div>                  
+                    </div>
+                </div>
+
+                <!-- CONTENT: TAB NHẬP ẢNH & TÀI NGUYÊN -->
+                <div id="tab-assets" class="hidden space-y-6">
+                    <div class="bg-white p-8 rounded-3xl">
+                        <h3 class="text-2xl font-bold text-purple-600 mb-6 uppercase text-center">Quản lý hình ảnh tài nguyên</h3>
+                        <!-- ASSET FORM BUTTONS -->
+                        <div id="asset-form-buttons" class="flex gap-3 mb-6">
+                            <button data-form="hero"
+                                    class="px-4 py-2 rounded-xl font-bold bg-yellow-400 hover:bg-yellow-500">
+                            🦸 Nhập Hero
+                            </button>
+                        
+                            <button data-form="monster"
+                                    class="px-4 py-2 rounded-xl font-bold bg-red-400 hover:bg-red-500 text-white">
+                            👹 Nhập Quái vật
+                            </button>
+                        
+                            <button data-form="gear"
+                                    class="px-4 py-2 rounded-xl font-bold bg-blue-400 hover:bg-blue-500 text-white">
+                            ⚔️ Nhập Vũ khí / Khiên
+                            </button>
+                        </div>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                            <div id="form-hero" class="asset-form hidden">
+                            <!-- Form nhập Hero -->
+                            <div class="p-6 bg-yellow-50 rounded-2xl border-2 border-yellow-100">
+                                <h3 class="font-bold text-gray-700 mb-4 flex items-center gap-2">
+                                    <span class="w-8 h-8 bg-blue-100 text-blue-600 rounded-lg flex items-center justify-center text-sm">01</span>
+                                    Nhập Hero
+                                </h3>
+                                <div class="space-y-4">
+                                    <input type="text" id="hero-name" placeholder="Tên Hero..." class="w-full p-3 rounded-xl border-2 border-gray-100 outline-none focus:border-blue-400">
+                                    <div class="grid grid-cols-3 gap-2">
+                                        <div>
+                                            <label class="text-xs text-gray-500 font-bold block mb-1">❤️ HP</label>
+                                            <input type="number" id="hero-hp" value="100" class="w-full p-2 border rounded-lg text-center">
+                                        </div>
+                                        <div>
+                                            <label class="text-xs text-gray-500 font-bold block mb-1">⚔️ ATK</label>
+                                            <input type="number" id="hero-atk" value="10" class="w-full p-2 border rounded-lg text-center">
+                                        </div>
+                                        <div>
+                                            <label class="text-xs text-gray-500 font-bold block mb-1">🛡️ DEF</label>
+                                            <input type="number" id="hero-def" value="5" class="w-full p-2 border rounded-lg text-center">
+                                        </div>
                                     </div>
-                                    <div>
-                                        <label class="text-[10px] text-gray-500 font-bold block mb-1 text-center">⚔️ ATK</label>
-                                        <input type="number" id="monster-atk" value="5" class="w-full p-1.5 border rounded-lg text-center text-sm">
+                                    <div class="flex items-center gap-2">
+                                        <input type="checkbox" id="hero-locked" class="w-5 h-5">
+                                        <label for="hero-locked" class="font-bold text-sm">🔒 Khóa hero này</label>
                                     </div>
-                                    <div>
-                                        <label class="text-[10px] text-gray-500 font-bold block mb-1 text-center">🛡️ DEF</label>
-                                        <input type="number" id="monster-def" value="0" class="w-full p-1.5 border rounded-lg text-center text-sm">
+                                    <select id="hero-unlock-station" class="w-full p-3 rounded-xl border-2 border-gray-100 outline-none focus:border-blue-400 bg-white">
+                                        <option value="">Hero mặc định (không khóa)</option>
+                                    </select>
+                                    <input type="file" id="hero-file" class="w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100">
+                                    <input type="text" id="hero-url" placeholder="Hoặc dán URL ảnh sprite..." class="w-full p-3 rounded-xl border-2 border-gray-100 outline-none focus:border-blue-400">
+                                    <button id="save-hero-btn" class="w-full py-3 bg-blue-500 text-white rounded-xl font-bold hover:bg-blue-600 transition-colors shadow-lg shadow-blue-100">Lưu Hero</button>
+                                </div>
+                            </div>
+                        </div>        
+                        <div id="form-monster" class="asset-form hidden">
+                            <!-- Form nhập Monster -->
+                            <div class="p-6 bg-red-50 rounded-2xl border-2 border-red-100">
+                                <h3 class="font-bold text-gray-700 mb-4 flex items-center gap-2">
+                                    <span class="w-8 h-8 bg-red-100 text-red-600 rounded-lg flex items-center justify-center text-sm">02</span>
+                                    Nhập Quái vật
+                                </h3>
+                                <div class="space-y-4">
+                                    <input type="text" id="monster-name" placeholder="Tên quái vật..." class="w-full p-3 rounded-xl border-2 border-gray-100 outline-none focus:border-red-400">
+                                    <div class="grid grid-cols-5 gap-x-1.5 gap-y-2 justify-items-center">
+                                        <div>
+                                            <label class="text-[10px] text-gray-500 font-bold block mb-1 text-center">❤️ HP</label>
+                                            <input type="number" id="monster-hp" value="50" class="w-full p-1.5 border rounded-lg text-center text-sm">
+                                        </div>
+                                        <div>
+                                            <label class="text-[10px] text-gray-500 font-bold block mb-1 text-center">⚔️ ATK</label>
+                                            <input type="number" id="monster-atk" value="5" class="w-full p-1.5 border rounded-lg text-center text-sm">
+                                        </div>
+                                        <div>
+                                            <label class="text-[10px] text-gray-500 font-bold block mb-1 text-center">🛡️ DEF</label>
+                                            <input type="number" id="monster-def" value="0" class="w-full p-1.5 border rounded-lg text-center text-sm">
+                                        </div>
+                                        <div>
+                                            <label class="text-[10px] text-gray-500 font-bold block mb-1 text-center">✨ EXP</label>
+                                            <input type="number" id="monster-exp" value="10" class="w-full p-1.5 border rounded-lg text-center text-sm">
+                                        </div>
+                                        <div>
+                                            <label class="text-[10px] text-gray-500 font-bold block mb-1 text-center">🪙 COIN</label>
+                                            <input type="number" id="monster-coin" value="0" class="w-full p-1.5 border rounded-lg text-center text-sm">
+                                        </div>
                                     </div>
-                                    <div>
-                                        <label class="text-[10px] text-gray-500 font-bold block mb-1 text-center">✨ EXP</label>
-                                        <input type="number" id="monster-exp" value="10" class="w-full p-1.5 border rounded-lg text-center text-sm">
+                                    <select id="monster-type" class="w-full p-3 rounded-xl border-2 border-gray-100 outline-none focus:border-red-400 bg-white">
+                                        <option value="normal">Quái thường</option>
+                                        <option value="elite">Elite</option>
+                                        <option value="boss">Boss</option>
+                                        <option value="final boss">Final Boss</option>
+                                    </select>
+                                    <select id="monster-location" class="w-full p-3 rounded-xl border-2 border-gray-100 outline-none focus:border-red-400 bg-white">
+                                        <option value="">-- Tất cả vùng --</option>
+                                    </select>
+                                    <input type="file" id="monster-file" class="w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-red-50 file:text-red-700 hover:file:bg-red-100">
+                                    <input type="text" id="monster-url" placeholder="Hoặc dán URL ảnh sprite..." class="w-full p-3 rounded-xl border-2 border-gray-100 outline-none focus:border-red-400">
+                                    <button id="save-monster-btn" class="w-full py-3 bg-red-500 text-white rounded-xl font-bold hover:bg-red-600 transition-colors shadow-lg shadow-red-100">Lưu Quái vật</button>
+                                </div>
+                            </div>
+                        </div>  
+                        <div id="form-gear" class="asset-form hidden"> 
+                            <!-- Form nhập Trang bị -->
+                            <div class="p-6 bg-blue-50 rounded-2xl border-2 border-blue-100 md:col-span-2">
+                                <h4 class="font-bold text-blue-700 mb-4 flex items-center gap-2 text-lg">
+                                    <span>⚔️</span> Nhập Vũ khí & Khiên
+                                </h4>
+                                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                    <div class="space-y-4">
+                                        <input type="text" id="gear-name" placeholder="Tên trang bị" class="w-full p-3 rounded-xl border-2 border-white outline-none focus:border-blue-400 shadow-sm">
+                                        <select id="gear-type" class="w-full p-3 rounded-xl border-2 border-white outline-none focus:border-blue-400 bg-white shadow-sm">
+                                            <option value="weapon">Vũ khí (Weapon)</option>
+                                            <option value="shield">Khiên (Shield)</option>
+                                        </select>
                                     </div>
-                                    <div>
-                                        <label class="text-[10px] text-gray-500 font-bold block mb-1 text-center">🪙 COIN</label>
-                                        <input type="number" id="monster-coin" value="0" class="w-full p-1.5 border rounded-lg text-center text-sm">
+                                    <div class="space-y-4">
+                                        <div class="space-y-2">
+                                            <label class="text-xs font-bold text-gray-400 uppercase ml-2">Hình ảnh</label>
+                                            <input type="text" id="gear-url" placeholder="Dán Link ảnh (URL)" class="w-full p-3 rounded-xl border-2 border-white outline-none focus:border-blue-400 shadow-sm">
+                                            <div class="flex items-center gap-2">
+                                                <span class="text-gray-400 text-xs italic">Hoặc</span>
+                                                <input type="file" id="gear-file" accept="image/*" class="text-xs text-gray-500">
+                                            </div>
+                                        </div>
                                     </div>
                                 </div>
-                                <select id="monster-type" class="w-full p-3 rounded-xl border-2 border-gray-100 outline-none focus:border-red-400 bg-white">
-                                    <option value="normal">Quái thường</option>
+                                <div class="flex flex-col gap-1 mt-4">
+                                    <label class="text-xs font-bold text-gray-500 uppercase">Chỉ số ô (0-31)</label>
+                                    <input type="number" id="gear-frame-index" value="0" min="0" max="31" 
+                                        class="p-3 rounded-xl border border-gray-200 focus:ring-2 focus:ring-blue-500 outline-none" 
+                                        placeholder="Ví dụ: 5">
+                                </div>
+                                <button id="save-gear-btn" class="w-full mt-6 py-3 bg-blue-500 text-white font-bold rounded-xl shadow-[0_4px_0_#1e40af] hover:bg-blue-600 transition-all">Lưu Trang bị</button>
+                            </div>
+                        </div>       
+                        </div>
+                    </div>
+                    
+                    <!-- Tìm kiếm & Sửa nhanh tài nguyên -->
+                    
+                    <div class="mt-10 p-4 border-t-2 border-dashed">
+                        <h3 class="font-bold mb-4">Tìm kiếm & Sửa nhanh tài nguyên</h3>
+                        
+                        <!-- Tab buttons -->
+                        <div class="flex bg-gray-100 p-1 rounded-xl mb-6">
+                            <button id="btn-show-heroes" class="asset-tab px-6 py-2 rounded-lg bg-blue-500 text-white font-bold transition-all">
+                                🦸 Heroes
+                            </button>
+                            <button id="btn-show-monsters" class="asset-tab px-6 py-2 rounded-lg text-gray-500 font-bold hover:bg-gray-200 transition-all">
+                                👹 Monsters
+                            </button>
+                            <button id="btn-show-gears" class="asset-tab px-6 py-2 rounded-lg text-gray-500 font-bold hover:bg-gray-200 transition-all">
+                                ⚔️ Gears
+                            </button>
+                        </div>
+
+                        <!-- ✅ Search/Filter area (ẩn mặc định) -->
+                        <div id="asset-search-filters" class="hidden mb-6 space-y-4">
+                            
+                            <!-- Common search (cho tất cả) -->
+                            <div class="flex gap-3">
+                                <input type="text" id="search-asset-name" placeholder="🔍 Tìm tên..." 
+                                    class="flex-1 p-3 rounded-xl border-2 border-gray-100 outline-none focus:border-purple-400">
+                                <button onclick="window.assetManager.search()" 
+                                        class="px-6 py-3 bg-blue-500 text-white rounded-xl font-bold hover:bg-blue-600">
+                                    Tìm kiếm
+                                </button>
+                            </div>
+
+                            <!-- ✅ Monster-specific filters (chỉ hiện khi chọn Monster tab) -->
+                            <div id="monster-filters" class="hidden flex gap-3">
+                                <select id="filter-monster-type" 
+                                        class="px-4 py-2 border-2 rounded-xl focus:border-red-400 outline-none">
+                                    <option value="">-- Tất cả loại --</option>
+                                    <option value="normal">Normal</option>
                                     <option value="elite">Elite</option>
                                     <option value="boss">Boss</option>
                                     <option value="final boss">Final Boss</option>
                                 </select>
-                                <select id="monster-location" class="w-full p-3 rounded-xl border-2 border-gray-100 outline-none focus:border-red-400 bg-white">
+
+                                <select id="filter-monster-location" 
+                                        class="px-4 py-2 border-2 rounded-xl focus:border-red-400 outline-none">
                                     <option value="">-- Tất cả vùng --</option>
                                 </select>
-                                <input type="file" id="monster-file" class="w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-red-50 file:text-red-700 hover:file:bg-red-100">
-                                <input type="text" id="monster-url" placeholder="Hoặc dán URL ảnh sprite..." class="w-full p-3 rounded-xl border-2 border-gray-100 outline-none focus:border-red-400">
-                                <button id="save-monster-btn" class="w-full py-3 bg-red-500 text-white rounded-xl font-bold hover:bg-red-600 transition-colors shadow-lg shadow-red-100">Lưu Quái vật</button>
                             </div>
                         </div>
-                    </div>  
-                    <div id="form-gear" class="asset-form hidden"> 
-                        <!-- Form nhập Trang bị -->
-                        <div class="p-6 bg-blue-50 rounded-2xl border-2 border-blue-100 md:col-span-2">
-                            <h4 class="font-bold text-blue-700 mb-4 flex items-center gap-2 text-lg">
-                                <span>⚔️</span> Nhập Vũ khí & Khiên
-                            </h4>
-                            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                <div class="space-y-4">
-                                    <input type="text" id="gear-name" placeholder="Tên trang bị" class="w-full p-3 rounded-xl border-2 border-white outline-none focus:border-blue-400 shadow-sm">
-                                    <select id="gear-type" class="w-full p-3 rounded-xl border-2 border-white outline-none focus:border-blue-400 bg-white shadow-sm">
-                                        <option value="weapon">Vũ khí (Weapon)</option>
-                                        <option value="shield">Khiên (Shield)</option>
-                                    </select>
-                                </div>
-                                <div class="space-y-4">
-                                    <div class="space-y-2">
-                                        <label class="text-xs font-bold text-gray-400 uppercase ml-2">Hình ảnh</label>
-                                        <input type="text" id="gear-url" placeholder="Dán Link ảnh (URL)" class="w-full p-3 rounded-xl border-2 border-white outline-none focus:border-blue-400 shadow-sm">
-                                        <div class="flex items-center gap-2">
-                                            <span class="text-gray-400 text-xs italic">Hoặc</span>
-                                            <input type="file" id="gear-file" accept="image/*" class="text-xs text-gray-500">
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="flex flex-col gap-1 mt-4">
-                                <label class="text-xs font-bold text-gray-500 uppercase">Chỉ số ô (0-31)</label>
-                                <input type="number" id="gear-frame-index" value="0" min="0" max="31" 
-                                    class="p-3 rounded-xl border border-gray-200 focus:ring-2 focus:ring-blue-500 outline-none" 
-                                    placeholder="Ví dụ: 5">
-                            </div>
-                            <button id="save-gear-btn" class="w-full mt-6 py-3 bg-blue-500 text-white font-bold rounded-xl shadow-[0_4px_0_#1e40af] hover:bg-blue-600 transition-all">Lưu Trang bị</button>
+                        
+                        <!-- Results grid -->
+                        <div id="asset-grid-container" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                            <p class="text-gray-400 italic text-center col-span-full">
+                                📋 Chọn một tab và nhấn "Tìm kiếm" để hiển thị dữ liệu
+                            </p>
                         </div>
-                    </div>       
+                    </div>
+                </div>
+
+                <!-- CONTENT: TAB TEST CÂU HỎI -->
+                <div id="tab-questions" class="hidden space-y-6">
+                    <div class="bg-white p-6 rounded-3xl">
+                        <div class="flex justify-between items-center mb-6">
+                            <h3 class="text-xl font-bold text-purple-600 uppercase">Test câu hỏi</h3>
+                            <button onclick="showAddQuestionForm()" class="px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 font-bold">
+                                + Thêm loại câu hỏi mới
+                            </button>
+                        </div>
+                        
+                        <!-- Danh sách các loại câu hỏi -->
+                        <div id="question-types-list" class="grid grid-cols-2 md:grid-cols-3 gap-4 mb-6">
+                            <!-- Sẽ được load từ DB -->
+                        </div>
+                        
+                        <!-- Form thêm câu hỏi mới -->
+                        <div id="add-question-form" class="hidden mb-6 p-6 bg-blue-50 rounded-2xl border-2 border-blue-200">
+                            <h4 class="font-bold text-lg mb-4">Thêm loại câu hỏi mới</h4>
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div>
+                                    <label class="block text-sm font-bold mb-2">ID (Số thứ tự):</label>
+                                    <input type="number" id="new-question-id" min="1" placeholder="VD: 6" class="w-full p-3 border rounded-lg">
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-bold mb-2">Tên câu hỏi:</label>
+                                    <input type="text" id="new-question-name" placeholder="VD: Chọn đáp án đúng" class="w-full p-3 border rounded-lg">
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-bold mb-2">Icon:</label>
+                                    <input type="text" id="new-question-icon" placeholder="VD: 🎯" class="w-full p-3 border rounded-lg">
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-bold mb-2">Mô tả:</label>
+                                    <input type="text" id="new-question-desc" placeholder="Chọn 1 trong 4 đáp án" class="w-full p-3 border rounded-lg">
+                                </div>
+                            </div>
+                            <div class="flex gap-2 mt-4">
+                                <button onclick="saveNewQuestionType()" class="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 font-bold">
+                                    💾 Lưu
+                                </button>
+                                <button onclick="cancelAddQuestionForm()" class="px-4 py-2 bg-gray-300 rounded-lg hover:bg-gray-400 font-bold">
+                                    Hủy
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Form sửa câu hỏi -->
+                        <div id="edit-question-form" class="hidden bg-white p-4 rounded-xl shadow-md">
+                            <h3 class="font-bold mb-2">Chỉnh sửa loại câu hỏi</h3>
+                            <input id="edit-question-id" type="number" class="border p-2 w-full mb-2" readonly />
+                            <input id="edit-question-name" type="text" class="border p-2 w-full mb-2" placeholder="Tên" />
+                            <input id="edit-question-icon" type="text" class="border p-2 w-full mb-2" placeholder="Icon" />
+                            <textarea id="edit-question-desc" class="border p-2 w-full mb-2" placeholder="Mô tả"></textarea>
+                            <div class="flex gap-2">
+                            <button onclick="window.testQuestionManager.saveEditedQuestionType()" 
+                                    class="bg-green-500 text-white px-4 py-2 rounded">💾 Lưu</button>
+                            <button onclick="window.testQuestionManager.cancelEditForm()" 
+                                    class="bg-gray-400 text-white px-4 py-2 rounded">❌ Hủy</button>
+                            </div>
+                        </div>
+
+                        <!-- Vùng test câu hỏi -->
+                        <div id="questionarea" class="p-6 border-2 border-dashed rounded-xl bg-gray-50 min-h-[400px]">
+                            <p class="text-gray-400 italic text-center">Chọn một loại câu hỏi bên trên để test</p>
+                        </div>
                     </div>
                 </div>
                 
-                <!-- Tìm kiếm & Sửa nhanh tài nguyên -->
-                
-                <div class="mt-10 p-4 border-t-2 border-dashed">
-                    <h3 class="font-bold mb-4">Tìm kiếm & Sửa nhanh tài nguyên</h3>
-                    
-                    <!-- Tab buttons -->
-                    <div class="flex bg-gray-100 p-1 rounded-xl mb-6">
-                        <button id="btn-show-heroes" class="asset-tab px-6 py-2 rounded-lg bg-blue-500 text-white font-bold transition-all">
-                            🦸 Heroes
-                        </button>
-                        <button id="btn-show-monsters" class="asset-tab px-6 py-2 rounded-lg text-gray-500 font-bold hover:bg-gray-200 transition-all">
-                            👹 Monsters
-                        </button>
-                        <button id="btn-show-gears" class="asset-tab px-6 py-2 rounded-lg text-gray-500 font-bold hover:bg-gray-200 transition-all">
-                            ⚔️ Gears
+                <!-- CONTENT: Tab Locations -->
+                <div id="tab-locations" class="tab-content hidden">
+                    <div class="flex justify-between items-center mb-6">
+                        <h2 class="text-2xl font-bold">Quản lý Vùng đất</h2>
+                        <button onclick="LocationManager.showAddForm()" 
+                                class="px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600">
+                            + Thêm vùng mới
                         </button>
                     </div>
-
-                    <!-- ✅ Search/Filter area (ẩn mặc định) -->
-                    <div id="asset-search-filters" class="hidden mb-6 space-y-4">
-                        
-                        <!-- Common search (cho tất cả) -->
-                        <div class="flex gap-3">
-                            <input type="text" id="search-asset-name" placeholder="🔍 Tìm tên..." 
-                                class="flex-1 p-3 rounded-xl border-2 border-gray-100 outline-none focus:border-purple-400">
-                            <button onclick="window.assetManager.search()" 
-                                    class="px-6 py-3 bg-blue-500 text-white rounded-xl font-bold hover:bg-blue-600">
-                                Tìm kiếm
-                            </button>
+                    
+                    <div id="location-form" class="hidden mb-6 p-4 bg-blue-50 rounded-lg">
+                        <h3 class="font-bold mb-3">Thêm/Sửa Vùng đất</h3>
+                        <input type="hidden" id="location-id">
+                        <div class="grid grid-cols-2 gap-4 mb-3">
+                            <input type="text" id="location-name" placeholder="Tên vùng (VD: Rừng Xanh)" class="px-3 py-2 border rounded">
+                            <input type="number" id="location-order" placeholder="Thứ tự" class="px-3 py-2 border rounded">
                         </div>
+                        <textarea id="location-desc" placeholder="Mô tả vùng đất" class="w-full px-3 py-2 border rounded mb-3" rows="2"></textarea>
+                        <input type="text" id="location-image" placeholder="URL ảnh nền" class="w-full px-3 py-2 border rounded mb-3">
+                        <div class="flex gap-2">
+                            <button onclick="LocationManager.save()" class="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600">Lưu</button>
+                            <button onclick="LocationManager.cancelForm()" class="px-4 py-2 bg-gray-300 rounded hover:bg-gray-400">Hủy</button>
+                        </div>
+                    </div>
+                    
+                    <div id="locations-list" class="grid grid-cols-1 gap-4"></div>
+                </div>
 
-                        <!-- ✅ Monster-specific filters (chỉ hiện khi chọn Monster tab) -->
-                        <div id="monster-filters" class="hidden flex gap-3">
-                            <select id="filter-monster-type" 
-                                    class="px-4 py-2 border-2 rounded-xl focus:border-red-400 outline-none">
-                                <option value="">-- Tất cả loại --</option>
-                                <option value="normal">Normal</option>
-                                <option value="elite">Elite</option>
-                                <option value="boss">Boss</option>
-                                <option value="final boss">Final Boss</option>
+                <!-- CONTENT: Tab Stations -->
+                <div id="tab-stations" class="tab-content hidden">
+                    <div class="flex justify-between items-center mb-6">
+                        <h2 class="text-2xl font-bold">Quản lý Chặng</h2>
+                        <button onclick="StationManager.showAddForm()" 
+                                class="px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600">
+                            + Thêm chặng mới
+                        </button>
+                    </div>
+                    
+                    <div id="station-form" class="hidden mb-6 p-4 bg-blue-50 rounded-lg">
+                        <h3 class="font-bold mb-3">Thêm/Sửa Chặng</h3>
+                        <input type="hidden" id="station-id">
+                        <div class="grid grid-cols-2 gap-4 mb-3">
+                            <select id="station-location" class="px-3 py-2 border rounded">
+                                <option value="">-- Chọn vùng đất --</option>
                             </select>
+                            <input type="number" id="station-order" placeholder="Thứ tự (1,2,3)" class="px-3 py-2 border rounded">
+                        </div>
+                        <input type="text" id="station-name" placeholder="Tên chặng (VD: Cổng Rừng)" class="w-full px-3 py-2 border rounded mb-3">
+                        <textarea id="station-desc" placeholder="Mô tả chặng" class="w-full px-3 py-2 border rounded mb-3" rows="2"></textarea>
+                        <div class="flex gap-2">
+                            <button onclick="StationManager.save()" class="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600">Lưu</button>
+                            <button onclick="StationManager.cancelForm()" class="px-4 py-2 bg-gray-300 rounded hover:bg-gray-400">Hủy</button>
+                        </div>
+                    </div>
+                    
+                    <div id="stations-list" class="space-y-4"></div>
+                </div>
 
-                            <select id="filter-monster-location" 
-                                    class="px-4 py-2 border-2 rounded-xl focus:border-red-400 outline-none">
+                <!-- CONTENT: Tab Steps -->
+                <div id="tab-steps" class="tab-content hidden">
+                    <div class="flex justify-between items-center mb-6">
+                        <h2 class="text-2xl font-bold">Cấu hình Steps (Monster spawn)</h2>
+                        <div class="flex gap-2">
+                            <select id="step-filter-location" onchange="StepManager.filterByLocation()" class="px-3 py-2 border rounded">
                                 <option value="">-- Tất cả vùng --</option>
                             </select>
+                            <select id="step-filter-station" onchange="StepManager.loadSteps()" class="px-3 py-2 border rounded">
+                                <option value="">-- Tất cả chặng --</option>
+                            </select>
                         </div>
                     </div>
                     
-                    <!-- Results grid -->
-                    <div id="asset-grid-container" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                        <p class="text-gray-400 italic text-center col-span-full">
-                            📋 Chọn một tab và nhấn "Tìm kiếm" để hiển thị dữ liệu
-                        </p>
-                    </div>
+                    <div id="steps-grid" class="grid grid-cols-5 gap-2"></div>
                 </div>
-            </div>
 
-            <!-- CONTENT: TAB TEST CÂU HỎI -->
-            <div id="tab-questions" class="hidden space-y-6">
-                <div class="bg-white p-6 rounded-3xl">
-                    <div class="flex justify-between items-center mb-6">
-                        <h3 class="text-xl font-bold text-purple-600 uppercase">Test câu hỏi</h3>
-                        <button onclick="showAddQuestionForm()" class="px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 font-bold">
-                            + Thêm loại câu hỏi mới
-                        </button>
-                    </div>
-                    
-                    <!-- Danh sách các loại câu hỏi -->
-                    <div id="question-types-list" class="grid grid-cols-2 md:grid-cols-3 gap-4 mb-6">
-                        <!-- Sẽ được load từ DB -->
-                    </div>
-                    
-                    <!-- Form thêm câu hỏi mới -->
-                    <div id="add-question-form" class="hidden mb-6 p-6 bg-blue-50 rounded-2xl border-2 border-blue-200">
-                        <h4 class="font-bold text-lg mb-4">Thêm loại câu hỏi mới</h4>
-                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            <div>
-                                <label class="block text-sm font-bold mb-2">ID (Số thứ tự):</label>
-                                <input type="number" id="new-question-id" min="1" placeholder="VD: 6" class="w-full p-3 border rounded-lg">
-                            </div>
-                            <div>
-                                <label class="block text-sm font-bold mb-2">Tên câu hỏi:</label>
-                                <input type="text" id="new-question-name" placeholder="VD: Chọn đáp án đúng" class="w-full p-3 border rounded-lg">
-                            </div>
-                            <div>
-                                <label class="block text-sm font-bold mb-2">Icon:</label>
-                                <input type="text" id="new-question-icon" placeholder="VD: 🎯" class="w-full p-3 border rounded-lg">
-                            </div>
-                            <div>
-                                <label class="block text-sm font-bold mb-2">Mô tả:</label>
-                                <input type="text" id="new-question-desc" placeholder="Chọn 1 trong 4 đáp án" class="w-full p-3 border rounded-lg">
-                            </div>
-                        </div>
-                        <div class="flex gap-2 mt-4">
-                            <button onclick="saveNewQuestionType()" class="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 font-bold">
-                                💾 Lưu
-                            </button>
-                            <button onclick="cancelAddQuestionForm()" class="px-4 py-2 bg-gray-300 rounded-lg hover:bg-gray-400 font-bold">
-                                Hủy
-                            </button>
-                        </div>
-                    </div>
-
-                    <!-- Form sửa câu hỏi -->
-                    <div id="edit-question-form" class="hidden bg-white p-4 rounded-xl shadow-md">
-                        <h3 class="font-bold mb-2">Chỉnh sửa loại câu hỏi</h3>
-                        <input id="edit-question-id" type="number" class="border p-2 w-full mb-2" readonly />
-                        <input id="edit-question-name" type="text" class="border p-2 w-full mb-2" placeholder="Tên" />
-                        <input id="edit-question-icon" type="text" class="border p-2 w-full mb-2" placeholder="Icon" />
-                        <textarea id="edit-question-desc" class="border p-2 w-full mb-2" placeholder="Mô tả"></textarea>
-                        <div class="flex gap-2">
-                        <button onclick="window.testQuestionManager.saveEditedQuestionType()" 
-                                class="bg-green-500 text-white px-4 py-2 rounded">💾 Lưu</button>
-                        <button onclick="window.testQuestionManager.cancelEditForm()" 
-                                class="bg-gray-400 text-white px-4 py-2 rounded">❌ Hủy</button>
-                        </div>
-                    </div>
-
-                    <!-- Vùng test câu hỏi -->
-                    <div id="questionarea" class="p-6 border-2 border-dashed rounded-xl bg-gray-50 min-h-[400px]">
-                        <p class="text-gray-400 italic text-center">Chọn một loại câu hỏi bên trên để test</p>
-                    </div>
-                </div>
-            </div>
-            
-            <!-- CONTENT: Tab Locations -->
-            <div id="tab-locations" class="tab-content hidden">
-                <div class="flex justify-between items-center mb-6">
-                    <h2 class="text-2xl font-bold">Quản lý Vùng đất</h2>
-                    <button onclick="LocationManager.showAddForm()" 
-                            class="px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600">
-                        + Thêm vùng mới
-                    </button>
-                </div>
-                
-                <div id="location-form" class="hidden mb-6 p-4 bg-blue-50 rounded-lg">
-                    <h3 class="font-bold mb-3">Thêm/Sửa Vùng đất</h3>
-                    <input type="hidden" id="location-id">
-                    <div class="grid grid-cols-2 gap-4 mb-3">
-                        <input type="text" id="location-name" placeholder="Tên vùng (VD: Rừng Xanh)" class="px-3 py-2 border rounded">
-                        <input type="number" id="location-order" placeholder="Thứ tự" class="px-3 py-2 border rounded">
-                    </div>
-                    <textarea id="location-desc" placeholder="Mô tả vùng đất" class="w-full px-3 py-2 border rounded mb-3" rows="2"></textarea>
-                    <input type="text" id="location-image" placeholder="URL ảnh nền" class="w-full px-3 py-2 border rounded mb-3">
-                    <div class="flex gap-2">
-                        <button onclick="LocationManager.save()" class="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600">Lưu</button>
-                        <button onclick="LocationManager.cancelForm()" class="px-4 py-2 bg-gray-300 rounded hover:bg-gray-400">Hủy</button>
-                    </div>
-                </div>
-                
-                <div id="locations-list" class="grid grid-cols-1 gap-4"></div>
-            </div>
-
-            <!-- CONTENT: Tab Stations -->
-            <div id="tab-stations" class="tab-content hidden">
-                <div class="flex justify-between items-center mb-6">
-                    <h2 class="text-2xl font-bold">Quản lý Chặng</h2>
-                    <button onclick="StationManager.showAddForm()" 
-                            class="px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600">
-                        + Thêm chặng mới
-                    </button>
-                </div>
-                
-                <div id="station-form" class="hidden mb-6 p-4 bg-blue-50 rounded-lg">
-                    <h3 class="font-bold mb-3">Thêm/Sửa Chặng</h3>
-                    <input type="hidden" id="station-id">
-                    <div class="grid grid-cols-2 gap-4 mb-3">
-                        <select id="station-location" class="px-3 py-2 border rounded">
-                            <option value="">-- Chọn vùng đất --</option>
-                        </select>
-                        <input type="number" id="station-order" placeholder="Thứ tự (1,2,3)" class="px-3 py-2 border rounded">
-                    </div>
-                    <input type="text" id="station-name" placeholder="Tên chặng (VD: Cổng Rừng)" class="w-full px-3 py-2 border rounded mb-3">
-                    <textarea id="station-desc" placeholder="Mô tả chặng" class="w-full px-3 py-2 border rounded mb-3" rows="2"></textarea>
-                    <div class="flex gap-2">
-                        <button onclick="StationManager.save()" class="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600">Lưu</button>
-                        <button onclick="StationManager.cancelForm()" class="px-4 py-2 bg-gray-300 rounded hover:bg-gray-400">Hủy</button>
-                    </div>
-                </div>
-                
-                <div id="stations-list" class="space-y-4"></div>
-            </div>
-
-            <!-- CONTENT: Tab Steps -->
-            <div id="tab-steps" class="tab-content hidden">
-                <div class="flex justify-between items-center mb-6">
-                    <h2 class="text-2xl font-bold">Cấu hình Steps (Monster spawn)</h2>
-                    <div class="flex gap-2">
-                        <select id="step-filter-location" onchange="StepManager.filterByLocation()" class="px-3 py-2 border rounded">
-                            <option value="">-- Tất cả vùng --</option>
-                        </select>
-                        <select id="step-filter-station" onchange="StepManager.loadSteps()" class="px-3 py-2 border rounded">
-                            <option value="">-- Tất cả chặng --</option>
-                        </select>
-                    </div>
-                </div>
-                
-                <div id="steps-grid" class="grid grid-cols-5 gap-2"></div>
-            </div>
-
-            <!-- ✅ CONTENT: TAB PROFILES (Thêm mới) -->
-            <div id="tab-profiles" class="hidden space-y-6">
-                <div class="bsg-white p-6 rounded-3xl">
-                    <div class="flex justify-between items-center mb-6">
-                        <h3 class="text-2xl font-bold text-blue-600">Quản lý Profiles</h3>
-                        
-                        <div class="flex gap-3">
-                            <select id="sort-profiles" onchange="ProfileManager.load()" 
+                <!-- ✅ CONTENT: TAB PROFILES (Thêm mới) -->
+                <div id="tab-profiles" class="hidden space-y-6">
+                    <div class="bsg-white p-6 rounded-3xl">
+                        <div class="flex justify-between items-center mb-6">
+                            <h3 class="text-2xl font-bold text-blue-600">Quản lý Profiles</h3>
+                            
+                            <div class="flex gap-3">
+                                <select id="sort-profiles" onchange="ProfileManager.load()" 
+                                        class="px-4 py-2 border-2 rounded-xl focus:border-blue-400 outline-none">
+                                    <option value="level">⚡ Sort by Level</option>
+                                    <option value="coin">🪙 Sort by Coin</option>
+                                    <option value="exp">📊 Sort by EXP</option>
+                                    <option value="name">🔤 Sort by Name</option>
+                                </select>
+                                
+                                <input type="text" id="search-profile" placeholder="🔍 Tìm user..." 
                                     class="px-4 py-2 border-2 rounded-xl focus:border-blue-400 outline-none">
-                                <option value="level">⚡ Sort by Level</option>
-                                <option value="coin">🪙 Sort by Coin</option>
-                                <option value="exp">📊 Sort by EXP</option>
-                                <option value="name">🔤 Sort by Name</option>
+                            </div>
+                        </div>
+                        
+                        <div id="profiles-list" class="space-y-3">
+                            <!-- JS sẽ render vào đây -->
+                        </div>
+                    </div>
+                </div>
+
+                <!-- TAB: NOUNS -->
+                <div id="tab-nouns" class="hidden space-y-6">
+                    <div class="bg-blue-100 p-6 rounded-3xl">
+                        <h3 class="text-xl font-bold text-blue-700 mb-4 uppercase">Upload Nouns từ Excel</h3>
+                        <div class="flex flex-wrap gap-4 items-center">
+                            <input type="file" id="nouns-excel-file" accept=".xlsx, .xls" 
+                                class="block w-full md:w-auto text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 cursor-pointer"/>
+                            <button id="nouns-upload-btn" class="px-8 py-2 bg-green-500 text-white font-bold rounded-xl shadow-[0_4px_0_#15803d] hover:translate-y-0.5 active:shadow-none transition-all">
+                                📤 Tải lên
+                            </button>
+                        </div>
+                        <div id="nouns-status" class="mt-4 p-3 bg-white/50 rounded-xl text-sm italic text-blue-600">
+                            Sẵn sàng...
+                        </div>
+                        
+                        <!-- Template Excel mẫu -->
+                        <div class="mt-4 p-4 bg-yellow-50 rounded-xl border-2 border-yellow-200">
+                            <p class="font-bold mb-2">📝 Format Excel cần có:</p>
+                            <code class="text-xs bg-white p-2 rounded block">
+                                word | type | countable | plural_form | starts_with_vowel | difficulty
+                                <br>apple | food | TRUE | apples | TRUE | A1
+                                <br>book | thing | TRUE | books | FALSE | A1
+                            </code>
+                        </div>
+                    </div>
+                    
+                    <!-- Danh sách Nouns -->
+                    <div class="bg-white p-6 rounded-3xl">
+                        <h3 class="text-xl font-bold mb-4">Danh sách Nouns</h3>
+                        <div class="overflow-x-auto">
+                            <table id="nouns-table" class="w-full">
+                                <thead class="bg-gray-100">
+                                    <tr>
+                                        <th class="p-3 text-left">Word</th>
+                                        <th class="p-3 text-left">Type</th>
+                                        <th class="p-3 text-left">Countable</th>
+                                        <th class="p-3 text-left">Plural</th>
+                                        <th class="p-3 text-left">Vowel</th>
+                                        <th class="p-3 text-left">Level</th>
+                                        <th class="p-3 text-left">Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="nouns-tbody">
+                                    <!-- JS will populate -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- TAB: VERBS -->
+                <div id="tab-verbs" class="hidden space-y-6">
+                    <div class="bg-green-100 p-6 rounded-3xl">
+                        <h3 class="text-xl font-bold text-green-700 mb-4 uppercase">Upload Verbs từ Excel</h3>
+                        <div class="flex flex-wrap gap-4 items-center">
+                            <input type="file" id="verbs-excel-file" accept=".xlsx, .xls" 
+                                class="block w-full md:w-auto text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-green-50 file:text-green-700 hover:file:bg-green-100 cursor-pointer"/>
+                            <button id="verbs-upload-btn" class="px-8 py-2 bg-green-500 text-white font-bold rounded-xl shadow-[0_4px_0_#15803d]">
+                                📤 Tải lên
+                            </button>
+                        </div>
+                        <div id="verbs-status" class="mt-4 p-3 bg-white/50 rounded-xl text-sm italic"></div>
+                        
+                        <div class="mt-4 p-4 bg-yellow-50 rounded-xl border-2 border-yellow-200">
+                            <p class="font-bold mb-2">📝 Format Excel:</p>
+                            <code class="text-xs bg-white p-2 rounded block">
+                                base_form | third_person | past_simple | past_participle | gerund | is_regular | is_stative | difficulty
+                                <br>go | goes | went | gone | going | FALSE | FALSE | A1
+                                <br>eat | eats | ate | eaten | eating | FALSE | FALSE | A1
+                            </code>
+                        </div>
+                    </div>
+                    
+                    <div class="bg-white p-6 rounded-3xl">
+                        <h3 class="text-xl font-bold mb-4">Danh sách Verbs</h3>
+                        <div class="overflow-x-auto">
+                            <table id="verbs-table" class="w-full text-sm">
+                                <thead class="bg-gray-100">
+                                    <tr>
+                                        <th class="p-2">Base</th>
+                                        <th class="p-2">3rd Person</th>
+                                        <th class="p-2">Past</th>
+                                        <th class="p-2">P.P.</th>
+                                        <th class="p-2">Gerund</th>
+                                        <th class="p-2">Regular?</th>
+                                        <th class="p-2">Stative?</th>
+                                        <th class="p-2">Level</th>
+                                        <th class="p-2">Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="verbs-tbody"></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- TAB: ADJECTIVES -->
+                <div id="tab-adjectives" class="hidden space-y-6">
+                    <div class="bg-pink-100 p-6 rounded-3xl">
+                        <h3 class="text-xl font-bold text-pink-700 mb-4 uppercase">Upload Adjectives từ Excel</h3>
+                        <div class="flex flex-wrap gap-4 items-center">
+                            <input type="file" id="adjectives-excel-file" accept=".xlsx, .xls" 
+                                class="block w-full md:w-auto text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-pink-50 file:text-pink-700 hover:file:bg-pink-100 cursor-pointer"/>
+                            <button id="adjectives-upload-btn" class="px-8 py-2 bg-pink-500 text-white font-bold rounded-xl shadow-[0_4px_0_#be185d] hover:translate-y-0.5 active:shadow-none transition-all">
+                                📤 Tải lên
+                            </button>
+                        </div>
+                        <div id="adjectives-status" class="mt-4 p-3 bg-white/50 rounded-xl text-sm italic text-pink-600">
+                            Sẵn sàng...
+                        </div>
+                        
+                        <!-- Template Excel mẫu -->
+                        <div class="mt-4 p-4 bg-yellow-50 rounded-xl border-2 border-yellow-200">
+                            <p class="font-bold mb-2">📝 Format Excel cần có:</p>
+                            <code class="text-xs bg-white p-2 rounded block">
+                                word | type | difficulty
+                                <br>big | size | A1
+                                <br>red | color | A1
+                                <br>happy | emotion | A1
+                                <br>beautiful | quality | A2
+                            </code>
+                            <p class="text-xs text-gray-600 mt-2">
+                                <b>Type:</b> size, color, emotion, quality, age, shape, condition
+                            </p>
+                        </div>
+                    </div>
+                    
+                    <!-- Danh sách Adjectives -->
+                    <div class="bg-white p-6 rounded-3xl">
+                        <h3 class="text-xl font-bold mb-4">Danh sách Adjectives</h3>
+                        <div class="overflow-x-auto">
+                            <table id="adjectives-table" class="w-full">
+                                <thead class="bg-gray-100">
+                                    <tr>
+                                        <th class="p-3 text-left">Word</th>
+                                        <th class="p-3 text-left">Type</th>
+                                        <th class="p-3 text-left">Level</th>
+                                        <th class="p-3 text-left">Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="adjectives-tbody">
+                                    <!-- JS will populate -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- TAB: PREPOSITIONS -->
+                <div id="tab-prepositions" class="hidden space-y-6">
+                    <div class="bg-orange-100 p-6 rounded-3xl">
+                        <h3 class="text-xl font-bold text-orange-700 mb-4 uppercase">Upload Prepositions từ Excel</h3>
+                        <div class="flex flex-wrap gap-4 items-center">
+                            <input type="file" id="prepositions-excel-file" accept=".xlsx, .xls" 
+                                class="block w-full md:w-auto text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-orange-50 file:text-orange-700 hover:file:bg-orange-100 cursor-pointer"/>
+                            <button id="prepositions-upload-btn" class="px-8 py-2 bg-orange-500 text-white font-bold rounded-xl shadow-[0_4px_0_#c2410c] hover:translate-y-0.5 active:shadow-none transition-all">
+                                📤 Tải lên
+                            </button>
+                        </div>
+                        <div id="prepositions-status" class="mt-4 p-3 bg-white/50 rounded-xl text-sm italic text-orange-600">
+                            Sẵn sàng...
+                        </div>
+                        
+                        <!-- Template Excel mẫu -->
+                        <div class="mt-4 p-4 bg-yellow-50 rounded-xl border-2 border-yellow-200">
+                            <p class="font-bold mb-2">📝 Format Excel cần có:</p>
+                            <code class="text-xs bg-white p-2 rounded block">
+                                word | usage_type | difficulty
+                                <br>in | both | A1
+                                <br>on | both | A1
+                                <br>at | both | A1
+                                <br>to | place | A1
+                                <br>from | place | A1
+                            </code>
+                            <p class="text-xs text-gray-600 mt-2">
+                                <b>usage_type:</b> time, place, both
+                            </p>
+                        </div>
+                    </div>
+                    
+                    <!-- Danh sách Prepositions -->
+                    <div class="bg-white p-6 rounded-3xl">
+                        <h3 class="text-xl font-bold mb-4">Danh sách Prepositions</h3>
+                        
+                        <!-- Filter -->
+                        <div class="mb-4 flex gap-3">
+                            <select id="filter-prep-type" onchange="window.quizGrammarMgr?.loadPrepositions()" 
+                                    class="px-4 py-2 border-2 rounded-xl focus:border-orange-400 outline-none">
+                                <option value="">-- Tất cả loại --</option>
+                                <option value="time">Time</option>
+                                <option value="place">Place</option>
+                                <option value="both">Both</option>
+                            </select>
+                        </div>
+                        
+                        <div class="overflow-x-auto">
+                            <table id="prepositions-table" class="w-full">
+                                <thead class="bg-gray-100">
+                                    <tr>
+                                        <th class="p-3 text-left">Word</th>
+                                        <th class="p-3 text-left">Usage Type</th>
+                                        <th class="p-3 text-left">Level</th>
+                                        <th class="p-3 text-left">Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="prepositions-tbody">
+                                    <!-- JS will populate -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- TAB: TEMPLATES -->
+                <div id="tab-templates" class="hidden space-y-6">
+                    <div class="bg-purple-100 p-6 rounded-3xl">
+                        <h3 class="text-xl font-bold text-purple-700 mb-4">Thêm Template mới</h3>
+                        
+                        <div class="space-y-3">
+                            <input type="text" id="template-pattern" 
+                                placeholder="VD: {subject} {verb} _____ {noun}" 
+                                class="w-full p-3 rounded-xl border-2 outline-none focus:border-purple-400">
+                            
+                            <select id="template-blank" class="w-full p-3 rounded-xl border-2 outline-none focus:border-purple-400">
+                                <option value="">-- Chọn vị trí blank --</option>
+                                <option value="article">Article (a/an/the)</option>
+                                <option value="preposition">Preposition (in/on/at)</option>
+                                <option value="verb_form">Verb form (chia động từ)</option>
                             </select>
                             
-                            <input type="text" id="search-profile" placeholder="🔍 Tìm user..." 
-                                   class="px-4 py-2 border-2 rounded-xl focus:border-blue-400 outline-none">
+                            <select id="template-focus" class="w-full p-3 rounded-xl border-2 outline-none focus:border-purple-400">
+                                <option value="articles">Articles</option>
+                                <option value="prepositions_place">Prepositions - Place</option>
+                                <option value="prepositions_time">Prepositions - Time</option>
+                                <option value="present_simple">Present Simple</option>
+                            </select>
+                            
+                            <input type="text" id="template-example" 
+                                placeholder="VD: She eats _____ apple" 
+                                class="w-full p-3 rounded-xl border-2 outline-none focus:border-purple-400">
+                            
+                            <button id="add-template-btn" class="w-full py-3 bg-purple-500 text-white font-bold rounded-xl">
+                                ➕ Thêm Template
+                            </button>
+                        </div>
+                        <div id="template-status" class="mt-3 text-sm"></div>
+                    </div>
+                    
+                    <div class="bg-white p-6 rounded-3xl">
+                        <h3 class="text-xl font-bold mb-4">Danh sách Templates</h3>
+                        <div id="templates-list" class="space-y-2"></div>
+                    </div>
+                </div>
+
+                <!-- TAB: COMPATIBILITY -->
+                <div id="tab-compatibility" class="hidden space-y-6">
+                    <!-- Upload Excel -->
+                    <div class="bg-orange-100 p-6 rounded-3xl">
+                        <h3 class="text-xl font-bold text-orange-700 mb-4 uppercase">Upload Compatibility từ Excel</h3>
+                        
+                        <div class="flex flex-wrap gap-4 items-center">
+                            <input type="file" id="compat-excel-file" accept=".xlsx, .xls" 
+                                class="block w-full md:w-auto text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-orange-50 file:text-orange-700 hover:file:bg-orange-100 cursor-pointer"/>
+                            <button id="compat-upload-btn" class="px-8 py-2 bg-orange-500 text-white font-bold rounded-xl shadow-[0_4px_0_#c2410c]">
+                                📤 Upload
+                            </button>
+                        </div>
+                        <div id="compat-status" class="mt-4 p-3 bg-white/50 rounded-xl text-sm"></div>
+                        
+                        <div class="mt-4 p-4 bg-yellow-50 rounded-xl border-2 border-yellow-200">
+                            <p class="font-bold mb-2">📝 Format Excel:</p>
+                            <code class="text-xs bg-white p-2 rounded block overflow-x-auto">
+                                compatibility_type | word1_id | word1_table | word2_id | word2_table | score | note
+                                <br>verb_object | 2 | verbs | 1 | nouns | 1.0 | eat apple - natural
+                                <br>verb_object | 2 | verbs | 2 | nouns | 0.0 | eat book - impossible
+                            </code>
                         </div>
                     </div>
                     
-                    <div id="profiles-list" class="space-y-3">
-                        <!-- JS sẽ render vào đây -->
+                    <!-- Quick add form -->
+                    <div class="bg-white p-6 rounded-3xl">
+                        <h3 class="text-xl font-bold mb-4">Thêm nhanh Compatibility Rule</h3>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <select id="compat-type" class="p-3 rounded-xl border-2 outline-none focus:border-orange-400">
+                                <option value="verb_object">Verb + Object</option>
+                                <option value="subject_verb">Subject + Verb</option>
+                                <option value="prep_noun">Preposition + Noun</option>
+                                <option value="adj_noun">Adjective + Noun</option>
+                            </select>
+                            
+                            <div class="grid grid-cols-2 gap-2">
+                                <input type="number" id="compat-word1-id" placeholder="Word 1 ID" 
+                                    class="p-3 rounded-xl border-2 outline-none focus:border-orange-400">
+                                <input type="text" id="compat-word1-table" placeholder="Table 1" 
+                                    class="p-3 rounded-xl border-2 outline-none focus:border-orange-400">
+                            </div>
+                            
+                            <div class="grid grid-cols-2 gap-2">
+                                <input type="number" id="compat-word2-id" placeholder="Word 2 ID" 
+                                    class="p-3 rounded-xl border-2 outline-none focus:border-orange-400">
+                                <input type="text" id="compat-word2-table" placeholder="Table 2" 
+                                    class="p-3 rounded-xl border-2 outline-none focus:border-orange-400">
+                            </div>
+                            
+                            <div>
+                                <label class="block text-xs font-bold text-gray-500 mb-1">Score (0.0 - 1.0)</label>
+                                <input type="number" id="compat-score" value="1.0" step="0.1" min="0" max="1" 
+                                    class="w-full p-3 rounded-xl border-2 outline-none focus:border-orange-400">
+                            </div>
+                            
+                            <div class="md:col-span-2">
+                                <label class="block text-xs font-bold text-gray-500 mb-1">Note (optional)</label>
+                                <input type="text" id="compat-note" placeholder="VD: eat apple - natural" 
+                                    class="w-full p-3 rounded-xl border-2 outline-none focus:border-orange-400">
+                            </div>
+                        </div>
+                        
+                        <button id="add-compat-btn" class="mt-4 w-full py-3 bg-orange-500 text-white font-bold rounded-xl hover:bg-orange-600">
+                            ➕ Thêm Rule
+                        </button>
+                        <div id="compat-add-status" class="mt-2 text-sm"></div>
+                    </div>
+                    
+                    <!-- List -->
+                    <div class="bg-white p-6 rounded-3xl">
+                        <div class="flex justify-between items-center mb-4">
+                            <h3 class="text-xl font-bold">Danh sách Compatibility Rules</h3>
+                            <button onclick="window.quizGrammarMgr?.loadCompatibility()" 
+                                    class="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 font-bold">
+                                🔄 Refresh
+                            </button>
+                        </div>
+                        
+                        <!-- Filter -->
+                        <div class="mb-4 flex gap-3">
+                            <select id="filter-compat-type" onchange="window.quizGrammarMgr?.loadCompatibility()" 
+                                    class="px-4 py-2 border-2 rounded-xl focus:border-orange-400 outline-none">
+                                <option value="">-- Tất cả loại --</option>
+                                <option value="verb_object">Verb + Object</option>
+                                <option value="subject_verb">Subject + Verb</option>
+                                <option value="prep_noun">Prep + Noun</option>
+                                <option value="adj_noun">Adj + Noun</option>
+                            </select>
+                        </div>
+                        
+                        <div id="compatibility-list">
+                            <!-- JS will populate -->
+                        </div>
                     </div>
                 </div>
-            </div>
         </div>
-    </div>
-</div>
+    </div> 
+
 
     <!-- Toast notification -->
     <div id="toast" class="fixed bottom-4 right-4 bg-gray-800 text-white px-6 py-3 rounded-lg shadow-lg hidden transition-all"></div>

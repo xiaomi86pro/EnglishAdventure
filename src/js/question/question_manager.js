@@ -104,19 +104,32 @@ const QuestionManager = {
   async loadGrammarData() {
     if (!window.supabase) throw new Error('Supabase chưa sẵn sàng');
   
-    // Lấy toàn bộ dữ liệu từ bảng words
-    const { data, error } = await window.supabase
+    // Lấy toàn bộ words
+    const { data: words, error: wordsError } = await window.supabase
       .from('words')
       .select('*');
+    if (wordsError) throw wordsError;
+    if (!words || !words.length) throw new Error('Bảng words trống');
   
-    if (error) throw error;
-    if (!data || !data.length) throw new Error('Bảng words trống');
+    // Tách nouns và verbs
+    const nouns = words.filter(w => w.part_of_speech === 'noun');
+    const verbs = words.filter(w => w.part_of_speech === 'verb');
   
-    // Tách riêng nouns và verbs theo part_of_speech
-    const nouns = data.filter(w => w.part_of_speech === 'noun');
-    const verbs = data.filter(w => w.part_of_speech === 'verb');
+    // Lấy rules
+    const { data: rules, error: rulesError } = await window.supabase
+      .from('verb_object_rules')
+      .select('*');
+    if (rulesError) throw rulesError;
   
-    return { nouns, verbs };
+    // Map verb_id -> allowed categories
+    const verbRules = {};
+    rules.forEach(r => {
+      const categories = r.allowed_category.split(',').map(c => c.trim());
+      if (!verbRules[r.verb_id]) verbRules[r.verb_id] = [];
+      verbRules[r.verb_id].push(...categories);
+    });
+    
+    return { nouns, verbs, verbRules };
   },
   
   async waitForCache(timeout = 2000) {
@@ -156,7 +169,7 @@ const QuestionManager = {
 
       // ====== SPECIAL CASE: QUESTION 8 (GRAMMAR) ======
       if (typeNumber === 8) {
-        const { nouns, verbs } = await this.loadGrammarData();
+        const { nouns, verbs, verbRules } = await this.loadGrammarData();
 
         this.currentQuestion = new QuestionType({
           containerId: 'questionarea',
