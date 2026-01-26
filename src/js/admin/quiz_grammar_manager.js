@@ -35,25 +35,36 @@ export class QuizGrammarManager {
             this.setStatus('nouns-status', '❌ Chưa chọn file!');
             return;
         }
-
+    
         try {
+            this.setStatus('nouns-status', '⏳ Đang xử lý...');
+            
             const rows = await this.readExcel(file);
             
             // Convert Excel data
             const nouns = rows.map(row => ({
+                id: row.id ? parseInt(row.id) : undefined,  // ✅ Có ID từ Excel
                 word: row.word,
                 type: row.type,
-                countable: row.countable === true || row.countable === 'TRUE',
+                countable: row.countable === true || row.countable === 'TRUE' || row.countable === 1,
                 plural_form: row.plural_form || null,
-                starts_with_vowel: row.starts_with_vowel === true || row.starts_with_vowel === 'TRUE',
-                difficulty: row.difficulty || 'A1'
+                starts_with_vowel: row.starts_with_vowel === true || row.starts_with_vowel === 'TRUE' || row.starts_with_vowel === 1,
+                difficulty: row.difficulty || 'A1',
+                semantic_category: row.semantic_category || null  // ✅ Cột mới
             }));
-
-            const { error } = await this.supabase.from('nouns').insert(nouns);
+    
+            // ✅ UPSERT: Update nếu ID tồn tại, Insert nếu chưa
+            const { data, error } = await this.supabase
+                .from('nouns')
+                .upsert(nouns, { 
+                    onConflict: 'id',
+                    ignoreDuplicates: false
+                })
+                .select();
             
             if (error) throw error;
             
-            this.setStatus('nouns-status', `✅ Đã upload ${nouns.length} nouns!`);
+            this.setStatus('nouns-status', `✅ Đã upload/update ${nouns.length} nouns thành công!`);
             this.loadNouns(); // Refresh table
             
         } catch (err) {
