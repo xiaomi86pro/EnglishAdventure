@@ -1,0 +1,284 @@
+NOUNS
+
+BỐI CẢNH:
+Tôi đang xây dựng hệ thống tạo câu hỏi tiếng Anh tự động cho học sinh tiểu học - THCS (level A1-B1).
+Tôi cần bạn tạo thêm danh sách NOUNS để import vào database.
+
+YÊU CẦU:
+- Tạo 200 nouns mới (không trùng với list tôi đã có)
+- Phù hợp cho trẻ em học tiếng Anh
+- Balanced across categories (đừng quá nhiều food, quá ít vehicle)
+
+===================================
+FORMAT EXCEL CẦN TRẢ VỀ:
+
+Columns: word | type | countable | plural_form | starts_with_vowel | difficulty | semantic_category
+
+VÍ DỤ:
+cat | animal | TRUE | cats | FALSE | A1 | animal_pet
+orange | food | TRUE | oranges | TRUE | A1 | fruit
+water | thing | FALSE | NULL | FALSE | A1 | drink
+
+===================================
+QUY TẮC BẮT BUỘC:
+
+1. **word**: Danh từ tiếng Anh (lowercase, không dấu cách)
+2. **type**: person, animal, thing, place, food
+3. **countable**: TRUE (đếm được) hoặc FALSE (không đếm được)
+4. **plural_form**: 
+   - Nếu countable=TRUE → điền dạng số nhiều (cats, apples, boxes)
+   - Nếu countable=FALSE → NULL
+5. **starts_with_vowel**: TRUE nếu bắt đầu bằng a/e/i/o/u, FALSE nếu phụ âm
+6. **difficulty**: A1 (80%), A2 (15%), B1 (5%)
+7. **semantic_category**: CHỈ DÙNG CÁC GIÁ TRỊ SAU (KHÔNG TỰ TẠO MỚI):
+
+===================================
+DANH SÁCH SEMANTIC_CATEGORY CHO PHÉP:
+
+**FOOD & DRINK:**
+food, drink, fruit, vegetable, snack
+
+**LIVING BEINGS:**
+person, animal_pet, animal_wild, animal_farm, insect, bird
+
+**PLACES:**
+place_education, place_public, place_home, place_outdoor, place_transport, place_work
+
+**OBJECTS:**
+educational_item, furniture, clothing, vehicle, tool, toy, electronic, container, appliance
+
+**NATURE:**
+nature_plant, nature_element, nature_landscape
+
+**BODY & HEALTH:**
+body_part, health_item
+
+**TIME & ABSTRACT:**
+time_unit, abstract_concept, emotion
+
+**ENTERTAINMENT:**
+sport, music, entertainment, hobby
+
+**OTHER:**
+color, shape, material, weather, number, language, country
+
+===================================
+YÊU CẦU PHÂN BỐ (để balanced):
+
+- food, fruit, vegetable: 30-40 từ
+- animal_pet, animal_wild, animal_farm: 20-30 từ
+- place_*: 25-35 từ
+- educational_item, toy: 20-25 từ
+- furniture, clothing: 15-20 từ
+- vehicle, tool: 10-15 từ
+- body_part: 15-20 từ
+- nature_*: 15-20 từ
+- Còn lại: scattered
+
+===================================
+LƯU Ý QUAN TRỌNG:
+
+1. ✅ Ưu tiên từ thông dụng, dễ hiểu với trẻ em
+2. ✅ Tránh từ trừu tượng phức tạp (philosophy, democracy...)
+3. ✅ Tránh từ nhạy cảm hoặc bạo lực
+4. ✅ Mỗi category phải có ít nhất 10-15 từ
+5. ✅ Countable phải logic: water=FALSE, apple=TRUE
+6. ✅ Plural form phải đúng: baby→babies, box→boxes, child→children
+7. ✅ starts_with_vowel check ÂM, không phải CHỮ (hour→TRUE vì âm /aʊ/)
+
+===================================
+CHECK TRƯỚC KHI TRẢ VỀ:
+
+□ Tất cả semantic_category có trong danh sách cho phép?
+□ Countable logic đúng? (bread=FALSE, breads không tồn tại)
+□ Plural form đúng ngữ pháp?
+□ starts_with_vowel đúng với ÂM đầu? (uniform→FALSE vì âm /juː/)
+□ Phân bố balanced? (không quá lệch 1 category)
+□ Số lượng đủ 200 rows?
+
+===================================
+TRẢ VỀ FORMAT:
+
+Excel/CSV với 7 columns như trên, 200 rows, sẵn sàng import vào database.
+
+
+
+
+VERBS 
+
+BỐI CẢNH:
+Tôi đang xây dựng hệ thống tạo câu hỏi tiếng Anh tự động.
+Cần thêm VERBS với thông tin chi tiết để generate câu có nghĩa.
+
+YÊU CẦU:
+- Tạo 60 verbs mới (không trùng với list tôi đã có)
+- Phù hợp cho học sinh level A1-B1
+- Có đầy đủ verb forms và compatible_objects
+
+===================================
+FORMAT EXCEL CẦN TRẢ VỀ:
+
+Columns: base_form | third_person | past_simple | past_participle | gerund | is_regular | is_stative | transitivity | common_preposition | difficulty | verb_category | compatible_objects
+
+VÍ DỤ:
+eat | eats | ate | eaten | eating | FALSE | FALSE | transitive | NULL | A1 | eating_action | ["food","fruit","vegetable","snack"]
+study | studies | studied | studied | studying | TRUE | FALSE | transitive | NULL | A1 | learning_action | ["educational_item","language"]
+sleep | sleeps | slept | slept | sleeping | FALSE | FALSE | intransitive | NULL | A1 | daily_action | []
+
+===================================
+QUY TẮC CHO TỪNG CỘT:
+
+1. **base_form**: Động từ nguyên mẫu (lowercase)
+2. **third_person**: He/she/it form (adds s/es/ies)
+3. **past_simple**: Quá khứ đơn
+4. **past_participle**: Quá khứ phân từ (V3)
+5. **gerund**: V-ing form
+6. **is_regular**: TRUE (thêm -ed) hoặc FALSE (irregular)
+7. **is_stative**: TRUE nếu là stative verb (know, love, like, hate, want, need, believe, understand)
+8. **transitivity**: transitive, intransitive, hoặc both
+9. **common_preposition**: Giới từ đi kèm (listen→to, arrive→at, go→to) hoặc NULL
+10. **difficulty**: A1 (70%), A2 (20%), B1 (10%)
+11. **verb_category**: CHỈ DÙNG CÁC GIÁ TRỊ SAU
+12. **compatible_objects**: JSON array các noun semantic_category
+
+===================================
+DANH SÁCH VERB_CATEGORY CHO PHÉP:
+
+eating_action, learning_action, movement_action, daily_action,
+communication_action, perception_action,
+thinking_action, emotion_action,
+creation_action, destruction_action, possession_action, placement_action,
+change_action, helping_action, play_action
+
+===================================
+DANH SÁCH NOUN CATEGORIES CHO compatible_objects:
+
+food, drink, fruit, vegetable, snack,
+person, animal_pet, animal_wild, animal_farm, insect, bird,
+place_education, place_public, place_home, place_outdoor, place_transport, place_work,
+educational_item, furniture, clothing, vehicle, tool, toy, electronic, container, appliance,
+nature_plant, nature_element, nature_landscape,
+body_part, health_item,
+time_unit, abstract_concept, emotion,
+sport, music, entertainment, hobby,
+color, shape, material, weather, number, language, country
+
+===================================
+HƯỚNG DẪN compatible_objects:
+
+**Nguyên tắc:**
+- Liệt kê TẤT CẢ noun categories mà verb này có thể đi với
+- Format: ["category1","category2","category3"]
+- Nếu intransitive (không có object) → []
+
+**Ví dụ cụ thể:**
+drink → ["drink"]
+cook → ["food","fruit","vegetable"]
+wear → ["clothing"]
+drive → ["vehicle"]
+ride → ["vehicle","animal_farm"]
+read → ["educational_item"]
+write → ["educational_item"]
+watch → ["entertainment","sport","electronic","person","animal_pet"]
+play → ["sport","music","toy","game"]
+clean → ["place_home","furniture","clothing","body_part","vehicle"]
+buy → ["food","clothing","toy","electronic","furniture","vehicle"]
+sell → ["food","clothing","toy","electronic","furniture"]
+love → ["person","animal_pet","food","hobby","sport","music"]
+visit → ["person","place_public","place_outdoor"]
+build → ["furniture","place_home","toy"]
+break → ["toy","furniture","electronic","tool","container"]
+fix → ["vehicle","electronic","furniture","toy","tool"]
+open → ["container","electronic","place_home"]
+close → ["container","electronic","place_home"]
+throw → ["toy","tool","container"]
+catch → ["animal_pet","toy"]
+
+**Quy tắc quan trọng:**
+- eat/drink CHỈ đi với food/drink categories
+- wear CHỈ với clothing
+- drive/ride với vehicle
+- Verb abstract (love, like, want) có thể rộng hơn
+- thinking_action verbs (think, know) thường không có object hoặc đi với abstract_concept
+
+===================================
+YÊU CẦU PHÂN BỐ:
+
+- eating_action: 5-8 verbs
+- learning_action: 8-10 verbs
+- movement_action: 10-12 verbs
+- daily_action: 8-10 verbs
+- communication_action: 6-8 verbs
+- perception_action: 5-6 verbs
+- emotion_action: 4-6 verbs
+- possession_action: 6-8 verbs
+- Còn lại: scattered
+
+===================================
+LƯU Ý QUAN TRỌNG:
+
+1. ✅ Verb forms phải đúng ngữ pháp:
+   - study → studies (không phải studys)
+   - fly → flies (không phải flys)
+   - go → went → gone (irregular)
+
+2. ✅ is_stative phải chính xác:
+   - know, love, like, hate, want, need → TRUE
+   - eat, run, play, study → FALSE
+
+3. ✅ compatible_objects phải logic:
+   - "eat book" → VÔ LÝ
+   - "eat apple" → HỢP LÝ
+
+4. ✅ Transitivity đúng:
+   - sleep, arrive, die → intransitive
+   - eat, drink, read → transitive
+   - play, cook → both
+
+5. ✅ common_preposition:
+   - listen → to
+   - look → at
+   - wait → for
+   - arrive → at/in
+   - depend → on
+
+===================================
+CHECK TRƯỚC KHI TRẢ VỀ:
+
+□ Tất cả verb_category có trong danh sách?
+□ Tất cả items trong compatible_objects có trong danh sách noun categories?
+□ compatible_objects là JSON array hợp lệ? ["cat1","cat2"]
+□ Verb forms đúng ngữ pháp? (go→went→gone, not go→goed→goed)
+□ is_stative đúng với nghĩa?
+□ Intransitive verbs có compatible_objects = []?
+□ Phân bố balanced?
+□ Đủ 60 rows?
+
+===================================
+TRẢ VỀ FORMAT:
+
+Excel/CSV với 12 columns như trên, 60 rows, sẵn sàng import vào database.
+
+
+
+
+
+
+
+CÁC TABLES KHÁC CẦN CẬP NHẬT SAU NÀY:
+1. ADJECTIVES (Đã đủ - chỉ cần thêm nếu muốn)
+Hiện có: 10
+Target: 50-100
+Prompt: Tương tự nouns, nhưng đơn giản hơn (chỉ cần: word, type, difficulty)
+2. TIME_EXPRESSIONS (Đã insert 19 - có thể thêm)
+Target: 30-40
+Thêm: các tháng còn lại, days of week, time periods
+3. PLACE_EXPRESSIONS (Đã insert 18 - có thể thêm)
+Target: 30-40
+Thêm: nhiều places hơn (hospital, airport, station...)
+4. SUBJECTS (Đã insert 13 - ĐỦ RỒI)
+Không cần thêm, trừ khi muốn specific noun phrases
+VD: "My little brother", "The old man"
+5. TEMPLATES (Đã insert 5 - CẦN THÊM)
+Target: 15-20 templates
+Khi làm Question 9, 10, 11 sẽ cần thêm templates mới
