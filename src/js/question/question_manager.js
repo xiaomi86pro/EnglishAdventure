@@ -167,23 +167,6 @@ const QuestionManager = {
 
       const QuestionType = await this.loadQuestionType(typeNumber); 
 
-      // ====== SPECIAL CASE: QUESTION 8 (GRAMMAR) ======
-      if (typeNumber === 8) {
-        const { nouns, verbs, verbRules } = await this.loadGrammarData();
-
-        this.currentQuestion = new QuestionType({
-          containerId: 'questionarea',
-          nouns,
-          verbs,
-          onCorrect: (hits = 1, advance = true) =>
-            this.handleQuestionCorrect(hits, advance),
-          onWrong: () => this.handleQuestionWrong()
-        });
-
-        await this.currentQuestion.load();
-        return;
-      }
-
       if (!QuestionType) throw new Error(`Không thể load QuestionType${typeNumber}`); 
 
       // --- Khởi tạo Instance (Hỗ trợ Class & Object) ---

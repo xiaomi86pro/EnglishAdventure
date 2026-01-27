@@ -70,6 +70,15 @@ body {
 /* Style cho nút Lưu và Xóa */
 .btn-save { background-color: #22c55e; color: white; padding: 6px 12px; rounded: 8px; font-weight: bold; border-radius: 8px; }
 .btn-delete { background-color: #ef4444; color: white; padding: 6px 12px; rounded: 8px; font-weight: bold; border-radius: 8px; margin-left: 4px; }
+@keyframes shake-logic {
+  10%, 90% { transform: translate3d(-2px, 0, 0); }
+  20%, 80% { transform: translate3d(4px, 0, 0); }
+  30%, 50%, 70% { transform: translate3d(-8px, 0, 0); }
+  40%, 60% { transform: translate3d(8px, 0, 0); }
+}
 
+.animate-shake {
+  animation: shake-logic 0.4s cubic-bezier(.36,.07,.19,.97) both;
+}
 
 

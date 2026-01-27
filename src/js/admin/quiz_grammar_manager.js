@@ -108,32 +108,128 @@ export class QuizGrammarManager {
             this.setStatus('verbs-status', '❌ Chưa chọn file!');
             return;
         }
-
+    
+        // ✅ DANH SÁCH VERB CATEGORIES HỢP LỆ
+        const allowedVerbCategories = [
+            'eating_action', 'learning_action', 'movement_action', 'daily_action',
+            'communication_action', 'perception_action',
+            'thinking_action', 'emotion_action',
+            'creation_action', 'destruction_action', 'possession_action', 'placement_action',
+            'change_action', 'helping_action', 'play_action'
+        ];
+    
+        // ✅ DANH SÁCH NOUN CATEGORIES HỢP LỆ (cho compatible_objects)
+        const allowedNounCategories = [
+            'food', 'drink', 'fruit', 'vegetable', 'snack',
+            'person', 'animal_pet', 'animal_wild', 'animal_farm', 'insect', 'bird',
+            'place_education', 'place_public', 'place_home', 'place_outdoor', 'place_transport', 'place_work',
+            'educational_item', 'furniture', 'clothing', 'vehicle', 'tool', 'toy', 'electronic', 'container', 'appliance',
+            'nature_plant', 'nature_element', 'nature_landscape',
+            'body_part', 'health_item',
+            'time_unit', 'abstract_concept', 'emotion',
+            'sport', 'music', 'entertainment', 'hobby',
+            'color', 'shape', 'material', 'weather', 'number', 'language', 'country'
+        ];
+    
         try {
+            this.setStatus('verbs-status', '⏳ Đang xử lý...');
+            
             const rows = await this.readExcel(file);
             
-            const verbs = rows.map(row => ({
-                base_form: row.base_form,
-                third_person: row.third_person,
-                past_simple: row.past_simple,
-                past_participle: row.past_participle,
-                gerund: row.gerund,
-                is_regular: row.is_regular === true || row.is_regular === 'TRUE',
-                is_stative: row.is_stative === true || row.is_stative === 'TRUE',
-                transitivity: row.transitivity || 'transitive',
-                common_preposition: row.common_preposition || null,
-                difficulty: row.difficulty || 'A1'
-            }));
-
-            const { error } = await this.supabase.from('verbs').insert(verbs);
+            // ✅ VALIDATE verb_category
+            const invalidVerbCats = rows.filter(row => 
+                row.verb_category && !allowedVerbCategories.includes(row.verb_category)
+            );
+            
+            if (invalidVerbCats.length > 0) {
+                const cats = [...new Set(invalidVerbCats.map(r => r.verb_category))];
+                this.setStatus('verbs-status', 
+                    `❌ Có ${invalidVerbCats.length} verbs có verb_category không hợp lệ: ${cats.join(', ')}`
+                );
+                return;
+            }
+            
+            // ✅ VALIDATE compatible_objects
+            for (const row of rows) {
+                if (row.compatible_objects) {
+                    let objects;
+                    
+                    // Parse JSON (có thể là string hoặc array)
+                    if (typeof row.compatible_objects === 'string') {
+                        try {
+                            objects = JSON.parse(row.compatible_objects);
+                        } catch (e) {
+                            this.setStatus('verbs-status', 
+                                `❌ Verb "${row.base_form}" có compatible_objects không phải JSON hợp lệ`
+                            );
+                            return;
+                        }
+                    } else {
+                        objects = row.compatible_objects;
+                    }
+                    
+                    // Check từng category trong array
+                    const invalidObjs = objects.filter(obj => !allowedNounCategories.includes(obj));
+                    if (invalidObjs.length > 0) {
+                        this.setStatus('verbs-status', 
+                            `❌ Verb "${row.base_form}" có compatible_objects không hợp lệ: ${invalidObjs.join(', ')}`
+                        );
+                        return;
+                    }
+                }
+            }
+            
+            // ✅ Convert Excel data
+            const verbs = rows.map(row => {
+                const verb = {
+                    base_form: row.base_form,
+                    third_person: row.third_person,
+                    past_simple: row.past_simple,
+                    past_participle: row.past_participle,
+                    gerund: row.gerund,
+                    is_regular: row.is_regular === true || row.is_regular === 'TRUE' || row.is_regular === 1,
+                    is_stative: row.is_stative === true || row.is_stative === 'TRUE' || row.is_stative === 1,
+                    transitivity: row.transitivity || 'transitive',
+                    common_preposition: row.common_preposition || null,
+                    difficulty: row.difficulty || 'A1',
+                    verb_category: row.verb_category || null,
+                    compatible_objects: null
+                };
+                
+                // Parse compatible_objects
+                if (row.compatible_objects) {
+                    if (typeof row.compatible_objects === 'string') {
+                        verb.compatible_objects = row.compatible_objects; // Đã là JSON string
+                    } else if (Array.isArray(row.compatible_objects)) {
+                        verb.compatible_objects = JSON.stringify(row.compatible_objects);
+                    }
+                }
+                
+                if (row.id) {
+                    verb.id = parseInt(row.id);
+                }
+                
+                return verb;
+            });
+    
+            console.log('📊 Sample verb:', verbs[0]);
+    
+            // ✅ UPSERT
+            const { data, error } = await this.supabase
+                .from('verbs')
+                .upsert(verbs, { 
+                    onConflict: 'id',
+                    ignoreDuplicates: false
+                })
+                .select();
             
             if (error) throw error;
             
-            this.setStatus('verbs-status', `✅ Đã upload ${verbs.length} verbs!`);
+            this.setStatus('verbs-status', `✅ Đã upload/update ${data?.length || verbs.length} verbs!`);
             this.loadVerbs();
             
         } catch (err) {
-            console.error(err);
+            console.error('❌ Error:', err);
             this.setStatus('verbs-status', '❌ Lỗi: ' + err.message);
         }
     }
