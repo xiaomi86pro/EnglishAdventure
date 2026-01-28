@@ -268,24 +268,35 @@ export class QuizGrammarManager {
             this.setStatus('adjectives-status', '❌ Chưa chọn file!');
             return;
         }
-
+    
         try {
+            this.setStatus('adjectives-status', '⏳ Đang xử lý...');
+    
             const rows = await this.readExcel(file);
-            
+    
             // Convert Excel data
-            const adjectives = rows.map(row => ({
-                word: row.word,
-                type: row.type, // size, color, emotion, quality, age
-                difficulty: row.difficulty || 'A1'
-            }));
-
-            const { error } = await this.supabase.from('adjectives').insert(adjectives);
-            
+            const adjectives = rows
+                .filter(row => row.word) // bỏ dòng trống
+                .map(row => ({
+                    word: row.word,
+                    type: row.type, // size, color, emotion, quality, age
+                    difficulty: row.difficulty || 'A1'
+                }));
+    
+            // ✅ UPSERT theo word
+            const { data, error } = await this.supabase
+                .from('adjectives')
+                .upsert(adjectives, { 
+                    onConflict: 'word',       // kiểm tra trùng theo word
+                    ignoreDuplicates: false   // update nếu trùng, insert nếu chưa
+                })
+                .select();
+    
             if (error) throw error;
-            
-            this.setStatus('adjectives-status', `✅ Đã upload ${adjectives.length} adjectives!`);
+    
+            this.setStatus('adjectives-status', `✅ Đã upload/update ${data.length} adjectives thành công!`);
             this.loadAdjectives(); // Refresh table
-            
+    
         } catch (err) {
             console.error(err);
             this.setStatus('adjectives-status', '❌ Lỗi: ' + err.message);
