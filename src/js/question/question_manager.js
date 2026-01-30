@@ -3,6 +3,12 @@
 
 window.VOCAB_CACHE = window.VOCAB_CACHE || []; 
 window.VOCAB_CACHE_STATUS = 'loading'; 
+window.GRAMMAR_CACHE = {
+  templates: [],
+  nouns: []
+};
+window.GRAMMAR_CACHE_STATUS = 'idle';
+
 
 const CONFIG = {
   preload: { sampleSize: 500, batchSize: 500, batchDelay: 200 }, 
@@ -10,6 +16,47 @@ const CONFIG = {
   debug: false 
 };
 window.CONFIG = CONFIG; 
+
+async function preloadArticleData() {
+  try {
+    if (!window.supabase) return;
+    if (window.GRAMMAR_CACHE_STATUS === 'ready') return;
+
+    window.GRAMMAR_CACHE_STATUS = 'loading';
+
+    const [{ data: templates, error: tErr }, { data: nouns, error: nErr }] =
+      await Promise.all([
+        window.supabase
+          .from('question_templates')
+          .select('id, pattern')
+          .eq('grammar_type', 'article')
+          .eq('is_active', true),
+
+        window.supabase
+          .from('nouns')
+          .select('word, article_form')
+          .eq('countable', true)
+      ]);
+
+    if (tErr || nErr) throw tErr || nErr;
+    if (!templates?.length || !nouns?.length) {
+      throw new Error('Article data empty');
+    }
+
+    window.GRAMMAR_CACHE.templates = templates;
+    window.GRAMMAR_CACHE.nouns = nouns;
+    window.GRAMMAR_CACHE_STATUS = 'ready';
+
+    console.log('[Preload] ✅ Articles ready:',
+      templates.length, 'templates,',
+      nouns.length, 'nouns'
+    );
+  } catch (e) {
+    console.error('[Preload] ❌ Article preload error', e);
+    window.GRAMMAR_CACHE_STATUS = 'error';
+  }
+}
+
 
 // --- Logic Preload Vocabulary ---
 async function preloadVocabulary() {
@@ -65,6 +112,7 @@ function initPreload(maxAttempts = 20, interval = 200) {
     attempts++;
     if (window.supabase) {
       preloadVocabulary(); 
+      preloadArticleData();
       return;
     }
     if (attempts < maxAttempts) setTimeout(tryInit, interval); 
