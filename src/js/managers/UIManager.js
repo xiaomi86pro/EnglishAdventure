@@ -261,32 +261,13 @@ class UIManager {
             className: 'w-full p-3 rounded-2xl bg-red-400 hover:bg-red-500 text-white font-bold transition-all shadow-md',
             innerHTML: '🚪 Thoát ra Menu'
         });
-<<<<<<< New-Order
     
         exitBtn.onclick = async () => {
             // ✅ Check nếu monster đã chết → Không cho thoát
             if (window.GameEngine?.monster?.hp <= 0) {
                 this.effects.showToast('⚠️ Đang xử lý chiến thắng, vui lòng chờ!','error',1000);
                 return;
-=======
-    
-        exitBtn.onclick = async () => {
-            // ✅ Check nếu monster đã chết → Không cho thoát
-            if (window.GameEngine?.monster?.hp <= 0) {
-                alert('⚠️ Đang xử lý chiến thắng, vui lòng chờ!');
-                return;
             }
-    
-            // ✅ Hiện confirm
-            const userConfirmed = window.confirm('Bạn có muốn lưu game và thoát ra menu?');
-            
-            if (userConfirmed && window.GameEngine) {
-                // User click OK → Lưu và thoát
-                await window.GameEngine.saveGameState();
-                window.GameEngine.showMainMenu();
->>>>>>> 551d0272bc46d8c5d8a07e6596c9a51a162bc004
-            }
-<<<<<<< New-Order
     
             // ✅ Hiện confirm
             const userConfirmed = window.confirm('Bạn có muốn lưu game và thoát ra menu?');
@@ -295,9 +276,6 @@ class UIManager {
                 await window.GameEngine.showMainMenu(false);
             }
             // User click Cancel → Không làm gì, tiếp tục chơi
-=======
-            // User click Cancel → Không làm gì, tiếp tục chơi
->>>>>>> 551d0272bc46d8c5d8a07e6596c9a51a162bc004
         };
     
         slot.appendChild(exitBtn);
