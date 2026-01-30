@@ -518,8 +518,13 @@ const GameEngine = {
                 location_id: this.currentLocation?.id,
                 station_id: this.currentStation?.id,
                 step: this.currentStep,
+<<<<<<< New-Order
                 isEndlessMode: this.isEndlessMode,
                 monster: this.monster && this.monster.hp > 0 ? this.monster : null
+=======
+                isEndlessMode: this.isEndlessMode,
+                monster: this.monster
+>>>>>>> 551d0272bc46d8c5d8a07e6596c9a51a162bc004
             });
 
             if (!saveResult.success) {
@@ -583,6 +588,37 @@ const GameEngine = {
             this.currentStep = savedGame.currentStep || 1;
             this.isEndlessMode = savedGame.isEndlessMode || false; 
 
+<<<<<<< New-Order
+=======
+            // 4. Khôi phục location & station
+            if (savedGame.currentLocationId && savedGame.currentStationId) {
+                const { data: location } = await window.supabase
+                    .from('locations')
+                    .select('*')
+                    .eq('id', savedGame.currentLocationId)
+                    .single();
+
+                const { data: station } = await window.supabase
+                    .from('stations')
+                    .select('*')
+                    .eq('id', savedGame.currentStationId)
+                    .single();
+
+                this.currentLocation = location;
+                this.currentStation = station;
+            } else {
+                // ✅ Nếu endless mode nhưng không có location/station → tạo fake
+                if (this.isEndlessMode) {
+                    this.currentLocation = { name: 'Endless Mode' };
+                    this.currentStation = { name: 'Luyện Tập' };
+                } else {
+                    const { location, station } = await this.progressionManager.loadFirstLocation();
+                    this.currentLocation = location;
+                    this.currentStation = station;
+                }
+            }
+
+>>>>>>> 551d0272bc46d8c5d8a07e6596c9a51a162bc004
             // 5. Init UI
             this.uiManager.initUI(GameConfig.TOTAL_STEPS_PER_STATION);
 
@@ -713,6 +749,7 @@ const GameEngine = {
         // Xóa nội dung các vùng
         DOMUtil.clearChildren('questionarea');
         DOMUtil.clearChildren('battleview');
+<<<<<<< New-Order
     },
 
     /**
@@ -799,6 +836,95 @@ const GameEngine = {
             alert('Lỗi khi bắt đầu chế độ luyện tập!');
             this.showMainMenu();
         }
+=======
+    },
+
+    /**
+     * Bắt đầu chế độ luyện tập (Endless Mode)
+     * Spawn random boss/final boss sau khi hoàn thành map
+     * @private
+     */
+    async _startEndlessMode() {
+        
+        try {
+            // 1. Thông báo
+            if (!this.isEndlessMode && this.effectsUtil) {             
+                this.effectsUtil.showToast(
+                    '🎉 Chúc mừng! Bạn đã hoàn thành! Giờ là chế độ LUYỆN TẬP!',
+                    'success',
+                    4000
+                );
+            }
+    
+            // Delay để toast hiện
+            await new Promise(r => setTimeout(r, 2000));
+
+            // 2. Set endless mode flag
+            this.isEndlessMode = true;
+            this.currentLocation = { name: 'Endless Mode' };
+            this.currentStation = { name: 'Luyện Tập' };
+            this.currentStep = 0; // Không có step
+
+            // 3. Random spawn boss hoặc final boss
+            const bossTypes = ['boss', 'final boss'];
+            const randomType = bossTypes[Math.floor(Math.random() * bossTypes.length)];
+
+            // Lấy random monster theo type
+            const { data: monsters, error } = await window.supabase
+                .from('monsters')
+                .select('*')
+                .eq('type', randomType);
+
+            if (error || !monsters || monsters.length === 0) {
+                console.error('[GameEngine] No boss found for endless mode');
+                ('Lỗi: Không tìm thấy boss!');
+                this.showMainMenu();
+                return;
+            }
+
+            const randomMonster = monsters[Math.floor(Math.random() * monsters.length)];
+
+            this.monster = {
+                ...randomMonster,
+                hp: randomMonster.base_hp,
+                max_hp: randomMonster.base_hp,
+                atk: randomMonster.base_atk,
+                def: randomMonster.base_def || 0,
+                state: 'idle',
+                isDead: false,
+                sprite_url: randomMonster.image_url,
+                questionType: GameConfig.getDefaultQuestionType(randomMonster.type)
+            };
+
+            // 4. Render monster
+            this.uiManager.renderMonsterSprite(this.monster);
+
+            // 5. Phát BGM boss
+            if (this.effectsUtil) {
+                this.effectsUtil.playMonsterBGM(this.monster.type);
+            }
+
+            // 6. Update UI
+            this.uiManager.updateAllUI(
+                this.player,
+                this.monster,
+                this.currentLocation,
+                this.currentStation,
+                this.currentStep,
+                GameConfig.TOTAL_STEPS_PER_STATION
+            );
+
+            // 7. Load question
+            this.nextQuestion();
+
+            console.log('[GameEngine] Endless mode started, spawned:', this.monster.name);
+
+        } catch (err) {
+            console.error('[GameEngine] _startEndlessMode error:', err);
+            alert('Lỗi khi bắt đầu chế độ luyện tập!');
+            this.showMainMenu();
+        }
+>>>>>>> 551d0272bc46d8c5d8a07e6596c9a51a162bc004
     }
 };
 
