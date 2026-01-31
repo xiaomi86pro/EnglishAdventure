@@ -135,7 +135,8 @@ class Question8 {
                 answerType: template.answer_type,
                 articleForm: correctAnswer,
                 articleSource: articleSource, // 'noun', 'adjective', hoặc 'second_mention'
-                hasAdjective: hasAdjective
+                hasAdjective: hasAdjective,
+                fullSentence: question.replace('___', correctAnswer)
             };
   
             this.renderQuestionUI();
@@ -249,6 +250,8 @@ class Question8 {
                 }
                 
                 feedbackArea.innerHTML = feedback;
+                this.speak(this.currentData.fullSentence);
+
             }
             
             if (typeof this.onCorrect === "function") {
