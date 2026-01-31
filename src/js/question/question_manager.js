@@ -350,11 +350,16 @@ const QuestionManager = {
       // --- Khởi tạo Instance (Hỗ trợ Class & Object) ---
       if (typeof QuestionType === 'function') {
         // Class-based (Question6, 7, 8, ...)
-        this.currentQuestion = new QuestionType({
-          dataPool: questionData, // Pass toàn bộ data cần thiết
+        
+        // Backward compatibility: Question 1-7 dùng vocabPool, Question 8+ dùng dataPool
+        const constructorOpts = {
+          dataPool: questionData, // Cho Question 8+
+          vocabPool: questionData.vocabulary || [], // Cho Question 1-7 (backward compatibility)
           containerId: 'questionarea',
           config: { speakOnCorrect: true }
-        });
+        };
+        
+        this.currentQuestion = new QuestionType(constructorOpts);
       } else {
         // Object-based (legacy)
         this.currentQuestion = QuestionType;
