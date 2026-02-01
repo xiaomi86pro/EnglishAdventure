@@ -200,7 +200,7 @@ class AuthComponent {
                         sprite: result.user.avatar_key,
                         level: result.user.level || 1
                     },
-                    currentStationName: 'Saved Game',  // Có thể load tên station nếu cần
+                    currentStationName: savedGameResult.data.currentStationName,
                     currentStep: savedGameResult.data.current_step || 1
                 };
                 

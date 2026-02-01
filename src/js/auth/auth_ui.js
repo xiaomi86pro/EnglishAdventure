@@ -153,13 +153,13 @@ export class AuthUI {
 
         container.innerHTML = `
             <div class="flex flex-col items-center gap-6 w-full max-w-md">
-                <h2 class="text-3xl font-black text-white uppercase tracking-wide drop-shadow-lg">Game đã lưu!</h2>
+                <h2 class="text-3xl font-black text-red uppercase tracking-wide drop-shadow-lg">Game đã lưu!</h2>
                 
                 <div class="bg-white/95 backdrop-blur-sm p-6 rounded-3xl border-4 border-white shadow-2xl w-full">
                     <div class="text-center mb-4">
                         <div class="text-5xl mb-2">${savedGame.player.sprite || '🧑‍🚀'}</div>
                         <p class="font-bold text-xl text-gray-700">${savedGame.player.display_name}</p>
-                        <p class="text-sm text-gray-500">Level ${savedGame.player.level} - Stage ${savedGame.currentStationName}</p>
+                        <p class="text-sm text-gray-500">Level ${savedGame.player.level}</p>
                     </div>
                 </div>
 
@@ -203,7 +203,7 @@ export class AuthUI {
                     
                     <button id="btn-start" disabled
                             onclick="AuthComponent.startGame()"
-                            class="w-full px-12 py-4 bg-gray-300 text-white text-2xl font-black rounded-full shadow-[0_10px_0_rgb(156,163,175)] cursor-not-allowed transition-all uppercase">
+                            class="w-full px-12 py-4 bg-gray-300 text-white text-2xl rounded-full shadow-[0_10px_0_rgb(156,163,175)] cursor-not-allowed transition-all uppercase">
                         Vào Trận!
                     </button>
                 </div>

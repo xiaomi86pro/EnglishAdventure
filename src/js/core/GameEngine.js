@@ -134,24 +134,16 @@ const GameEngine = {
                 startStep = savedGame.data.current_step;
                 
             } else {
-                console.log('[GameEngine] No save found, starting fresh');
-                
-                // Load first location & station
+                console.log('[GameEngine] No save found, starting fresh');  
                 const { location, station } = await this.progressionManager.loadFirstLocation();
                 startLocation = location;
                 startStation = station;
-                startStep = 1;
+                startStep = 1;      
             }
 
             this.currentLocation = startLocation;
             this.currentStation = startStation;
             this.currentStep = startStep;
-
-            // 4. Load first location & station
-            const { location, station } = await this.progressionManager.loadFirstLocation();
-            this.currentLocation = location;
-            this.currentStation = station;
-            this.currentStep = 1;
 
             // 5. Dựng UI
             this.uiManager.initUI(GameConfig.TOTAL_STEPS_PER_STATION);
@@ -517,7 +509,7 @@ const GameEngine = {
                 hp_current: this.player.hp_current,
                 location_id: this.currentLocation?.id,
                 station_id: this.currentStation?.id,
-                step: this.currentStep,
+                currentStep: this.currentStep,
                 isEndlessMode: this.isEndlessMode,
                 monster: this.monster && this.monster.hp > 0 ? this.monster : null
             });
@@ -589,6 +581,40 @@ const GameEngine = {
             // 6. Render hero
             this.uiManager.renderHeroSprite(this.player);
 
+            // 6.5 Restore location & station (NON-ENDLESS only)
+            if (!this.isEndlessMode) {
+                // Guard dữ liệu
+                if (!savedGame.currentLocationId || !savedGame.currentStationId) {
+                    throw new Error('Invalid save data: missing location or station');
+                }
+
+                // Load location
+                const { data: location, error: locErr } = await window.supabase
+                    .from('locations')
+                    .select('*')
+                    .eq('id', savedGame.currentLocationId)
+                    .single();
+
+                if (locErr) throw locErr;
+                this.currentLocation = location;
+
+                // Load station
+                const { data: station, error: stErr } = await window.supabase
+                    .from('stations')
+                    .select('*')
+                    .eq('id', savedGame.currentStationId)
+                    .single();
+
+                if (stErr) throw stErr;
+                this.currentStation = station;
+
+            } else {
+                // Endless mode: KHÔNG có map cố định
+                this.currentLocation = null;
+                this.currentStation = null;
+            }
+
+
             // 7. Khôi phục monster
             if (savedGame.monster && savedGame.monster.id) {
                 // Load full monster data từ DB
@@ -607,6 +633,7 @@ const GameEngine = {
                         def: monsterData.base_def || 0,
                         state: 'idle',
                         isDead: false,
+                        hasDroppedReward: false,
                         sprite_url: monsterData.image_url,
                         questionType: GameConfig.getDefaultQuestionType(monsterData.type)
                     };

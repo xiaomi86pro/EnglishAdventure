@@ -408,6 +408,7 @@ class EffectsUtil {
                 setTimeout(() => wrapper.remove(), fadeDuration);
             }, flyDuration + groundDelay);
         }
+        
         window.audioControl.playSfx('./public/sounds/Coin_Drop2.wav');
     }
     
