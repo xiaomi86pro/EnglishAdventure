@@ -36,7 +36,7 @@ export class UserService {
                 .select('*')
                 .eq('display_name', username)
                 .eq('password', password)
-                .single();
+                .maybeSingle();
 
             if (error) {
                 if (error.code === 'PGRST116') {
@@ -63,7 +63,7 @@ export class UserService {
                 .from('profiles')
                 .select('id')
                 .eq('display_name', displayName)
-                .single();
+                .maybeSingle();
 
             if (existing) {
                 throw new Error('Tên này đã được sử dụng!');
@@ -119,7 +119,7 @@ export class UserService {
                 .from('profiles')
                 .select('*, heroes(*)')
                 .eq('id', userId)
-                .single();
+                .maybeSingle();
 
             if (error) throw error;
             
@@ -139,7 +139,7 @@ export class UserService {
                 .from('profiles')
                 .select('*')
                 .eq('display_name', displayName)
-                .single();
+                .maybeSingle();
 
             if (error) throw error;
             

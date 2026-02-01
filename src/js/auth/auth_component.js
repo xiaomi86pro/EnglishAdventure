@@ -247,7 +247,7 @@ class AuthComponent {
                 .from('heroes')
                 .select('*')
                 .eq('id', userData.selected_hero_id)
-                .single();
+                .maybeSingle();
             
             // 4. Tính stats với level bonus
             const playerLevel = userData.level || 1;

@@ -64,7 +64,7 @@ async isHeroLocked(heroId, userId) {
             .select('id')
             .eq('profile_id', userId)
             .eq('hero_id', heroId)
-            .single();
+            .maybeSingle();
 
         // Nếu có record trong unlocked_heroes → unlocked
         if (unlocked) return false;
@@ -74,7 +74,7 @@ async isHeroLocked(heroId, userId) {
             .from('heroes')
             .select('is_locked')
             .eq('id', heroId)
-            .single();
+            .maybeSingle();
 
         return hero?.is_locked || false;
 
@@ -97,7 +97,7 @@ async isHeroLocked(heroId, userId) {
             .from('heroes')
             .select('is_locked')
             .eq('id', heroId)
-            .single();
+            .maybeSingle();
 
         // Nếu hero này mặc định không khóa (is_locked = false trong bảng heroes), thì trả về false luôn
         if (!hero || !hero.is_locked) return false;
@@ -131,7 +131,7 @@ async isHeroLocked(heroId, userId) {
                 .from('heroes')
                 .select('*, stations(name, order_index, locations(name))')
                 .eq('id', heroId)
-                .single();
+                .maybeSingle();
 
             if (error) throw error;
             

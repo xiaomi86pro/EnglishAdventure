@@ -26,7 +26,7 @@ class MonsterHandler {
                 .select('*, monsters(*)')
                 .eq('station_id', stationId)
                 .eq('step_number', stepNumber)
-                .single();
+                .maybeSingle();
 
             if (error || !stepConfig) {
                 console.error('⛔ Không tìm thấy config cho step này!');

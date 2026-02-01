@@ -57,7 +57,7 @@ const GameEngine = {
                 .from('heroes')
                 .select('*')
                 .eq('id', userData.selected_hero_id)
-                .single();
+                .maybeSingle();
 
             if (error) {
                 console.error("Lỗi load hero:", error);
@@ -110,7 +110,7 @@ const GameEngine = {
 
             let startLocation, startStation, startStep;
 
-            if (savedGame.success && savedGame.data) {
+            if (savedGame.success && savedGame.data && savedGame.data.current_location_id) {
                 console.log('[GameEngine] Found cloud save, restoring...');
                 
                 // Restore HP từ save
@@ -121,13 +121,13 @@ const GameEngine = {
                     .from('locations')
                     .select('*')
                     .eq('id', savedGame.data.current_location_id)
-                    .single();
+                    .maybeSingle();
                 
                 const { data: station } = await window.supabase
                     .from('stations')
                     .select('*')
                     .eq('id', savedGame.data.current_station_id)
-                    .single();
+                    .maybeSingle();
                 
                 startLocation = location;
                 startStation = station;
@@ -593,7 +593,7 @@ const GameEngine = {
                     .from('locations')
                     .select('*')
                     .eq('id', savedGame.currentLocationId)
-                    .single();
+                    .maybeSingle();
 
                 if (locErr) throw locErr;
                 this.currentLocation = location;
@@ -603,7 +603,7 @@ const GameEngine = {
                     .from('stations')
                     .select('*')
                     .eq('id', savedGame.currentStationId)
-                    .single();
+                    .maybeSingle();
 
                 if (stErr) throw stErr;
                 this.currentStation = station;
@@ -622,7 +622,7 @@ const GameEngine = {
                     .from('monsters')
                     .select('*')
                     .eq('id', savedGame.monster.id)
-                    .single();
+                    .maybeSingle();
                 
                 if (monsterData) {
                     this.monster = {

@@ -21,7 +21,7 @@ class ProgressionManager {
                 .select('*')
                 .order('order_index', { ascending: true })
                 .limit(1)
-                .single();
+                .maybeSingle();
 
             if (locError) throw locError;
 
@@ -32,7 +32,7 @@ class ProgressionManager {
                 .eq('location_id', location.id)
                 .order('order_index', { ascending: true })
                 .limit(1)
-                .single();
+                .maybeSingle();
 
             if (stError) throw stError;
 
@@ -65,7 +65,7 @@ class ProgressionManager {
                 .gt('order_index', currentStation.order_index)
                 .order('order_index', { ascending: true })
                 .limit(1)
-                .single();
+                .maybeSingle();
 
             if (error || !nextStation) {
                 console.log('[ProgressionManager] Hết station trong location này');
@@ -98,7 +98,7 @@ class ProgressionManager {
                 .gt('order_index', currentLocation.order_index)
                 .order('order_index', { ascending: true })
                 .limit(1)
-                .single();
+                .maybeSingle();
 
             if (locError || !nextLocation) {
                 console.log('[ProgressionManager] Hết game - không còn location');
@@ -112,7 +112,7 @@ class ProgressionManager {
                 .eq('location_id', nextLocation.id)
                 .order('order_index', { ascending: true })
                 .limit(1)
-                .single();
+                .maybeSingle();
 
             if (stError) throw stError;
 

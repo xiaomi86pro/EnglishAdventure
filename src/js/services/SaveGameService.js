@@ -31,7 +31,7 @@ class SaveGameService {
                     onConflict: 'profile_id'  // ← Giữ nguyên
                 })
                 .select()
-                .single();
+                .maybeSingle();
 
             if (error) throw error;
 
@@ -53,7 +53,7 @@ class SaveGameService {
                 .from('save_games')
                 .select('*')
                 .eq('profile_id', profileId)
-                .single();
+                .maybeSingle();
 
             if (error) {
                 if (error.code === 'PGRST116') {
