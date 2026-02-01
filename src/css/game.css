@@ -54,12 +54,22 @@
   
   /* Sprite chung */
   .sprite{
-    background-size:contain;
-    background-repeat:no-repeat;
-    background-position:center;
-    margin-bottom:10px;
-    transition:all .3s ease;
-    pointer-events:none;
+    position: relative;
+    pointer-events: none;
+  }
+  
+  .hero-img{
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    display: block;
+  }
+
+  .monster-img {
+    width: 100%;
+    height: auto;
+    object-fit: contain;
+    transform-origin: bottom center;
   }
   
   /* Hero */
@@ -70,11 +80,63 @@
   }
   
   /* Monster sizes */
-  #monster{margin-right:40px}
-  #monster.size-normal{width:var(--monster-normal);height:var(--monster-normal)}
-  #monster.size-elite{width:var(--monster-elite);height:var(--monster-elite)}
-  #monster.size-boss{width:var(--monster-boss);height:var(--monster-boss)}
-  #monster.size-fboss{width:var(--monster-fboss);height:var(--monster-fboss)}
+  #monster {
+    position: relative;
+    margin-right: 40px;
+    display: flex;
+    align-items: flex-end; /* chân chạm đất */
+    justify-content: center;
+    pointer-events: none;
+  }
+  /* Normal */
+#monster.size-normal {
+  width: var(--monster-normal);
+  height: var(--monster-normal);
+}
+#monster.size-normal .monster-img {
+  transform: translateY(-8px);
+}
+
+/* Elite */
+#monster.size-elite {
+  width: var(--monster-elite);
+  height: var(--monster-elite);
+}
+#monster.size-elite .monster-img {
+  transform: translateY(-16px);
+}
+
+/* Boss */
+#monster.size-boss {
+  width: var(--monster-boss);
+  height: var(--monster-boss);
+}
+#monster.size-boss .monster-img {
+  transform: translateY(-28px);
+}
+
+/* Final Boss */
+#monster.size-fboss {
+  width: var(--monster-fboss);
+  height: var(--monster-fboss);
+}
+#monster.size-fboss .monster-img {
+  transform: translateY(-42px);
+}
+.monster-shadow {
+  position: absolute;
+  bottom: 4px;
+  width: 60%;
+  height: 12px;
+  background: radial-gradient(ellipse, rgba(0,0,0,.35), transparent);
+  filter: blur(2px);
+  z-index: 1;
+}
+.monster-img {
+  z-index: 2;
+}
+
+    
   /* Attack and hit effects */
   .attack-lunge{
     animation:attackLunge .28s ease-out forwards;

@@ -427,27 +427,48 @@ class UIManager {
      */
     renderHeroSprite(player) {
         if (!player || !player.sprite_url) return;
-
+    
         const heroEl = DOMUtil.getById('hero');
-        if (heroEl) {
-            DOMUtil.setBackgroundImage('hero', player.sprite_url);
-            heroEl.className = 'sprite';
-        }
+        if (!heroEl) return;
+    
+        // Clear background-image cũ (rất quan trọng)
+        heroEl.style.backgroundImage = 'none';
+    
+        // Clear content cũ (tránh duplicate img)
+        heroEl.innerHTML = '';
+    
+        // Đảm bảo class sprite
+        heroEl.className = 'sprite';
+    
+        // Tạo img hero
+        const img = document.createElement('img');
+        img.src = player.sprite_url;
+        img.alt = player.name || 'hero';
+        img.className = 'hero-img';
+    
+        heroEl.appendChild(img);
     }
+    
 
     /**
      * Render monster sprite
      */
     renderMonsterSprite(monster) {
         if (!monster || !monster.sprite_url) return;
-
+    
         const monsterEl = DOMUtil.getById('monster');
-        if (monsterEl) {
-            DOMUtil.setBackgroundImage('monster', monster.sprite_url);
-            
-            const sizeClass = GameConfig.getMonsterSizeClass(monster.type);
-            monsterEl.className = `sprite ${sizeClass}`;
-        }
+        if (!monsterEl) return;
+    
+        monsterEl.style.backgroundImage = 'none';
+        monsterEl.innerHTML = '';
+        monsterEl.className = `sprite size-${monster.size || 'normal'}`;
+    
+        const img = document.createElement('img');
+        img.src = monster.sprite_url;
+        img.alt = monster.name || 'monster';
+        img.className = 'monster-img';
+    
+        monsterEl.appendChild(img);
     }
 }
 

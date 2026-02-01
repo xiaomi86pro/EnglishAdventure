@@ -142,3 +142,23 @@
         opacity: 0;
     }
 }
+.hero-img.heal-glow {
+  animation: healGlow .8s ease-out;
+}
+@keyframes healGlow {
+  0% {
+    filter: drop-shadow(0 0 0 rgba(0,255,180,0));
+    transform: scale(1);
+  }
+  50% {
+    filter:
+      drop-shadow(0 0 10px rgba(0,255,180,.9))
+      drop-shadow(0 0 22px rgba(0,255,180,.6))
+      drop-shadow(0 0 36px rgba(0,255,180,.4));
+    transform: scale(1.05);
+  }
+  100% {
+    filter: drop-shadow(0 0 0 rgba(0,255,180,0));
+    transform: scale(1);
+  }
+}

@@ -84,12 +84,13 @@ class EffectsUtil {
         const container = DOMUtil.getById(containerId);
         const target = DOMUtil.getById(targetId);
         if (!container || !target) return;
-
-        // Tính tọa độ center của target
+    
         const pos = DOMUtil.getRelativeCenter(targetId, containerId);
         if (!pos) return;
-
-        // Tạo số +HP màu xanh
+    
+        /* =======================
+           +HP POPUP
+        ======================= */
         const healEl = DOMUtil.createElement('div', {
             className: 'heal-popup',
             innerText: `+${healAmount} HP`,
@@ -107,23 +108,33 @@ class EffectsUtil {
                 zIndex: '50'
             }
         });
-
+    
         container.appendChild(healEl);
-
-        // Phát âm thanh heal
+    
+        /* =======================
+           HEAL SOUND
+        ======================= */
         if (this.audioManager) {
             this.audioManager.playSfx(GameConfig.SOUNDS.heal);
         }
-
-        // Hiệu ứng ánh sáng xanh quanh hero
-        DOMUtil.setStyle(targetId, 'boxShadow', '0 0 30px #22c55e, 0 0 50px #22c55e');
-        setTimeout(() => {
-            DOMUtil.setStyle(targetId, 'boxShadow', '');
-        }, 1000);
-
-        // Tạo các particle hồi máu xung quanh hero
+    
+        /* =======================
+           HERO GREEN GLOW (FIX)
+        ======================= */
+        const heroImg = target.querySelector('img');
+        if (heroImg) {
+            heroImg.classList.add('heal-glow');
+            setTimeout(() => {
+                heroImg.classList.remove('heal-glow');
+            }, 800);
+        }
+    
+        /* =======================
+           HEAL PARTICLES
+        ======================= */
         for (let i = 0; i < 8; i++) {
             const particle = DOMUtil.createElement('div', {
+                className: 'heal-particle',
                 innerText: '💚',
                 styles: {
                     position: 'absolute',
@@ -134,23 +145,23 @@ class EffectsUtil {
                     zIndex: '45'
                 }
             });
-
+    
             const angle = (Math.PI * 2 / 8) * i;
             const distance = 60;
             const tx = Math.cos(angle) * distance;
             const ty = Math.sin(angle) * distance;
-
-            particle.style.animation = 'healParticle 1s ease-out forwards';
+    
             particle.style.setProperty('--heal-tx', `${tx}px`);
             particle.style.setProperty('--heal-ty', `${ty}px`);
-
+            particle.style.animation = 'healParticle 1s ease-out forwards';
+    
             container.appendChild(particle);
             setTimeout(() => particle.remove(), 1000);
         }
-
-        // Xóa số +HP sau animation
+    
         setTimeout(() => healEl.remove(), GameConfig.TIMINGS.healEffect);
     }
+    
 
     /**
      * Hiệu ứng rung (shake) cho element
