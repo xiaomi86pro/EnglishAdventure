@@ -318,68 +318,99 @@ class EffectsUtil {
  * @param {string} fromId - 'monster'
  * @param {number} coinAmount 
  */
-showCoinDrop(containerId, fromId, coinAmount) {
-    const container = DOMUtil.getById(containerId);
-    const fromEl = DOMUtil.getById(fromId);
-    if (!container || !fromEl) return;
-
-    // Lấy vị trí monster
-    const pos = DOMUtil.getRelativeCenter(fromId, containerId);
-    if (!pos) return;
-
-    // Tạo nhiều coin particles rơi xuống
-    const coinCount = Math.min(10, Math.ceil(coinAmount / 10)); // Max 10 coins
+    showCoinDrop(containerId, fromId, coinAmount) {
+        const container = DOMUtil.getById(containerId);
+        const fromEl = DOMUtil.getById(fromId);
+        if (!container || !fromEl || coinAmount <= 0) return;
     
-    for (let i = 0; i < coinCount; i++) {
-        const coin = DOMUtil.createElement('div', {
-            className: 'coin-particle',
-            innerText: '💰',
-            styles: {
-                position: 'absolute',
-                left: `${pos.x}px`,
-                top: `${pos.y}px`,
-                fontSize: '24px',
-                pointerEvents: 'none',
-                zIndex: '100'
-            }
-        });
-
-        // Random offset để coins không rơi cùng 1 chỗ
-        const offsetX = (Math.random() - 0.5) * 100;
-        const offsetY = Math.random() * 150 + 100;
-
-        coin.style.setProperty('--coin-tx', `${offsetX}px`);
-        coin.style.setProperty('--coin-ty', `${offsetY}px`);
-        coin.style.animation = 'coinDrop 1s ease-out forwards';
-
-        container.appendChild(coin);
-
-        // Xóa sau khi animation xong
-        setTimeout(() => coin.remove(), 1000);
-    }
-
-    // Hiển thị số coin to ở giữa
-    const coinText = DOMUtil.createElement('div', {
-        className: 'coin-amount-popup',
-        innerText: `+${coinAmount} 💰`,
-        styles: {
-            position: 'absolute',
-            left: `${pos.x}px`,
-            top: `${pos.y}px`,
-            transform: 'translate(-50%, -50%)',
-            fontSize: '32px',
-            fontWeight: '900',
-            color: '#fbbf24',
-            textShadow: '0 0 10px #000, 0 0 20px #fbbf24',
-            animation: 'floatUpFade 2s ease-out forwards',
-            pointerEvents: 'none',
-            zIndex: '101'
+        // Vị trí xuất phát (giữa monster)
+        const pos = DOMUtil.getRelativeCenter(fromId, containerId);
+        if (!pos) return;
+    
+        const monsterRect = fromEl.getBoundingClientRect();
+        const containerRect = container.getBoundingClientRect();
+    
+        // ==== CONFIG ====
+        const COIN_SIZE = 40;
+        const flyDuration = 800;     // bay cong
+        const groundDelay = 2000;    // nằm đất
+        const fadeDuration = 300;    // mờ đi
+        const FOOT_OFFSET = 10;      // nâng mặt đất lên chút
+    
+        // Mặt đất logic = đáy monster
+        const groundY =
+            monsterRect.bottom
+            - containerRect.top
+            - COIN_SIZE
+            - FOOT_OFFSET;
+    
+        // Số coin rơi (1 coin = 1 particle)
+        const coinCount = coinAmount;
+    
+        for (let i = 0; i < coinCount; i++) {
+    
+            /* =====================
+               1️⃣ WRAPPER (bay X)
+            ====================== */
+            const wrapper = DOMUtil.createElement('div', {
+                className: 'coin-wrapper',
+                styles: {
+                    position: 'absolute',
+                    left: `${pos.x}px`,
+                    top: `${pos.y}px`,
+                    pointerEvents: 'none',
+                    zIndex: '100',
+                    willChange: 'transform'
+                }
+            });
+    
+            /* =====================
+               2️⃣ COIN (bay Y)
+            ====================== */
+            const coin = DOMUtil.createElement('img', {
+                className: 'coin',
+                attributes: {
+                    src: './public/icon/Coin.png',
+                    alt: 'coin'
+                },
+                styles: {
+                    width: `${COIN_SIZE}px`,
+                    height: `${COIN_SIZE}px`,
+                    willChange: 'transform, opacity'
+                }
+            });
+    
+            wrapper.appendChild(coin);
+            container.appendChild(wrapper);
+    
+            /* =====================
+               3️⃣ TÍNH QUỸ ĐẠO
+            ====================== */
+            const offsetX = (Math.random() - 0.5) * 140;
+            const fallDistance = Math.max(20, groundY - pos.y);
+    
+            wrapper.style.setProperty('--tx', `${offsetX}px`);
+            coin.style.setProperty('--ty', `${fallDistance}px`);
+    
+            /* =====================
+               4️⃣ START ANIMATION
+            ====================== */
+            requestAnimationFrame(() => {
+                wrapper.classList.add('coin-fly');
+                coin.classList.add('coin-drop');
+            });
+            
+            /* =====================
+               5️⃣ FADE + REMOVE
+            ====================== */
+            setTimeout(() => {
+                coin.style.animation = `coinFadeOut ${fadeDuration}ms ease-out forwards`;
+                setTimeout(() => wrapper.remove(), fadeDuration);
+            }, flyDuration + groundDelay);
         }
-    });
-
-    container.appendChild(coinText);
-    setTimeout(() => coinText.remove(), 2000);
-}
+        window.audioControl.playSfx('./public/sounds/Coin_Drop2.wav');
+    }
+    
 
 /**
  * Hiệu ứng exp bay vào hero

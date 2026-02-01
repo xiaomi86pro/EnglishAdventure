@@ -10,6 +10,71 @@
     }
 }
 
+.coin-wrapper {
+    position: absolute;
+    left: var(--start-x);
+    top: var(--start-y);
+    pointer-events: none;
+    will-change: transform;
+  }
+  
+  .coin-wrapper.coin-fly {
+    animation: coin-x 0.9s ease-out forwards;
+  }
+  
+  .coin {
+    width: 48px;
+    height: 48px;
+    animation:
+      coin-y 0.9s cubic-bezier(.2,.6,.3,1) forwards,
+      coin-bounce 0.4s ease-out 0.9s forwards;
+  }
+  
+  /* bay ngang */
+  @keyframes coin-x {
+    to {
+      transform: translateX(var(--tx));
+    }
+  }
+  
+  /* parabol */
+  @keyframes coin-y {
+    0%   { transform: translateY(0); }
+    40%  { transform: translateY(-60px); } /* lên */
+    100% { transform: translateY(var(--ty)); } /* rơi */
+  }
+  
+  /* nảy */
+  @keyframes coin-bounce {
+    0%   { transform: translateY(var(--ty)); }
+    40%  { transform: translateY(calc(var(--ty) - 14px)); }
+    70%  { transform: translateY(var(--ty)); }
+    85%  { transform: translateY(calc(var(--ty) - 6px)); }
+    100% { transform: translateY(var(--ty)); }
+  }
+  
+
+@keyframes coinArc {
+    0% {
+      transform: translate(0, 0) scale(1) rotate(0deg);
+    }
+    50% {
+      transform: translate(var(--coin-tx), calc(var(--coin-ty) * -0.6))
+                 scale(1.1)
+                 rotate(180deg);
+    }
+    100% {
+      transform: translate(var(--coin-tx), var(--coin-ty))
+                 scale(1)
+                 rotate(360deg);
+    }
+  }
+  
+  @keyframes coinFadeOut {
+    from { opacity: 1; }
+    to   { opacity: 0; }
+  }
+
 /* Exp orb fly to hero */
 @keyframes expFlyToHero {
     0% {

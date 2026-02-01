@@ -47,6 +47,7 @@ class MonsterHandler {
                 def: monsterData.base_def,
                 state: 'idle',
                 isDead: false,
+                hasDroppedReward: false,
                 sprite_url: monsterData.image_url,
                 questionType: stepConfig.question_type || GameConfig.getDefaultQuestionType(monsterData.type)
             };
@@ -127,7 +128,8 @@ class MonsterHandler {
         const expGained = monster?.exp_reward || 0;
     
         // ✅ 3. Hiển thị hiệu ứng coin drop
-        if (coinDropped > 0 && this.effects) {
+        if (coinDropped > 0 && this.effects &&!monster.hasDroppedReward) {
+            monster.hasDroppedReward = true;
             this.effects.showCoinDrop('battleview', 'monster', coinDropped);
         }
     
@@ -176,6 +178,7 @@ class MonsterHandler {
                 atk: randomMonster.base_atk,
                 state: 'idle',
                 isDead: false,
+                hasDroppedReward: false,
                 sprite_url: randomMonster.image_url,
                 questionType: GameConfig.getDefaultQuestionType(randomMonster.type)
             };

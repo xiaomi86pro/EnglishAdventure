@@ -103,7 +103,7 @@ async checkAndUnlockHero(completedStationId, userId) {
             .from('heroes')
             .select('id, name')
             .eq('unlock_station_id', completedStationId)
-            .single();
+            .maybeSingle();
 
         if (error || !heroToUnlock) {
             return []; // Không có hero nào cần unlock
@@ -115,7 +115,7 @@ async checkAndUnlockHero(completedStationId, userId) {
             .select('id')
             .eq('profile_id', userId)
             .eq('hero_id', heroToUnlock.id)
-            .single();
+            .maybeSingle();
 
         if (existing) {
             console.log('[HeroHandler] User already unlocked this hero');
