@@ -8,7 +8,7 @@
     --text-font: 'Montserrat', sans-serif;
     --hero-size: 128px;
     --monster-normal: 64px;
-    --monster-elite: 96px;
+    --monster-elite: 128px;
     --monster-boss: 200px;
     --monster-fboss: 200px;
     --z-ui: 50;
@@ -65,12 +65,14 @@
     display: block;
   }
 
-  .monster-img {
+  #monster .monster-img {
     width: 100%;
-    height:100%;
+    height: auto;
     object-fit: contain;
     transform-origin: bottom center;
-    pointer-events:none;
+    transform:
+      translateY(var(--monster-y, 0))
+      scale(var(--monster-scale, 1));
   }
   
   /* Hero */
@@ -89,41 +91,45 @@
     justify-content: center;
     pointer-events: none;
   }
-  /* Normal */
-#monster.size-normal {
-  width: var(--monster-normal);
-  height: var(--monster-normal);
-}
-#monster.size-normal .monster-img {
-  transform: translateY(-8px);
-}
 
-/* Elite */
-#monster.size-elite {
-  width: var(--monster-elite);
-  height: var(--monster-elite);
-}
-#monster.size-elite .monster-img {
-  transform: translateY(-16px);
-}
+  /* ========================= */
+  /* NORMAL + LOCATION TIERS   */
+  /* ========================= */
 
-/* Boss */
-#monster.size-boss {
-  width: var(--monster-boss);
-  height: var(--monster-boss);
-}
-#monster.size-boss .monster-img {
-  transform: translateY(-28px);
-}
+  /* NORMAL */
+  #monster.size-normal.tier-early { --monster-scale: 1; }
+  #monster.size-normal.tier-mid   { --monster-scale: 1.3; }
+  #monster.size-normal.tier-late  { --monster-scale: 1.35; }
 
-/* Final Boss */
-#monster.size-fboss {
-  width: var(--monster-fboss);
-  height: var(--monster-fboss);
-}
-#monster.size-fboss .monster-img {
-  transform: translateY(-42px);
-}
+  /* ELITE */
+  #monster.size-elite.tier-early { --monster-scale: 1.1; }
+  #monster.size-elite.tier-mid   { --monster-scale: 1.3; }
+  #monster.size-elite.tier-late  { --monster-scale: 1.35; }
+
+  #monster.size-normal {
+    width: var(--monster-normal);
+    height: var(--monster-normal);
+    --monster-y: -8px;
+  }
+  
+  #monster.size-elite {
+    width: var(--monster-elite);
+    height: var(--monster-elite);
+    --monster-y: -16px;
+  }
+  
+  #monster.size-boss {
+    width: var(--monster-boss);
+    height: var(--monster-boss);
+    --monster-y: -28px;
+  }
+  
+  #monster.size-fboss {
+    width: var(--monster-fboss);
+    height: var(--monster-fboss);
+    --monster-y: -42px;
+  }
+
 .monster-shadow {
   position: absolute;
   bottom: 4px;

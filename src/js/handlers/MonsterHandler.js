@@ -18,7 +18,7 @@ class MonsterHandler {
      * @param {number} stepNumber 
      * @returns {Object} monster object
      */
-    async spawnFromStep(stationId, stepNumber) {
+    async spawnFromStep(stationId, stepNumber,location) {
         try {
             // 1. Lấy step config từ DB
             const { data: stepConfig, error } = await this.supabase
@@ -38,6 +38,9 @@ class MonsterHandler {
 
             // 2. Lấy monster từ config
             const monsterData = stepConfig.monsters;
+            const locationTier = location?.order_index
+            ? GameConfig.getLocationTier(location.order_index)
+            : 'early';
             
             const monster = {
                 ...monsterData,
@@ -49,18 +52,21 @@ class MonsterHandler {
                 isDead: false,
                 hasDroppedReward: false,
                 sprite_url: monsterData.image_url,
-                questionType: stepConfig.question_type || GameConfig.getDefaultQuestionType(monsterData.type)
+                questionType: stepConfig.question_type || GameConfig.getDefaultQuestionType(monsterData.type),
+                locationTier
             };
-
-            // 3. Render monster lên UI
-            //this._renderMonster(monster);
 
             // 4. Phát nhạc boss nếu cần
             if (this.effects) {
                 this.effects.playMonsterBGM(monster.type);
             }
 
-            console.log('Spawned monster:', monster.name);
+            console.log(
+                '[DEBUG monster tier]',
+                monster.name,
+                monster.locationTier
+            );
+
             return monster;
 
         } catch (err) {
@@ -171,7 +177,7 @@ class MonsterHandler {
                 state: 'idle',
                 isDead: false,
                 hasDroppedReward: false,
-                sprite_url: randomMonster.image_url,
+                sprite_url: './public/icon/Coin.png',
                 questionType: GameConfig.getDefaultQuestionType(randomMonster.type)
             };
 

@@ -24,10 +24,26 @@ const GameConfig = {
         'final boss': 'size-fboss'
     },
     
+    MONSTER_LOCATION_TIERS: {
+        1: 'early',
+        2: 'mid',
+        3: 'late',
+        4: 'end'
+      },
+
+    getLocationTier(orderIndex) {
+        if (!orderIndex) return 'early';
+      
+        if (orderIndex <= 1) return 'early';
+        if (orderIndex === 2) return 'mid';
+        if (orderIndex === 3) return 'late';
+        return 'end';
+    },
+
     // BGM theo loại monster
     MONSTER_BGM: {
-        boss: './sounds/Boss_Battle.mp3',
-        'final boss': './sounds/Final_Boss.mp3'
+        boss: './public/sounds/Boss_Battle.mp3',
+        'final boss': './public/sounds/Final_Boss.mp3'
     },
     
     // Default question type theo monster type

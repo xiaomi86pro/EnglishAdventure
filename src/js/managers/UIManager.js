@@ -461,9 +461,11 @@ class UIManager {
     
         monsterEl.style.backgroundImage = 'none';
         monsterEl.innerHTML = '';
-        //monsterEl.className = `sprite size-${monster.size || 'normal'}`;
         const sizeClass = GameConfig.getMonsterSizeClass(monster.type);
-        monsterEl.className = `sprite ${sizeClass}`;
+        const tierClass = monster.locationTier
+        ? `tier-${monster.locationTier}`
+        : '';
+        monsterEl.className = `sprite ${sizeClass} ${tierClass}`;
     
         const img = document.createElement('img');
         img.src = monster.sprite_url;

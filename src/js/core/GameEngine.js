@@ -154,8 +154,15 @@ const GameEngine = {
             // 7. Spawn monster
             this.monster = await this.monsterHandler.spawnFromStep(
                 this.currentStation.id, 
-                this.currentStep
+                this.currentStep,
+                this.currentLocation
             );
+            console.log(
+                '[DEBUG monster tier]',
+                this.monster.name,
+                this.monster.locationTier
+              );
+            
             this.uiManager.renderMonsterSprite(this.monster);
 
             // 8. Update all UI
@@ -444,9 +451,15 @@ const GameEngine = {
             if (progression.needsNewMonster) {
                 this.monster = await this.monsterHandler.spawnFromStep(
                     this.currentStation.id,
-                    this.currentStep
+                    this.currentStep,
+                    this.currentLocation
                 );
-                this.uiManager.renderMonsterSprite(this.monster);
+                console.log(
+                    '[DEBUG monster tier]',
+                    this.monster.name,
+                    this.monster.locationTier
+                  );
+                this.uiManager.renderMonsterSprite(this.monster);         
             }
 
             // 13. Update UI
@@ -641,14 +654,25 @@ const GameEngine = {
                     };
                     
                     this.uiManager.renderMonsterSprite(this.monster);
+                    console.log(
+                        '[DEBUG monster tier]',
+                        this.monster.name,
+                        this.monster.locationTier
+                      );
                 }
             } else {
                 // Spawn monster mới từ step
                 this.monster = await this.monsterHandler.spawnFromStep(
                     this.currentStation.id,
-                    this.currentStep
+                    this.currentStep,
+                    this.currentLocation
                 );
-                this.uiManager.renderMonsterSprite(this.monster);
+                console.log(
+                    '[DEBUG monster tier]',
+                    this.monster.name,
+                    this.monster.locationTier
+                  );
+                this.uiManager.renderMonsterSprite(this.monster);              
             }
 
             // 8. Update UI
