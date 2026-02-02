@@ -67,9 +67,10 @@
 
   .monster-img {
     width: 100%;
-    height: auto;
+    height:100%;
     object-fit: contain;
     transform-origin: bottom center;
+    pointer-events:none;
   }
   
   /* Hero */
@@ -132,11 +133,7 @@
   filter: blur(2px);
   z-index: 1;
 }
-.monster-img {
-  z-index: 2;
-}
 
-    
   /* Attack and hit effects */
   .attack-lunge{
     animation:attackLunge .28s ease-out forwards;

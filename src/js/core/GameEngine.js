@@ -156,6 +156,7 @@ const GameEngine = {
                 this.currentStation.id, 
                 this.currentStep
             );
+            this.uiManager.renderMonsterSprite(this.monster);
 
             // 8. Update all UI
             this.uiManager.updateAllUI(
@@ -445,6 +446,7 @@ const GameEngine = {
                     this.currentStation.id,
                     this.currentStep
                 );
+                this.uiManager.renderMonsterSprite(this.monster);
             }
 
             // 13. Update UI
@@ -646,6 +648,7 @@ const GameEngine = {
                     this.currentStation.id,
                     this.currentStep
                 );
+                this.uiManager.renderMonsterSprite(this.monster);
             }
 
             // 8. Update UI

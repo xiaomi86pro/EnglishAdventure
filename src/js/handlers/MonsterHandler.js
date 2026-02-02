@@ -53,7 +53,7 @@ class MonsterHandler {
             };
 
             // 3. Render monster lên UI
-            this._renderMonster(monster);
+            //this._renderMonster(monster);
 
             // 4. Phát nhạc boss nếu cần
             if (this.effects) {
@@ -84,16 +84,8 @@ class MonsterHandler {
      * @param {Object} monster 
      */
     _renderMonster(monster) {
-        const monsterEl = DOMUtil.getById('monster');
-        if (!monsterEl) return;
-
-        // Set background image
-        DOMUtil.setBackgroundImage('monster', monster.sprite_url);
-
-        // Set size class theo loại monster
-        const sizeClass = GameConfig.getMonsterSizeClass(monster.type);
-        monsterEl.className = `sprite ${sizeClass}`;
-    }
+        
+    } 
 
     /**
      * Xử lý khi monster bị tiêu diệt
