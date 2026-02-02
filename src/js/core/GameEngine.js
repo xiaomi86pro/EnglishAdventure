@@ -653,6 +653,15 @@ const GameEngine = {
                         questionType: GameConfig.getDefaultQuestionType(monsterData.type)
                     };
                     
+                    // ⭐ FIX: gán lại locationTier khi restore
+                    if (this.currentLocation?.order_index) {
+                        this.monster.locationTier = GameConfig.getLocationTier(
+                        this.currentLocation.order_index
+                        );
+                    } else {
+                        this.monster.locationTier = 'early'; // fallback an toàn
+                    }
+  
                     this.uiManager.renderMonsterSprite(this.monster);
                     console.log(
                         '[DEBUG monster tier]',

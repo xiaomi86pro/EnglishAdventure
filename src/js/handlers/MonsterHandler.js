@@ -68,7 +68,7 @@ class MonsterHandler {
             );
 
             return monster;
-
+              
         } catch (err) {
             console.error('Lỗi spawn monster:', err);
             return this._createDefaultMonster();
