@@ -18,9 +18,15 @@ export class AssetManager {
     }
 
     // ===== UPLOAD ASSET =====
-    async uploadAsset(file, subFolder) {
+    async uploadAsset(file, subFolder,displayName) {
+        const slug = displayName
+        .toLowerCase()
+        .normalize('NFD')                // tách dấu tiếng Việt
+        .replace(/[\u0300-\u036f]/g, '') // xoá dấu
+        .replace(/[^a-z0-9]+/g, '-')     // ký tự lạ → -
+        .replace(/(^-|-$)/g, '');        // bỏ - đầu/cuối
         const fileExt = file.name.split('.').pop();
-        const fileName = `${subFolder}_${Date.now()}.${fileExt}`;
+        const fileName = `${slug}_${Date.now()}.${fileExt}`;
         const filePath = `${subFolder}/${fileName}`;
 
         const { data, error } = await this.supabase.storage
@@ -174,6 +180,10 @@ export class AssetManager {
                          class="w-20 h-20 object-contain bg-gray-50 rounded-lg ${hero.is_locked ? 'grayscale' : ''}" 
                          alt="${hero.name}">
                     ${hero.is_locked ? '<div class="absolute top-0 right-0 text-2xl">🔒</div>' : ''}
+                    <label for="hero-img-${hero.id}" class="absolute bottom-0 right-0 bg-blue-500 text-white px-2 py-1 rounded-tl-lg text-xs cursor-pointer hover:bg-blue-600">
+                        📷 Đổi ảnh
+                    </label>
+                    <input type="file" id="hero-img-${hero.id}" accept="image/*" class="hidden">
                 </div>
                 <div class="flex-1">
                     <input type="text" 
@@ -239,6 +249,53 @@ export class AssetManager {
         checkbox.addEventListener('change', () => {
             dropdown.disabled = !checkbox.checked;
             if (!checkbox.checked) dropdown.value = '';
+        });
+
+        // Xử lý thay đổi ảnh Hero
+        const imgInput = card.querySelector(`#hero-img-${hero.id}`);
+        const imgElement = card.querySelector('img');
+        
+        imgInput.addEventListener('change', async (e) => {
+            const file = e.target.files[0];
+            if (!file) return;
+            
+            const confirmUpload = confirm(`Bạn có chắc muốn thay đổi ảnh cho "${hero.name}"?`);
+            if (!confirmUpload) {
+                imgInput.value = '';
+                return;
+            }
+            
+            try {
+                // Xóa ảnh cũ nếu có
+                if (hero.image_url) {
+                    const oldPath = hero.image_url.split('/Assets/')[1];
+                    if (oldPath) {
+                        await this.supabase.storage.from('Assets').remove([oldPath]);
+                    }
+                }
+                
+                // Upload ảnh mới
+                const newUrl = await this.uploadAsset(file, 'heroes', hero.name);
+                
+                // Cập nhật vào database
+                const { error } = await this.supabase
+                    .from('heroes')
+                    .update({ image_url: newUrl })
+                    .eq('id', hero.id);
+                    
+                if (error) throw error;
+                
+                // Cập nhật UI
+                imgElement.src = newUrl;
+                hero.image_url = newUrl;
+                this.showToast('✅ Đã cập nhật ảnh Hero!');
+                
+            } catch (err) {
+                this.showToast('❌ Lỗi: ' + err.message);
+                console.error(err);
+            }
+            
+            imgInput.value = '';
         });
         
         return card;
@@ -392,8 +449,15 @@ export class AssetManager {
         
         card.innerHTML = `
             <div class="flex items-center gap-4 pb-3 border-b border-gray-100">
+            <div class="relative">
                 <img src="${monster.image_url}" class="w-20 h-20 object-contain bg-gray-50 rounded-lg" alt="${monster.name}">
                 <div class="flex-1">
+                    <label for="monster-img-${monster.id}" class="absolute bottom-0 right-0 bg-purple-500 text-white px-2 py-1 rounded-tl-lg text-xs cursor-pointer hover:bg-purple-600">
+                        📷 Đổi ảnh
+                    </label>
+                    <input type="file" id="monster-img-${monster.id}" accept="image/*" class="hidden">      
+                </div>
+                    <input type="file" id="monster-img-${monster.id}" accept="image/*" class="hidden">
                     <input type="text" id="monster-name-${monster.id}" value="${monster.name}" 
                            class="font-bold text-xl text-gray-700 w-full border-b border-transparent focus:border-red-400 outline-none mb-1">
                     <p class="text-xs text-gray-400">ID: ${monster.id.substring(0,8)}...</p>
@@ -468,6 +532,53 @@ export class AssetManager {
             </div>
         `;
         
+        // Xử lý thay đổi ảnh Monster
+        const imgInput = card.querySelector(`#monster-img-${monster.id}`);
+        const imgElement = card.querySelector('img');
+        
+        imgInput.addEventListener('change', async (e) => {
+            const file = e.target.files[0];
+            if (!file) return;
+            
+            const confirmUpload = confirm(`Bạn có chắc muốn thay đổi ảnh cho "${monster.name}"?`);
+            if (!confirmUpload) {
+                imgInput.value = '';
+                return;
+            }
+            
+            try {
+                // Xóa ảnh cũ
+                if (monster.image_url) {
+                    const oldPath = monster.image_url.split('/Assets/')[1];
+                    if (oldPath) {
+                        await this.supabase.storage.from('Assets').remove([oldPath]);
+                    }
+                }
+                
+                // Upload ảnh mới
+                const newUrl = await this.uploadAsset(file, 'monsters', monster.name);
+                
+                // Cập nhật database
+                const { error } = await this.supabase
+                    .from('monsters')
+                    .update({ image_url: newUrl })
+                    .eq('id', monster.id);
+                    
+                if (error) throw error;
+                
+                // Cập nhật UI
+                imgElement.src = newUrl;
+                monster.image_url = newUrl;
+                this.showToast('✅ Đã cập nhật ảnh Monster!');
+                
+            } catch (err) {
+                this.showToast('❌ Lỗi: ' + err.message);
+                console.error(err);
+            }
+            
+            imgInput.value = '';
+        });
+
         return card;
     }
 
