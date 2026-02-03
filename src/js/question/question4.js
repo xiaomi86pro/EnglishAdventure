@@ -76,103 +76,84 @@ class Question4 {
         
         const words = this.wordsToFind;
         
-        // ✅ RANDOM VAI TRÒ: 50% hoán đổi từ ngang/dọc
-        let word1, word2, index1, index2, is1Horizontal;
-        if (Math.random() > 0.5) {
-            word1 = words[0].en;
-            word2 = words[1].en;
-            index1 = 0;
-            index2 = 1;
-            is1Horizontal = true;  // Từ 1 nằm ngang
-        } else {
-            word1 = words[1].en;
-            word2 = words[0].en;
-            index1 = 1;
-            index2 = 0;
-            is1Horizontal = true;  // Từ 1 nằm ngang
-        }
+        // ✅ TỪ DÀI NHẤT LUÔN NẰM NGANG (words[0])
+        const horizontalWord = words[0].en;  // Từ dài nhất
+        const verticalWord = words[1].en;    // Từ dài thứ 2
         
-        // Từ 2 sẽ nằm dọc (vuông góc với từ 1)
-        
-        // ✅ XÁC ĐỊNH KÍCH THƯỚC GRID
-        const gridWidth = word1.length + 1;
-        const gridHeight = word2.length + 1;
+        // ✅ KÍCH THƯỚC GRID CỐ ĐỊNH
+        const gridWidth = horizontalWord.length + 1;
+        const gridHeight = verticalWord.length + 1;
         
         // Tạo grid rỗng
         const grid = Array(gridHeight).fill(null).map(() => Array(gridWidth).fill(''));
         
-        // ✅ 1. ĐẶT TỪ 1 (NGANG) - Vị trí hàng random
-        const word1Row = Math.floor(Math.random() * gridHeight);
-        const word1Col = 0;
+        // ✅ 1. ĐẶT TỪ NGANG - Vị trí hàng random
+        const horizontalRow = Math.floor(Math.random() * gridHeight);
+        const horizontalCol = 0;
         
-        for (let i = 0; i < word1.length && word1Col + i < gridWidth; i++) {
-            grid[word1Row][word1Col + i] = word1[i];
+        for (let i = 0; i < horizontalWord.length; i++) {
+            grid[horizontalRow][horizontalCol + i] = horizontalWord[i];
         }
-        words[index1].firstCharPos = { row: word1Row, col: word1Col };
-        words[index1].isHorizontal = is1Horizontal;
+        words[0].firstCharPos = { row: horizontalRow, col: horizontalCol };
+        words[0].isHorizontal = true;
         
-        // ✅ 2. ĐẶT TỪ 2 (DỌC) - Tìm vị trí cắt hợp lệ
-        let word2Placed = false;
+        // ✅ 2. ĐẶT TỪ DỌC - Tìm ký tự chung để cắt
+        let verticalPlaced = false;
         
-        // Thử tìm ký tự chung để cắt nhau
-        for (let i = 0; i < word2.length && !word2Placed; i++) {
-            const char = word2[i];
-            // Tìm vị trí của char này trong word1
-            for (let j = 0; j < word1.length && !word2Placed; j++) {
-                if (word1[j] === char) {
-                    // Thử đặt word2 dọc sao cho ký tự thứ i của nó trùng với word1[j]
-                    const word2Row = word1Row - i;
-                    const word2Col = word1Col + j;
+        // Thử tìm ký tự chung
+        for (let i = 0; i < verticalWord.length && !verticalPlaced; i++) {
+            const char = verticalWord[i];
+            
+            for (let j = 0; j < horizontalWord.length && !verticalPlaced; j++) {
+                if (horizontalWord[j] === char) {
+                    // Thử đặt từ dọc tại vị trí này
+                    const verticalRow = horizontalRow - i;
+                    const verticalCol = horizontalCol + j;
                     
-                    // Kiểm tra xem có thể đặt không
+                    // Kiểm tra có thể đặt không
                     let canPlace = true;
-                    for (let k = 0; k < word2.length; k++) {
-                        const r = word2Row + k;
-                        const c = word2Col;
+                    for (let k = 0; k < verticalWord.length; k++) {
+                        const r = verticalRow + k;
+                        const c = verticalCol;
                         
-                        // Vượt biên
                         if (r < 0 || r >= gridHeight || c < 0 || c >= gridWidth) {
                             canPlace = false;
                             break;
                         }
                         
-                        // Ô này đã có chữ khác
                         const existing = grid[r][c];
-                        if (existing !== '' && existing !== word2[k]) {
+                        if (existing !== '' && existing !== verticalWord[k]) {
                             canPlace = false;
                             break;
                         }
                     }
                     
                     if (canPlace) {
-                        // Đặt word2
-                        for (let k = 0; k < word2.length; k++) {
-                            const r = word2Row + k;
-                            const c = word2Col;
-                            grid[r][c] = word2[k];
+                        // Đặt từ dọc
+                        for (let k = 0; k < verticalWord.length; k++) {
+                            grid[verticalRow + k][verticalCol] = verticalWord[k];
                         }
-                        words[index2].firstCharPos = { row: word2Row, col: word2Col };
-                        words[index2].isHorizontal = false;
-                        word2Placed = true;
+                        words[1].firstCharPos = { row: verticalRow, col: verticalCol };
+                        words[1].isHorizontal = false;
+                        verticalPlaced = true;
                     }
                 }
             }
         }
         
-        // Nếu không tìm được vị trí cắt, đặt word2 ở cột random (không cắt)
-        if (!word2Placed) {
-            const word2Col = Math.floor(Math.random() * gridWidth);
-            const word2Row = 0;
+        // Nếu không tìm được ký tự chung, đặt ở cột random
+        if (!verticalPlaced) {
+            const verticalCol = Math.floor(Math.random() * gridWidth);
+            const verticalRow = 0;
             
-            for (let k = 0; k < word2.length && word2Row + k < gridHeight; k++) {
-                const r = word2Row + k;
-                const c = word2Col;
-                if (grid[r][c] === '') {
-                    grid[r][c] = word2[k];
+            for (let k = 0; k < verticalWord.length; k++) {
+                const r = verticalRow + k;
+                if (r < gridHeight && grid[r][verticalCol] === '') {
+                    grid[r][verticalCol] = verticalWord[k];
                 }
             }
-            words[index2].firstCharPos = { row: word2Row, col: word2Col };
-            words[index2].isHorizontal = false;
+            words[1].firstCharPos = { row: verticalRow, col: verticalCol };
+            words[1].isHorizontal = false;
         }
         
         // ✅ 3. ĐẶT 3 TỪ CÒN LẠI
@@ -180,7 +161,7 @@ class Question4 {
             const word = words[i].en;
             let placed = false;
             
-            // Thử đan xen với các chữ đã có
+            // Thử đan xen
             for (let r = 0; r < gridHeight && !placed; r++) {
                 for (let c = 0; c < gridWidth && !placed; c++) {
                     // Thử ngang
@@ -200,7 +181,7 @@ class Question4 {
                 }
             }
             
-            // Nếu không đặt được, tìm chỗ trống đầu tiên
+            // Nếu không đặt được, tìm chỗ trống
             if (!placed) {
                 for (let r = 0; r < gridHeight && !placed; r++) {
                     for (let c = 0; c <= gridWidth - word.length && !placed; c++) {
@@ -220,7 +201,7 @@ class Question4 {
             }
         }
         
-        // ✅ 4. ĐIỀN CHỮ NGẪU NHIÊN VÀO Ô TRỐNG
+        // ✅ 4. ĐIỀN CHỮ NGẪU NHIÊN
         const alphabet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
         for (let r = 0; r < gridHeight; r++) {
             for (let c = 0; c < gridWidth; c++) {
@@ -232,6 +213,8 @@ class Question4 {
         
         this.gridWidth = gridWidth;
         this.gridHeight = gridHeight;
+        
+        console.log(`Grid: ${gridWidth}x${gridHeight}`, `Ngang: ${horizontalWord}`, `Dọc: ${verticalWord}`);
         
         return grid;
     }
@@ -273,19 +256,34 @@ class Question4 {
 
         // 2. Xây dựng giao diện
         const wrapper = document.createElement('div');
-        wrapper.className = "flex flex-col lg:flex-row gap-6 items-start justify-center w-full max-w-7xl mx-auto p-4";
+        wrapper.className =
+            'w-full max-w-7xl mx-auto bg-slate-800 rounded-3xl p-6 ' +
+            'flex flex-col relative overflow-hidden';
 
-        // Nút Hint ở trên cùng (mobile) hoặc góc trái (desktop)
         wrapper.innerHTML = `
-            <button id="hint-btn" 
-                class="lg:absolute lg:top-4 lg:left-4 mb-4 lg:mb-0 px-6 py-3 bg-gradient-to-r from-yellow-500 to-orange-500 text-white font-bold rounded-xl shadow-lg hover:scale-105 transition-transform flex items-center gap-2 self-center lg:self-start">
-                <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
-                    <path d="M11 3a1 1 0 10-2 0v1a1 1 0 102 0V3zM15.657 5.757a1 1 0 00-1.414-1.414l-.707.707a1 1 0 001.414 1.414l.707-.707zM18 10a1 1 0 01-1 1h-1a1 1 0 110-2h1a1 1 0 011 1zM5.05 6.464A1 1 0 106.464 5.05l-.707-.707a1 1 0 00-1.414 1.414l.707.707zM5 10a1 1 0 01-1 1H3a1 1 0 110-2h1a1 1 0 011 1zM8 16v-1h4v1a2 2 0 11-4 0zM12 14c.015-.34.208-.646.477-.859a4 4 0 10-4.954 0c.27.213.462.519.476.859h4.002z"/>
-                </svg>
-                HINT (-5 HP)
+            <!-- Badge loại câu hỏi -->
+            <div class="absolute top-0 left-0 bg-blue-600 text-white px-3 py-1 
+                        rounded-br-2xl text-xs font-bold shadow z-10">
+                Type 4: Word Search
+            </div>
+
+            <!-- Hint button -->
+            <button id="hint-btn"
+                class="absolute top-4 right-4 w-10 h-10 bg-white 
+                    border-2 border-yellow-400 rounded-full 
+                    flex items-center justify-center text-xl 
+                    shadow hover:bg-yellow-50 active:scale-95 
+                    transition-transform z-20">
+                💡
             </button>
+
+            <!-- Mô tả -->
+            <div class="text-white/60 text-center text-sm font-bold 
+                        uppercase tracking-widest mb-4">
+                Tìm các từ trong bảng chữ cái
+            </div>
         `;
-    
+        
         // --- KHỐI TRÁI: GRID CHỮ CÁI ---
         const gridContainer = document.createElement('div');
         gridContainer.className = "grid gap-1 p-2 bg-slate-800 rounded-xl border border-slate-700 shadow-inner";
@@ -327,10 +325,16 @@ class Question4 {
             `;
             wordList.appendChild(item);
         });
-    
+        
+        const contentRow = document.createElement('div');
+        contentRow.className =
+        'flex flex-col lg:flex-row gap-6 items-start justify-center w-full mt-6';
+
         // Gom tất cả vào giao diện chính
-        wrapper.appendChild(gridContainer);
-        wrapper.appendChild(wordList);
+        contentRow.appendChild(gridContainer);
+        contentRow.appendChild(wordList);
+
+        wrapper.appendChild(contentRow);
         area.appendChild(wrapper);
     
         // 3. Khởi tạo các sự kiện tương tác

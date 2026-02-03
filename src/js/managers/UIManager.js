@@ -310,7 +310,7 @@ class UIManager {
         const killBtn = DOMUtil.createElement('button', {
             id: 'kill-btn',
             className: 'w-full mb-2 p-3 rounded-2xl bg-purple-500 hover:bg-purple-600 text-white font-bold transition-all shadow-md',
-            innerHTML: '💀 Kill Monster (Test)'
+            innerHTML: '💀 Kill Monster'
         });
 
         killBtn.onclick = () => {
