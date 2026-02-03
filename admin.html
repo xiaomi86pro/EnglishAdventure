@@ -20,28 +20,51 @@
         <!-- TAB NAVIGATION -->
         <div class="flex gap-6">
             <div class="w-64 shrink-0 bg-white rounded-3xl p-4 space-y-3 shadow">
-            <button onclick="switchTab('vocab')" id="btn-tab-vocab" class="px-8 py-3 rounded-2xl font-black uppercase transition-all bg-blue-500 text-white shadow-lg">
-                📚 Nhập từ vựng
-            </button>
-            <button onclick="switchTab('assets')" id="btn-tab-assets" class="px-8 py-3 rounded-2xl font-black uppercase transition-all bg-gray-200 text-gray-700 hover:bg-gray-300">
-                🎨 Assets
-            </button>
-            <button onclick="switchTab('questions')" id="btn-tab-questions" class="px-8 py-3 rounded-2xl font-black uppercase transition-all bg-gray-200 text-gray-700 hover:bg-gray-300">
-                ❓ Test câu hỏi
-            </button>
-            <button id="btn-tab-locations" onclick="switchTab('locations')" class="px-8 py-3 rounded-2xl font-black uppercase transition-all bg-gray-200 text-gray-700 hover:bg-gray-300">
-                🗺️ Vùng đất
-            </button>
-            <button id="btn-tab-stations" onclick="switchTab('stations')" class="px-8 py-3 rounded-2xl font-black uppercase transition-all bg-gray-200 text-gray-700 hover:bg-gray-300">
-                🚉 Chặng
-            </button>
-            <button id="btn-tab-steps" onclick="switchTab('steps')" class="px-8 py-3 rounded-2xl font-black uppercase transition-all bg-gray-200 text-gray-700 hover:bg-gray-300">
-                👣 Cấu hình Step
-            </button>
-            <button onclick="switchTab('profiles')" id="btn-tab-profiles" class="px-8 py-3 rounded-2xl font-black uppercase transition-all bg-gray-200 text-gray-700 hover:bg-gray-300">
-            <span>👤</span> <span>Profiles</span>
-            </button>
+
+                <button onclick="switchTab('vocab')" id="btn-tab-vocab"
+                    class="sidebar-btn">
+                    <span>📚</span>
+                    <span>Nhập từ vựng</span>
+                </button>
+            
+                <button onclick="switchTab('assets')" id="btn-tab-assets"
+                    class="sidebar-btn">
+                    <span>🎨</span>
+                    <span>Assets</span>
+                </button>
+            
+                <button onclick="switchTab('questions')" id="btn-tab-questions"
+                    class="sidebar-btn">
+                    <span>❓</span>
+                    <span>Test câu hỏi</span>
+                </button>
+            
+                <button onclick="switchTab('locations')" id="btn-tab-locations"
+                    class="sidebar-btn">
+                    <span>🗺️</span>
+                    <span>Vùng đất</span>
+                </button>
+            
+                <button onclick="switchTab('stations')" id="btn-tab-stations"
+                    class="sidebar-btn">
+                    <span>🚉</span>
+                    <span>Chặng</span>
+                </button>
+            
+                <button onclick="switchTab('steps')" id="btn-tab-steps"
+                    class="sidebar-btn">
+                    <span>👣</span>
+                    <span>Cấu hình Step</span>
+                </button>
+            
+                <button onclick="switchTab('profiles')" id="btn-tab-profiles"
+                    class="sidebar-btn">
+                    <span>👤</span>
+                    <span>Profiles</span>
+                </button>
+            
             </div>
+            
         <div id='conten-area' class="flex-1">
             <!-- CONTENT: TAB NHẬP TỪ -->
             <div id="tab-vocab" class="space-y-6">

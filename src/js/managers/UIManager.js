@@ -291,12 +291,22 @@ class UIManager {
         if (!dashboard) return;
 
         // Xóa nút cũ nếu có
-        const oldNextQuestionBtn = DOMUtil.getById('next-question-btn');
-        const oldKillBtn = DOMUtil.getById('kill-btn');
-        const oldAdminBtn = DOMUtil.getById('admin-link-btn');
-        if (oldNextQuestionBtn) oldNextQuestionBtn.remove();
-        if (oldKillBtn) oldKillBtn.remove();
-        if (oldAdminBtn) oldAdminBtn.remove();
+        //const oldNextQuestionBtn = DOMUtil.getById('next-question-btn');
+        //const oldKillBtn = DOMUtil.getById('kill-btn');
+        //const oldAdminBtn = DOMUtil.getById('admin-link-btn');
+        //if (oldNextQuestionBtn) oldNextQuestionBtn.remove();
+        //if (oldKillBtn) oldKillBtn.remove();
+        //if (oldAdminBtn) oldAdminBtn.remove();
+
+        [
+            'kill-btn',
+            'admin-link-btn',
+            'test-question-btn',
+            'test-question-input'
+          ].forEach(id => {
+              const el = DOMUtil.getById(id);
+              if (el) el.remove();
+          });
 
         // Lấy role từ GameEngine
         const GE = window.GameEngine;
@@ -308,27 +318,36 @@ class UIManager {
             return;
         }
 
-        // ✅ Tạo nút Next Question (Test)
-        const nextQuestionBtn = DOMUtil.createElement('button', {
-            id: 'next-question-btn',
-            className: 'w-full mb-2 p-3 rounded-2xl bg-blue-500 hover:bg-blue-600 text-white font-bold transition-all shadow-md',
-            innerHTML: '🔄 Next Question'
+        // ✅ Input nhập question type
+        const testInput = DOMUtil.createElement('input', {
+            id: 'test-question-input',
+            className: 'w-full mb-2 p-3 rounded-2xl border-2 border-purple-400 text-center font-bold text-lg',
+        });
+        testInput.type = 'number';
+        testInput.min = '1';
+        testInput.placeholder = 'Question Type (vd: 4)';
+
+        // ✅ Nút Test Question
+        const testBtn = DOMUtil.createElement('button', {
+            id: 'test-question-btn',
+            className: 'w-full mb-2 p-3 rounded-2xl bg-indigo-500 hover:bg-indigo-600 text-white font-bold transition-all shadow-md',
+            innerHTML: '🧪 Test Question'
         });
 
-        nextQuestionBtn.onclick = () => {
-            try {
-                if (!GE) return;
-                if (typeof GE.nextQuestion !== 'function') {
-                    console.warn('[UIManager] nextQuestion() not found on GameEngine');
-                    return;
-                }
+        testBtn.onclick = () => {
+            const value = testInput.value;
+            if (!value) {
+                alert('Nhập question type trước');
+                return;
+            }
 
-                console.log('[ADMIN TEST] Force load next question');
-                GE.nextQuestion();
-            } catch (err) {
-                console.error('[UIManager] Next Question button error', err);
+            if (window.GameEngine?.testQuestion) {
+                window.GameEngine.testQuestion(value);
+            } else {
+                console.error('[Admin] GameEngine.testQuestion not found');
             }
         };
+         
 
         // ✅ Tạo nút Kill Monster (Test)
         const killBtn = DOMUtil.createElement('button', {
@@ -378,7 +397,9 @@ class UIManager {
         adminBtn.setAttribute('href', './admin.html');
 
         // ✅ Append vào cuối dashboard (trước nút Admin cố định trong HTML nếu có)
-        dashboard.appendChild(nextQuestionBtn);
+        dashboard.appendChild(testInput);
+        //dashboard.appendChild(nextQuestionBtn);
+        dashboard.appendChild(testBtn);
         dashboard.appendChild(killBtn);
         dashboard.appendChild(adminBtn);
 

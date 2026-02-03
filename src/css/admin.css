@@ -70,6 +70,35 @@ body {
 /* Style cho nút Lưu và Xóa */
 .btn-save { background-color: #22c55e; color: white; padding: 6px 12px; rounded: 8px; font-weight: bold; border-radius: 8px; }
 .btn-delete { background-color: #ef4444; color: white; padding: 6px 12px; rounded: 8px; font-weight: bold; border-radius: 8px; margin-left: 4px; }
+.sidebar-btn {
+  width: 100%;
+  height: 48px;
+
+  padding-left: 16px;
+  padding-right: 16px;
+
+  border-radius: 16px;
+
+  font-weight: 800;
+  font-size: 0.875rem;
+  text-transform: uppercase;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+
+  white-space: nowrap;
+
+  background-color: #e5e7eb; /* gray-200 */
+  color: #374151;            /* gray-700 */
+
+  transition: all 0.2s ease;
+}
+
+.sidebar-btn:hover {
+  background-color: rgb(96, 153, 238); /* gray-300 */
+}
 
 
 

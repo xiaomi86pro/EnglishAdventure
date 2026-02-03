@@ -243,6 +243,46 @@ const GameEngine = {
     },
 
     /**
+     * ADMIN ONLY – Test question by type (không ảnh hưởng game flow)
+     */
+    async testQuestion(questionType) {
+        try {
+            if (!window.QuestionManager) {
+                console.warn('[GameEngine] QuestionManager not found');
+                return;
+            }
+
+            const type = Number(questionType);
+            if (!type || type <= 0) {
+                alert('Question type không hợp lệ');
+                return;
+            }
+
+            console.log('[ADMIN] Test question type:', type);
+
+            // Destroy question cũ nếu có
+            if (window.QuestionManager.currentQuestion) {
+                if (typeof window.QuestionManager.currentQuestion.destroy === 'function') {
+                    window.QuestionManager.currentQuestion.destroy();
+                }
+            }
+
+            // Hiển thị loading trong question area
+            this.uiManager?.showQuestionLoading?.();
+
+            // Load question theo type nhập vào
+            await window.QuestionManager.loadType(
+                type,
+                this.monster?.type
+            );
+
+        } catch (err) {
+            console.error('[GameEngine] testQuestion error', err);
+            alert('Lỗi test question: ' + err.message);
+        }
+    },
+
+    /**
      * Xử lý khi người chơi trả lời đúng
      * @param {number} hits - số đòn hero sẽ tấn công
      * @param {boolean} advanceNext - có load câu hỏi tiếp không
