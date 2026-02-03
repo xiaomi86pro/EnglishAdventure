@@ -81,7 +81,7 @@ export class ProfileManager {
         modal.id = 'edit-profile-modal';
         modal.className = 'fixed inset-0 bg-black/50 flex items-center justify-center z-50';
         modal.innerHTML = `
-            <div class="bg-white rounded-3xl p-8 max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto">
+            <div class="bg-white rounded-3xl p-8 max-w-3xl w-full mx-4 max-h-[90vh] overflow-y-auto">
                 <h3 class="text-2xl font-bold mb-6 text-blue-600">✏️ Chỉnh sửa Profile</h3>
                 
                 <div class="grid grid-cols-2 gap-4 mb-6">
@@ -149,7 +149,12 @@ export class ProfileManager {
                         class="w-full p-2 border rounded-lg text-sm">
                     <p class="text-xs text-gray-400 mt-1">Chỉ nhập nếu muốn thay đổi</p>
                 </div>
-
+                <div class="mt-6 border-t-2 pt-4">
+                <h4 class="font-bold text-lg mb-3 text-purple-600">🦸 Heroes đã mở khóa</h4>
+                <div id="unlocked-heroes-list" class="space-y-2">
+                    <p class="text-gray-400">Đang tải...</p>
+                </div>
+                </div>
                 <div class="flex gap-3">
                     <button onclick="ProfileManager.saveEdit('${userId}')" 
                             class="flex-1 py-3 bg-blue-500 text-white rounded-xl font-bold hover:bg-blue-600">
@@ -165,10 +170,108 @@ export class ProfileManager {
 
         document.body.appendChild(modal);
 
+        // THÊM ĐOẠN NÀY - Load heroes đã unlock
+        this.loadUnlockedHeroes(userId);
+
         // Click outside to close
         modal.onclick = (e) => {
             if (e.target === modal) this.closeEditForm();
         };
+    }
+
+    /**
+     * Load và hiển thị heroes đã unlock của user
+     */
+    async loadUnlockedHeroes(userId) {
+        // Lấy danh sách unlocked
+        const { data: unlocked, error: unlockedError } = await this.supabase
+            .from('unlocked_heroes')
+            .select('hero_id, unlocked_at')
+            .eq('profile_id', userId);
+
+        if (unlockedError) {
+            console.error('Error loading unlocked heroes:', unlockedError);
+            return;
+        }
+
+        // Lấy tất cả heroes
+        const { data: allHeroes, error: heroesError } = await this.supabase
+            .from('heroes')
+            .select('*')
+            .order('name');
+
+        if (heroesError) {
+            console.error('Error loading heroes:', heroesError);
+            return;
+        }
+
+        const container = document.getElementById('unlocked-heroes-list');
+        if (!container) return;
+
+        const unlockedIds = new Set(unlocked.map(u => u.hero_id));
+
+        container.innerHTML = allHeroes.map(hero => {
+            const isUnlocked = unlockedIds.has(hero.id);
+            return `
+                <div class="flex items-center gap-3 p-2 bg-white rounded-lg border ${isUnlocked ? 'border-green-400' : 'border-gray-200'}">
+                    <input type="checkbox" 
+                        id="hero-${hero.id}" 
+                        data-hero-id="${hero.id}"
+                        ${isUnlocked ? 'checked' : ''}
+                        class="w-5 h-5 cursor-pointer"
+                        onchange="ProfileManager.toggleHero('${userId}', '${hero.id}', this.checked)">
+                    <label for="hero-${hero.id}" class="flex-1 cursor-pointer flex items-center gap-2">
+                        <span class="text-2xl">
+                        ${hero.image_url 
+                            ? `<img src="${hero.image_url}" alt="${hero.name}" class="w-10 h-10 rounded-full object-cover border-2 border-gray-300">` 
+                            : '<span class="text-2xl">🦸</span>'}
+                        </span>
+                        <div>
+                            <p class="font-bold">${hero.name}</p>
+                            <p class="text-xs text-gray-500">HP:${hero.base_hp} ATK:${hero.base_atk} DEF:${hero.base_def}</p>
+                        </div>
+                    </label>
+                    ${isUnlocked ? '<span class="text-green-600 text-sm">✓ Đã mở</span>' : '<span class="text-gray-400 text-sm">Khóa</span>'}
+                </div>
+            `;
+        }).join('');
+    }
+
+    /**
+     * Bật/tắt unlock hero
+     */
+    async toggleHero(userId, heroId, isChecked) {
+        if (isChecked) {
+            // Thêm vào unlocked_heroes
+            const { error } = await this.supabase
+                .from('unlocked_heroes')
+                .insert({
+                    profile_id: userId,
+                    hero_id: heroId,
+                    unlocked_at: new Date().toISOString()
+                });
+
+            if (error) {
+                alert('Lỗi mở khóa hero: ' + error.message);
+                // Uncheck lại checkbox
+                document.getElementById(`hero-${heroId}`).checked = false;
+                return;
+            }
+        } else {
+            // Xóa khỏi unlocked_heroes
+            const { error } = await this.supabase
+                .from('unlocked_heroes')
+                .delete()
+                .eq('profile_id', userId)
+                .eq('hero_id', heroId);
+
+            if (error) {
+                alert('Lỗi khóa hero: ' + error.message);
+                // Check lại checkbox
+                document.getElementById(`hero-${heroId}`).checked = true;
+                return;
+            }
+        }
     }
 
     /**
