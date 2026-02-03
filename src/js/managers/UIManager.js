@@ -291,8 +291,10 @@ class UIManager {
         if (!dashboard) return;
 
         // Xóa nút cũ nếu có
+        const oldNextQuestionBtn = DOMUtil.getById('next-question-btn');
         const oldKillBtn = DOMUtil.getById('kill-btn');
         const oldAdminBtn = DOMUtil.getById('admin-link-btn');
+        if (oldNextQuestionBtn) oldNextQuestionBtn.remove();
         if (oldKillBtn) oldKillBtn.remove();
         if (oldAdminBtn) oldAdminBtn.remove();
 
@@ -305,6 +307,28 @@ class UIManager {
             console.log('[UIManager] User is not admin, admin buttons hidden');
             return;
         }
+
+        // ✅ Tạo nút Next Question (Test)
+        const nextQuestionBtn = DOMUtil.createElement('button', {
+            id: 'next-question-btn',
+            className: 'w-full mb-2 p-3 rounded-2xl bg-blue-500 hover:bg-blue-600 text-white font-bold transition-all shadow-md',
+            innerHTML: '🔄 Next Question'
+        });
+
+        nextQuestionBtn.onclick = () => {
+            try {
+                if (!GE) return;
+                if (typeof GE.nextQuestion !== 'function') {
+                    console.warn('[UIManager] nextQuestion() not found on GameEngine');
+                    return;
+                }
+
+                console.log('[ADMIN TEST] Force load next question');
+                GE.nextQuestion();
+            } catch (err) {
+                console.error('[UIManager] Next Question button error', err);
+            }
+        };
 
         // ✅ Tạo nút Kill Monster (Test)
         const killBtn = DOMUtil.createElement('button', {
@@ -354,6 +378,7 @@ class UIManager {
         adminBtn.setAttribute('href', './admin.html');
 
         // ✅ Append vào cuối dashboard (trước nút Admin cố định trong HTML nếu có)
+        dashboard.appendChild(nextQuestionBtn);
         dashboard.appendChild(killBtn);
         dashboard.appendChild(adminBtn);
 

@@ -35,173 +35,182 @@ class Question4 {
     _selectWords() {
         if (!this.vocabPool || this.vocabPool.length === 0) return;
         
-        // ✅ 1. CHUẨN HÓA VÀ LỌC DỮ LIỆU BAN ĐẦU
         let pool = this.vocabPool.map(w => ({
             en: (w.en || w.english || w.english_word || '').toUpperCase().trim(),
             vi: w.vi || w.vietnamese || w.vietnamese_translation || ''
         }))
-        .filter(w => w.en.length > 0 && !w.en.includes(' ') && w.en.length >= 3); // Bỏ từ rỗng, từ ghép và từ quá ngắn
+        .filter(w => w.en.length > 0 && !w.en.includes(' ') && w.en.length >= 3);
     
         if (pool.length < 5) {
             console.warn('Không đủ từ vựng để chơi (cần ít nhất 5 từ)');
             return;
         }
     
-        // ✅ 2. CHỌN NGẪU NHIÊN 5 TỪ
         const shuffled = [...pool].sort(() => Math.random() - 0.5);
         const selectedWords = shuffled.slice(0, 5);
     
-        // ✅ 3. SẮP XẾP THEO ĐỘ DÀI GIẢM DẦN
         selectedWords.sort((a, b) => b.en.length - a.en.length);
     
-        // ✅ 4. LẤY 2 TỪ DÀI NHẤT LÀM TRỤC NGANG VÀ DỌC
-        const horizontalWord = selectedWords[0]; // Từ dài nhất - nằm ngang
-        const verticalWord = selectedWords[1];   // Từ dài thứ 2 - nằm dọc
-        const otherWords = selectedWords.slice(2, 5); // 3 từ còn lại
-    
-        // ✅ 5. GÁN DỮ LIỆU VÀO ĐỐI TƯỢNG
-        // Thứ tự: [ngang, dọc, ...các từ khác]
-        this.wordsToFind = [horizontalWord, verticalWord, ...otherWords].map(w => ({
+        this.wordsToFind = selectedWords.map(w => ({
             en: w.en,
             vi: w.vi,
             found: false,
             hinted: false
         }));
-
-        console.log('Từ được chọn:', this.wordsToFind.map(w => `${w.en} (${w.en.length})`));
+    
+        // ✅ DEBUG
+        console.log('=== DEBUG _selectWords ===');
+        console.log('Số từ chọn được:', this.wordsToFind.length);
+        this.wordsToFind.forEach((w, i) => {
+            console.log(`Từ ${i}:`, w.en, `(${w.en ? w.en.length : 'undefined'} chữ)`, w);
+        });
+        console.log('========================');
     }
 
     _generateGrid() {
-        if (!this.wordsToFind || this.wordsToFind.length < 2) return [[]];
+        // ✅ KIỂM TRA DỮ LIỆU ĐẦU VÀO
+        if (!this.wordsToFind || this.wordsToFind.length === 0) {
+            console.error('Không có từ nào để tạo grid');
+            return [[]];
+        }
         
         const words = this.wordsToFind;
         
-        // ✅ TỪ DÀI NHẤT LUÔN NẰM NGANG (words[0])
-        const horizontalWord = words[0].en;  // Từ dài nhất
-        const verticalWord = words[1].en;    // Từ dài thứ 2
+        // Kiểm tra từ đầu tiên
+        if (!words[0] || !words[0].en || words[0].en.length === 0) {
+            console.error('Từ đầu tiên không hợp lệ:', words[0]);
+            return [[]];
+        }
+        
+        // ✅ TỪ DÀI NHẤT LUÔN NẰM NGANG
+        const longestWord = words[0].en;
+        
+        console.log('Từ dài nhất:', longestWord, 'Độ dài:', longestWord.length);
+        
+        // ✅ PHÂN LOẠI TỪ
+        const horizontalWords = []; // Từ nằm ngang
+        const verticalWords = [];   // Từ nằm dọc
+        
+        words.forEach((wordObj, index) => {
+            // Kiểm tra wordObj hợp lệ
+            if (!wordObj || !wordObj.en) {
+                console.warn('Từ không hợp lệ tại index', index, wordObj);
+                return;
+            }
+            
+            if (index === 0) {
+                // Từ đầu tiên (dài nhất) luôn nằm ngang
+                horizontalWords.push({ ...wordObj, originalIndex: index });
+            } else if (wordObj.en.length >= 8) {
+                // Các từ khác >= 8 chữ cũng nằm ngang
+                horizontalWords.push({ ...wordObj, originalIndex: index });
+            } else {
+                // Từ < 8 chữ nằm dọc
+                verticalWords.push({ ...wordObj, originalIndex: index });
+            }
+        });
         
         // ✅ KÍCH THƯỚC GRID CỐ ĐỊNH
-        const gridWidth = horizontalWord.length + 1;
-        const gridHeight = verticalWord.length + 1;
+        const gridWidth = Math.max(longestWord.length + 1, 5); // Tối thiểu 5 cột
+        const gridHeight = 8; // CỐ ĐỊNH 8 HÀNG
         
-        // Tạo grid rỗng
-        const grid = Array(gridHeight).fill(null).map(() => Array(gridWidth).fill(''));
+        console.log(`Khởi tạo Grid: ${gridWidth}x${gridHeight}`);
         
-        // ✅ 1. ĐẶT TỪ NGANG - Vị trí hàng random
-        const horizontalRow = Math.floor(Math.random() * gridHeight);
-        const horizontalCol = 0;
-        
-        for (let i = 0; i < horizontalWord.length; i++) {
-            grid[horizontalRow][horizontalCol + i] = horizontalWord[i];
-        }
-        words[0].firstCharPos = { row: horizontalRow, col: horizontalCol };
-        words[0].isHorizontal = true;
-        
-        // ✅ 2. ĐẶT TỪ DỌC - Tìm ký tự chung để cắt
-        let verticalPlaced = false;
-        
-        // Thử tìm ký tự chung
-        for (let i = 0; i < verticalWord.length && !verticalPlaced; i++) {
-            const char = verticalWord[i];
-            
-            for (let j = 0; j < horizontalWord.length && !verticalPlaced; j++) {
-                if (horizontalWord[j] === char) {
-                    // Thử đặt từ dọc tại vị trí này
-                    const verticalRow = horizontalRow - i;
-                    const verticalCol = horizontalCol + j;
-                    
-                    // Kiểm tra có thể đặt không
-                    let canPlace = true;
-                    for (let k = 0; k < verticalWord.length; k++) {
-                        const r = verticalRow + k;
-                        const c = verticalCol;
-                        
-                        if (r < 0 || r >= gridHeight || c < 0 || c >= gridWidth) {
-                            canPlace = false;
-                            break;
-                        }
-                        
-                        const existing = grid[r][c];
-                        if (existing !== '' && existing !== verticalWord[k]) {
-                            canPlace = false;
-                            break;
-                        }
-                    }
-                    
-                    if (canPlace) {
-                        // Đặt từ dọc
-                        for (let k = 0; k < verticalWord.length; k++) {
-                            grid[verticalRow + k][verticalCol] = verticalWord[k];
-                        }
-                        words[1].firstCharPos = { row: verticalRow, col: verticalCol };
-                        words[1].isHorizontal = false;
-                        verticalPlaced = true;
-                    }
-                }
+        // ✅ TẠO GRID RỖNG - KIỂM TRA KỸ
+        const grid = [];
+        for (let r = 0; r < gridHeight; r++) {
+            const row = [];
+            for (let c = 0; c < gridWidth; c++) {
+                row.push('');
             }
+            grid.push(row);
         }
         
-        // Nếu không tìm được ký tự chung, đặt ở cột random
-        if (!verticalPlaced) {
-            const verticalCol = Math.floor(Math.random() * gridWidth);
-            const verticalRow = 0;
+        // Kiểm tra grid đã tạo đúng chưa
+        if (!grid || grid.length === 0 || !grid[0] || grid[0].length === 0) {
+            console.error('Grid không được tạo đúng!', grid);
+            return [[]];
+        }
+        
+        console.log(`Grid đã tạo: ${grid[0].length}x${grid.length}`, 
+                    `Ngang: ${horizontalWords.length}, Dọc: ${verticalWords.length}`);
+        
+        // ✅ 1. ĐẶT CÁC TỪ NGANG
+        let currentRow = 0;
+        horizontalWords.forEach(wordObj => {
+            const word = wordObj.en;
             
-            for (let k = 0; k < verticalWord.length; k++) {
-                const r = verticalRow + k;
-                if (r < gridHeight && grid[r][verticalCol] === '') {
-                    grid[r][verticalCol] = verticalWord[k];
+            // Đặt từ ngang tại hàng currentRow
+            if (currentRow < gridHeight) {
+                for (let i = 0; i < word.length && i < gridWidth; i++) {
+                    grid[currentRow][i] = word[i];
                 }
+                
+                words[wordObj.originalIndex].firstCharPos = { row: currentRow, col: 0 };
+                words[wordObj.originalIndex].isHorizontal = true;
+                
+                currentRow += 2; // Cách 1 hàng
             }
-            words[1].firstCharPos = { row: verticalRow, col: verticalCol };
-            words[1].isHorizontal = false;
-        }
+        });
         
-        // ✅ 3. ĐẶT 3 TỪ CÒN LẠI
-        for (let i = 2; i < words.length; i++) {
-            const word = words[i].en;
+        // ✅ 2. ĐẶT CÁC TỪ DỌC - Cố gắng đan vào từ ngang
+        verticalWords.forEach(wordObj => {
+            const word = wordObj.en;
             let placed = false;
             
-            // Thử đan xen
-            for (let r = 0; r < gridHeight && !placed; r++) {
-                for (let c = 0; c < gridWidth && !placed; c++) {
-                    // Thử ngang
-                    if (c + word.length <= gridWidth) {
-                        if (this._canPlaceInGrid(word, r, c, true, grid)) {
-                            this._placeWordInGrid(words[i], word, r, c, true, grid);
-                            placed = true;
-                        }
-                    }
-                    // Thử dọc
-                    if (!placed && r + word.length <= gridHeight) {
-                        if (this._canPlaceInGrid(word, r, c, false, grid)) {
-                            this._placeWordInGrid(words[i], word, r, c, false, grid);
-                            placed = true;
+            // Thử đan vào các chữ cái đã có trên grid
+            for (let charIdx = 0; charIdx < word.length && !placed; charIdx++) {
+                const char = word[charIdx];
+                
+                // Tìm tất cả vị trí có ký tự này trên grid
+                for (let r = 0; r < gridHeight && !placed; r++) {
+                    for (let c = 0; c < gridWidth && !placed; c++) {
+                        if (grid[r][c] === char) {
+                            // Thử đặt từ dọc sao cho ký tự thứ charIdx trùng với vị trí (r,c)
+                            const startRow = r - charIdx;
+                            const startCol = c;
+                            
+                            // Kiểm tra có thể đặt không
+                            if (this._canPlaceInGrid(word, startRow, startCol, false, grid)) {
+                                this._placeWordInGrid(words[wordObj.originalIndex], word, startRow, startCol, false, grid);
+                                placed = true;
+                            }
                         }
                     }
                 }
             }
             
-            // Nếu không đặt được, tìm chỗ trống
+            // Nếu không đan được, đặt ở cột trống
             if (!placed) {
-                for (let r = 0; r < gridHeight && !placed; r++) {
-                    for (let c = 0; c <= gridWidth - word.length && !placed; c++) {
-                        let canPlace = true;
-                        for (let k = 0; k < word.length; k++) {
-                            if (grid[r][c + k] !== '') {
-                                canPlace = false;
-                                break;
-                            }
-                        }
-                        if (canPlace) {
-                            this._placeWordInGrid(words[i], word, r, c, true, grid);
-                            placed = true;
-                        }
+                // Tìm cột có ít chữ nhất
+                let bestCol = 0;
+                let minChars = gridHeight;
+                
+                for (let c = 0; c < gridWidth; c++) {
+                    let charCount = 0;
+                    for (let r = 0; r < gridHeight; r++) {
+                        if (grid[r][c] !== '') charCount++;
+                    }
+                    if (charCount < minChars) {
+                        minChars = charCount;
+                        bestCol = c;
                     }
                 }
+                
+                // Đặt từ dọc ở cột này
+                const startRow = 0;
+                for (let i = 0; i < word.length && startRow + i < gridHeight; i++) {
+                    if (grid[startRow + i][bestCol] === '') {
+                        grid[startRow + i][bestCol] = word[i];
+                    }
+                }
+                
+                words[wordObj.originalIndex].firstCharPos = { row: startRow, col: bestCol };
+                words[wordObj.originalIndex].isHorizontal = false;
             }
-        }
+        });
         
-        // ✅ 4. ĐIỀN CHỮ NGẪU NHIÊN
+        // ✅ 3. ĐIỀN CHỮ NGẪU NHIÊN
         const alphabet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
         for (let r = 0; r < gridHeight; r++) {
             for (let c = 0; c < gridWidth; c++) {
@@ -214,20 +223,34 @@ class Question4 {
         this.gridWidth = gridWidth;
         this.gridHeight = gridHeight;
         
-        console.log(`Grid: ${gridWidth}x${gridHeight}`, `Ngang: ${horizontalWord}`, `Dọc: ${verticalWord}`);
+        console.log('Grid hoàn thành:', gridWidth, 'x', gridHeight);
         
         return grid;
     }
     
     // Kiểm tra có thể đặt từ trong grid không (không vượt quá biên)
     _canPlaceInGrid(word, r, c, isHorizontal, grid) {
+        // ✅ KIỂM TRA GRID HỢP LỆ
+        if (!grid || grid.length === 0 || !grid[0]) {
+            console.error('Grid không hợp lệ trong _canPlaceInGrid');
+            return false;
+        }
+        
+        const gridHeight = grid.length;
+        const gridWidth = grid[0].length;
+        
         for (let i = 0; i < word.length; i++) {
             const curR = isHorizontal ? r : r + i;
             const curC = isHorizontal ? c + i : c;
             
-            // Kiểm tra ô này: hoặc rỗng, hoặc trùng chữ
-            const cellChar = grid[curR][curC];
-            if (cellChar !== '' && cellChar !== word[i]) {
+            // Vượt biên
+            if (curR < 0 || curR >= gridHeight || curC < 0 || curC >= gridWidth) {
+                return false;
+            }
+            
+            // Ô đã có chữ khác
+            const existing = grid[curR][curC];
+            if (existing !== '' && existing !== word[i]) {
                 return false;
             }
         }
@@ -292,7 +315,8 @@ class Question4 {
         grid.forEach((row, r) => {
             row.forEach((char, c) => {
                 const cell = document.createElement('div');
-                cell.className = "word-cell w-12 h-12 sm:w-14 sm:h-14 flex items-center justify-center bg-slate-700 text-white font-black rounded-xl cursor-pointer select-none hover:bg-slate-600 transition-all text-2xl shadow-md border border-slate-600/50";                cell.innerText = char;
+                cell.className = "word-cell w-12 h-12 sm:w-14 sm:h-14 flex items-center justify-center bg-slate-700 text-white font-black rounded-xl cursor-pointer select-none hover:bg-slate-600 transition-all text-2xl shadow-md border border-slate-600/50";                
+                cell.innerText = char;
                 cell.dataset.row = r;
                 cell.dataset.col = c;
                 gridContainer.appendChild(cell);
