@@ -931,8 +931,8 @@ const GameEngine = {
         }
     
         // 3. Hiển thị hiệu ứng mất máu
-        if (typeof this.showDamage === 'function') {
-            this.showDamage(this.player, dmg);
+        if (this.effectsUtil) {
+            this.effectsUtil.showDamage('battleview', 'hero', dmg);
         }
     },
     

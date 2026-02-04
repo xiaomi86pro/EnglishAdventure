@@ -187,8 +187,10 @@ class Question2 {
             }, 2000);
         }
 
-        window.GameEngine?.useHint(this._config.damageOnHint);
-
+        if (window.GameEngine?.effectsUtil) {
+            window.GameEngine.effectsUtil.showDamage('battleview', 'hero', this.damageOnHint || 5);
+        }
+        
         if (btn) btn.classList.add("opacity-50", "cursor-not-allowed");
     }
 

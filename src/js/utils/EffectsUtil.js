@@ -55,7 +55,7 @@ class EffectsUtil {
      * @param {number} centerY 
      * @param {number} damage 
      */
-    showDamage(containerId, centerX, centerY, damage) {
+    showDamage(containerId, targetId, damage) {
         const container = DOMUtil.getById(containerId);
         if (!container) return;
 
@@ -63,8 +63,8 @@ class EffectsUtil {
             className: 'damage-popup',
             innerText: `-${damage}`,
             styles: {
-                left: `${centerX}px`,
-                top: `${centerY}px`
+                left: `${pos.x}px`,
+                top: `${pos.y}px`
             }
         });
 
