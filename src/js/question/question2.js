@@ -187,25 +187,7 @@ class Question2 {
             }, 2000);
         }
 
-        // Trừ máu người chơis
-        if (window.GameEngine?.player) {
-            window.GameEngine.player.hp_current = Math.max(0, window.GameEngine.player.hp_current - this._config.damageOnHint);
-            console.log('HP after hint:', window.GameEngine.player.hp_current);
-            const GE = window.GameEngine;
-
-            window.uiManager.updateAllUI(
-                GE.player,
-                GE.monster,
-                GE.currentLocation,
-                GE.currentStation,
-                GE.currentStep,
-                GameConfig.TOTAL_STEPS_PER_STATION
-            );
-            
-            if (typeof window.GameEngine.showDamage === 'function') {
-                window.GameEngine.showDamage(window.GameEngine.player, this._config.damageOnHint);
-            }
-        }
+        window.GameEngine?.useHint(this._config.damageOnHint);
 
         if (btn) btn.classList.add("opacity-50", "cursor-not-allowed");
     }

@@ -903,8 +903,41 @@ const GameEngine = {
             alert('Lỗi khi bắt đầu chế độ luyện tập!');
             this.showMainMenu();
         }
-    }
+    },
+
+    useHint(damage) {
+        if (!this.player) return;
+    
+        const dmg = Number(damage) || 0;
+    
+        // 1. Trừ máu người chơi
+        this.player.hp_current = Math.max(
+            0,
+            this.player.hp_current - dmg
+        );
+    
+        console.log('[GameEngine] HP after hint:', this.player.hp_current);
+    
+        // 2. Cập nhật UI (luôn dùng state hiện tại của GameEngine)
+        if (window.uiManager && typeof window.uiManager.updateAllUI === 'function') {
+            window.uiManager.updateAllUI(
+                this.player,
+                this.monster,
+                this.currentLocation,
+                this.currentStation,
+                this.currentStep,
+                GameConfig.TOTAL_STEPS_PER_STATION
+            );
+        }
+    
+        // 3. Hiển thị hiệu ứng mất máu
+        if (typeof this.showDamage === 'function') {
+            this.showDamage(this.player, dmg);
+        }
+    },
+    
 };
+
 
 // Expose ra window
 window.GameEngine = GameEngine;
