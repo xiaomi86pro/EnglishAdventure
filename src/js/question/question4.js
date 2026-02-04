@@ -445,7 +445,7 @@ class Question4 {
             if (window.GameEngine?.player) {
                 const damage = 5;
                 window.GameEngine.player.hp_current = Math.max(0, window.GameEngine.player.hp_current - damage);
-                window.GameEngine.updateAllUI();
+                window.uiManager.updateAllUI();
                 if (typeof window.GameEngine.showDamage === 'function') {
                     window.GameEngine.showDamage(window.GameEngine.player, damage);
                 }

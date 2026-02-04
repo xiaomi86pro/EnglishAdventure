@@ -207,6 +207,7 @@ const GameEngine = {
         // Managers
         this.stateManager = new StateManager();
         this.uiManager = new UIManager(this.effectsUtil);
+        window.uiManager = this.uiManager;
         this.battleManager = new BattleManager(this.audioManager, this.effectsUtil, this.uiManager);
         this.progressionManager = new ProgressionManager(window.supabase, this.monsterHandler);
         this.saveGameService = new SaveGameService(window.supabase); 
