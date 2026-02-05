@@ -184,9 +184,7 @@ class BattleManager {
         this.effects.showDamage('battleview', targetElId , actualDamage);
 
         // Tạo hiệu ứng sao
-        const pos = DOMUtil.getRelativeCenter(targetElId, 'battleview');
-        if (!pos) return;
-        this.effects.createStars('battleview', pos.x, pos.y, 8);
+        this.effects.createStars('battleview', targetElId, 8);
     }
 
     /**

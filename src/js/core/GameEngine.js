@@ -905,17 +905,15 @@ const GameEngine = {
         }
     },
 
-    useHint(damage) {
+        useHint(damage, options = {}) {
         if (!this.player) return;
     
         const dmg = Number(damage) || 0;
-    
-        // 1. Trừ máu người chơi
-        this.player.hp_current = Math.max(
-            0,
-            this.player.hp_current - dmg
-        );
-    
+        const targetId = options.targetId || GameConfig.HINT.defaultTargetId;
+        const containerId = options.containerId || GameConfig.HINT.defaultContainerId;
+            
+        this.player.hp_current = Math.max(0, this.player.hp_current - dmg);
+      
         console.log('[GameEngine] HP after hint:', this.player.hp_current);
     
         // 2. Cập nhật UI (luôn dùng state hiện tại của GameEngine)
@@ -930,9 +928,10 @@ const GameEngine = {
             );
         }
     
-        // 3. Hiển thị hiệu ứng mất máu
+        // 3. Hiển thị hiệu ứng mất máu + sao
         if (this.effectsUtil) {
-            this.effectsUtil.showDamage('battleview', 'hero', dmg);
+            this.effectsUtil.showDamage(containerId, targetId, dmg);
+            this.effectsUtil.createStars(containerId, targetId, 8);
         }
     },
     

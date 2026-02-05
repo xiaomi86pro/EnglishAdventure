@@ -1,3 +1,4 @@
+import HintUtil from '../utils/HintUtil.js';
 // js/question/question4.js
 
 class Question4 {
@@ -290,15 +291,7 @@ class Question4 {
                 Type 4: Word Search
             </div>
 
-            <!-- Hint button -->
-            <button id="hint-btn"
-                class="absolute top-4 right-4 w-10 h-10 bg-white 
-                    border-2 border-yellow-400 rounded-full 
-                    flex items-center justify-center text-xl 
-                    shadow hover:bg-yellow-50 active:scale-95 
-                    transition-transform z-20">
-                💡
-            </button>
+            ${HintUtil.getButtonHTML()}
 
             <!-- Mô tả -->
             <div class="text-white/60 text-center text-sm font-bold 
@@ -437,19 +430,9 @@ class Question4 {
      * Xử lý nút Hint
      */
     _attachHintHandler() {
-        const hintBtn = document.getElementById('hint-btn');
-        if (!hintBtn) return;
-
-        hintBtn.onclick = () => {
-            // 1. Trừ HP Hero
-            if (window.GameEngine?.player) {
-                const damage = 5;
-                window.GameEngine.player.hp_current = Math.max(0, window.GameEngine.player.hp_current - damage);
-                window.uiManager.updateAllUI();
-                if (window.GameEngine?.effectsUtil) {
-                    window.GameEngine.effectsUtil.showDamage('battleview', 'hero', damage);
-                }
-            }
+        const hintBtn = HintUtil.bindHintButton(() => {
+            // 1. Trừ HP + hiệu ứng hint chung
+            HintUtil.useHint({ damage: 5 });
 
             // 2. Tìm từ chưa giải xong đầu tiên
             const unsolvedWord = this.wordsToFind.find(w => !w.found);
@@ -470,7 +453,8 @@ class Question4 {
                     }, 2000);
                 }
             }
-        };
+        });
+        if (!hintBtn) return;    
     }
 
     speakWord(text) {

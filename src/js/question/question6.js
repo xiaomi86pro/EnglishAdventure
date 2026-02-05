@@ -1,3 +1,4 @@
+import HintUtil from '../utils/HintUtil.js';
 // js/question/question6.js
 // Question Type 6: Kéo thả đuôi từ (Suffix Drag & Drop) - Vertical & Merged Style - Class Version
 
@@ -81,9 +82,7 @@ class Question6 {
             <div class="absolute top-0 left-0 bg-yellow-600 text-white px-3 py-1 rounded-br-2xl text-xs font-bold shadow z-10">
                 Type 6: Suffix Match
             </div>
-            <button id="q6-hint-btn" class="absolute top-4 right-4 w-10 h-10 bg-white border-2 border-yellow-400 rounded-full flex items-center justify-center text-xl shadow hover:bg-yellow-50 active:scale-95 transition-transform z-20">
-                💡
-            </button>
+            ${HintUtil.getButtonHTML()}
             <div class="text-white/50 text-center text-sm font-bold uppercase tracking-widest mb-4">
                 Kéo mảnh ghép bên phải để hoàn thành từ
             </div>
@@ -151,8 +150,7 @@ class Question6 {
         container.appendChild(wrapper);
         
         setTimeout(() => {
-            const hintBtn = document.getElementById('q6-hint-btn');
-            if (hintBtn) hintBtn.onclick = () => this.useHint();
+            HintUtil.bindHintButton(() => this.useHint());
         }, 0);
         this._attachEvents();
     }
@@ -287,13 +285,7 @@ class Question6 {
         if (targetIndex === -1) return; 
         
         const targetItem = this._items[targetIndex];
-        if (window.GameEngine && window.GameEngine.player) {
-            window.GameEngine.player.hp_current = Math.max(0, window.GameEngine.player.hp_current - (this.damageOnHint || 5));
-            window.GameEngine.updateAllUI();
-            if (window.GameEngine?.effectsUtil) {
-                window.GameEngine.effectsUtil.showDamage('battleview', 'hero', this.damageOnHint || 5);
-            }
-        }
+        HintUtil.useHint({ damage: this.damageOnHint || 5 });
         
         const zone = this._dropZones[targetIndex];
         const tile = this._draggables.find(d => 

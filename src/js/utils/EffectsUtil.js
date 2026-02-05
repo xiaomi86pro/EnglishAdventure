@@ -12,23 +12,29 @@ class EffectsUtil {
     }
 
     /**
-     * Tạo hiệu ứng sao văng ra
+     * Tạo hiệu ứng sao văng ra theo target element
      * @param {string} containerId - ID của container (thường là 'battleview')
-     * @param {number} x - Tọa độ X
-     * @param {number} y - Tọa độ Y
+     * @param {string} targetId
      * @param {number} count - Số lượng sao (default: 8)
      */
-    createStars(containerId, x, y, count = 8) {
+    createStars(containerId, targetId, count = 8) {
         const container = DOMUtil.getById(containerId);
         if (!container) return;
+
+        let pos = DOMUtil.getRelativeCenter(targetId, containerId);
+        if (!pos || !Number.isFinite(pos.x) || !Number.isFinite(pos.y)) {
+            const rect = DOMUtil.getRect(containerId);
+            if (!rect) return;
+            pos = { x: rect.width / 2, y: rect.height / 2 };
+        }
 
         for (let i = 0; i < count; i++) {
             const star = DOMUtil.createElement('div', {
                 className: 'star-particle',
                 innerText: '⭐',
                 styles: {
-                    left: `${x}px`,
-                    top: `${y}px`
+                    left: `${pos.x}px`,
+                    top: `${pos.y}px`
                 }
             });
 

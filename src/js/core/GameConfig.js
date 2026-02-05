@@ -82,6 +82,14 @@ const GameConfig = {
         hpBar: '#22c55e'
     },
     
+     // Hint system (dùng chung cho các Question)
+     HINT: {
+        buttonId: 'hint-btn',
+        defaultDamage: 5,
+        defaultContainerId: 'battleview',
+        defaultTargetId: 'hero'
+    },
+    
     // Default monster (fallback khi không có config)
     DEFAULT_MONSTER: {
         name: "??? (Chưa config)",

@@ -1,3 +1,5 @@
+import GameConfig from '../core/GameConfig.js';
+import HintUtil from '../utils/HintUtil.js';
 // js/question/question2.js
 // Question Type 2 – Fill in the missing letter (Dạng Class)
 
@@ -93,9 +95,7 @@ class Question2 {
                     Question Type 2 : Fill the blank
                 </div>
 
-                <button id="hint-btn" class="absolute top-4 right-4 w-12 h-12 flex items-center justify-center bg-white border-2 border-yellow-400 text-2xl rounded-2xl shadow-sm hover:bg-yellow-50 transition-all transform active:scale-90">
-                    💡
-                </button>
+                ${HintUtil.getButtonHTML("w-12 h-12 text-2xl rounded-2xl shadow-sm transition-all transform active:scale-90")}
 
                 <div class="text-center bg-white/90 p-5 rounded-2xl border-2 border-dashed border-blue-200 w-full max-w-md mt-8">
                     <p class="text-gray-400 text-xs uppercase font-bold tracking-widest mb-1">Nghĩa tiếng Việt</p>
@@ -129,7 +129,7 @@ class Question2 {
         // Gắn sự kiện
         const input = document.getElementById("answer-input");
         const checkBtn = document.getElementById("check-btn");
-        const hintBtn = document.getElementById("hint-btn");
+        const hintBtn = document.getElementById(GameConfig.HINT.buttonId);
 
         if (input) {
             input.disabled = false;
@@ -162,8 +162,7 @@ class Question2 {
         }
         
         if (checkBtn) checkBtn.onclick = () => this.checkAnswer();
-        if (hintBtn) hintBtn.onclick = () => this.useHint(hintBtn);
-        setTimeout(() => {
+        HintUtil.bindHintButton(() => this.useHint(hintBtn));        setTimeout(() => {
             const hintDiv = document.getElementById("hint-word-display");
             if (hintDiv && !this._destroyed) {
                 hintDiv.classList.replace("opacity-100", "opacity-0");
@@ -187,9 +186,11 @@ class Question2 {
             }, 2000);
         }
 
-        if (window.GameEngine?.effectsUtil) {
-            window.GameEngine.effectsUtil.showDamage('battleview', 'hero', this.damageOnHint || 5);
-        }
+        
+        HintUtil.useHint({
+            damage: this._config.damageOnHint,
+            onShowHint: null
+        });        
         
         if (btn) btn.classList.add("opacity-50", "cursor-not-allowed");
     }
@@ -200,10 +201,6 @@ class Question2 {
         const input = document.getElementById("answer-input");
         const checkBtn = document.getElementById("check-btn");
         if (!input || !this.currentData) return;
-
-        // Disable ngay khi người chơi nhấn CHECK hoặc Enter
-        //input.disabled = true;
-        //if (checkBtn) checkBtn.disabled = true;
 
         const userChar = input.value.trim().toLowerCase();
         const correctChar = this.currentData.word[this.currentData.missingIndex].toLowerCase();

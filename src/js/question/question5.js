@@ -1,3 +1,4 @@
+import HintUtil from '../utils/HintUtil.js';
 // js/question/question5.js
 
 class Question5 {
@@ -73,7 +74,7 @@ class Question5 {
             Type 5: Combine Letters
             </div>
             <div class="absolute top-0 right-0 z-10">
-            <button id="btn-hint" class="px-4 py-2 bg-yellow-400 hover:bg-yellow-500 text-black font-black rounded-bl-2xl">
+            <button id="hint-btn" class="px-4 py-2 bg-yellow-400 hover:bg-yellow-500 text-black font-black rounded-bl-2xl">
                 💡 Hint (<span id="hint-counter">${this.hintCount}</span>/<span id="hint-max">${this.config.maxHints}</span>)
             </button>
             </div>
@@ -159,8 +160,7 @@ class Question5 {
         const letterBtns = document.querySelectorAll('.letter-btn');
         const submitBtn = document.getElementById('submit-btn');
         const clearBtn = document.getElementById('clear-btn');
-        const hintBtn = document.getElementById('btn-hint');
-        // Click chọn chữ cái
+        const hintBtn = document.getElementById('hint-btn');        // Click chọn chữ cái
         letterBtns.forEach(btn => {
             btn.onclick = () => {
                 if (btn.classList.contains('selected')) return;
@@ -177,7 +177,7 @@ class Question5 {
         });
         if (submitBtn) submitBtn.onclick = () => this.submitWord();
         if (clearBtn) clearBtn.onclick = () => this.clearWord();
-        if (hintBtn) hintBtn.onclick = () => this.useHint();
+        HintUtil.bindHintButton(() => this.useHint());
     }
 
     /**
@@ -250,6 +250,8 @@ class Question5 {
             }
             return;
         }
+
+        HintUtil.useHint({ damage: 5 });
 
         // Tìm từ chưa giải
         let unsolvedIndex = -1;
