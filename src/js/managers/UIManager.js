@@ -66,26 +66,61 @@ class UIManager {
 
     /**
      * Cập nhật toàn bộ UI
-     * @param {Object} player 
-     * @param {Object} monster 
-     * @param {Object} location 
-     * @param {Object} station 
-     * @param {number} currentStep 
+     * @param {Object|any} stateOrPlayer - Có thể truyền object state hoặc legacy positional player
+     * @param {Object} monster
+     * @param {Object} location
+     * @param {Object} station
+     * @param {number} currentStep
      * @param {number} totalSteps 
      */
-    updateAllUI(player, monster, location, station, currentStep, totalSteps = 10) {
+    updateAllUI(stateOrPlayer, monster, location, station, currentStep, totalSteps = 10) {
+        const isStateObject = stateOrPlayer && typeof stateOrPlayer === 'object' && (
+            Object.prototype.hasOwnProperty.call(stateOrPlayer, 'player') ||
+            Object.prototype.hasOwnProperty.call(stateOrPlayer, 'monster') ||
+            Object.prototype.hasOwnProperty.call(stateOrPlayer, 'location') ||
+            Object.prototype.hasOwnProperty.call(stateOrPlayer, 'station')
+        );
+
+        if (!isStateObject && arguments.length > 1) {
+            console.warn('[UIManager] updateAllUI positional args is deprecated. Use updateAllUI({ player, monster, location, station, currentStep, totalSteps }).');
+        }
+
+        const fallback = window.GameEngine ? {
+            player: window.GameEngine.player,
+            monster: window.GameEngine.monster,
+            location: window.GameEngine.currentLocation,
+            station: window.GameEngine.currentStation,
+            currentStep: window.GameEngine.currentStep,
+            totalSteps: GameConfig.TOTAL_STEPS_PER_STATION
+        } : {};
+
+        const uiState = isStateObject
+            ? { ...fallback, ...stateOrPlayer }
+            : {
+                ...fallback,
+                player: stateOrPlayer,
+                monster,
+                location,
+                station,
+                currentStep,
+                totalSteps
+            };
+
+        const safeTotalSteps = Number.isFinite(Number(uiState.totalSteps)) && Number(uiState.totalSteps) > 0
+            ? Number(uiState.totalSteps)
+            : 10;
 
         // 1. Cập nhật player info card
-        this.updatePlayerCard(player);
+        this.updatePlayerCard(uiState.player);
 
         // 2. Cập nhật monster info
-        this.updateMonsterInfo(monster, location, station, currentStep, totalSteps);
+        this.updateMonsterInfo(uiState.monster, uiState.location, uiState.station, uiState.currentStep, safeTotalSteps);
 
         // 3. Cập nhật progress bar
-        this.updateProgressBar(currentStep, totalSteps, monster?.type);
+        this.updateProgressBar(uiState.currentStep, safeTotalSteps, uiState.monster?.type);
 
         // 4. Cập nhật HP bars
-        this.updateBattleStatus(player, monster);
+        this.updateBattleStatus(uiState.player, uiState.monster);
 
         if (window.GameEngine?.isEndlessMode) {
             console.log('[UIManager] Endless mode detected, hiding progress bar');

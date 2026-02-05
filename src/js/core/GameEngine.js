@@ -166,14 +166,7 @@ const GameEngine = {
             this.uiManager.renderMonsterSprite(this.monster);
 
             // 8. Update all UI
-            this.uiManager.updateAllUI(
-                this.player,
-                this.monster,
-                this.currentLocation,
-                this.currentStation,
-                this.currentStep,
-                GameConfig.TOTAL_STEPS_PER_STATION
-            );
+            this.refreshUI();    
 
             // 9. Load first question
             this.nextQuestion();
@@ -504,14 +497,7 @@ const GameEngine = {
             }
 
             // 13. Update UI
-            this.uiManager.updateAllUI(
-                this.player,
-                this.monster,
-                this.currentLocation,
-                this.currentStation,
-                this.currentStep,
-                GameConfig.TOTAL_STEPS_PER_STATION
-            );
+            this.refreshUI();
 
             // 14. Load question
             this.nextQuestion();
@@ -726,14 +712,7 @@ const GameEngine = {
             }
 
             // 8. Update UI
-            this.uiManager.updateAllUI(
-                this.player,
-                this.monster,
-                this.currentLocation,
-                this.currentStation,
-                this.currentStep,
-                GameConfig.TOTAL_STEPS_PER_STATION
-            );
+            this.refreshUI();
 
             await new Promise(r => setTimeout(r, 100));
             this.uiManager.renderAdminButtons();
@@ -884,14 +863,7 @@ const GameEngine = {
             }
 
             // 6. Update UI
-            this.uiManager.updateAllUI(
-                this.player,
-                this.monster,
-                this.currentLocation,
-                this.currentStation,
-                this.currentStep,
-                GameConfig.TOTAL_STEPS_PER_STATION
-            );
+            this.refreshUI();
 
             // 7. Load question
             this.nextQuestion();
@@ -905,6 +877,24 @@ const GameEngine = {
         }
     },
 
+        getUIState() {
+                return {
+                    player: this.player,
+                    monster: this.monster,
+                    location: this.currentLocation,
+                    station: this.currentStation,
+                    currentStep: this.currentStep,
+                    totalSteps: GameConfig.TOTAL_STEPS_PER_STATION
+                };
+            },
+        
+            refreshUI() {
+                if (!this.uiManager || typeof this.uiManager.updateAllUI !== 'function') return;
+        
+                const { player, monster, location, station, currentStep, totalSteps } = this.getUIState();
+                this.uiManager.updateAllUI(player, monster, location, station, currentStep, totalSteps);
+            },
+        
         useHint(damage, options = {}) {
         if (!this.player) return;
     
@@ -917,17 +907,8 @@ const GameEngine = {
         console.log('[GameEngine] HP after hint:', this.player.hp_current);
     
         // 2. Cập nhật UI (luôn dùng state hiện tại của GameEngine)
-        if (window.uiManager && typeof window.uiManager.updateAllUI === 'function') {
-            window.uiManager.updateAllUI(
-                this.player,
-                this.monster,
-                this.currentLocation,
-                this.currentStation,
-                this.currentStep,
-                GameConfig.TOTAL_STEPS_PER_STATION
-            );
-        }
-    
+        this.refreshUI();
+
         // 3. Hiển thị hiệu ứng mất máu + sao
         if (this.effectsUtil) {
             this.effectsUtil.showDamage(containerId, targetId, dmg);
