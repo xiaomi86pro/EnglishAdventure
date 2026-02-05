@@ -43,7 +43,7 @@ const GameConfig = {
     // BGM theo loại monster
     MONSTER_BGM: {
         boss: './public/sounds/Boss_Battle.mp3',
-        'final boss': './public/sounds/Final_Boss.mp3'
+        'final boss': './sounds/Final_Boss.mp3'
     },
     
     // Default question type theo monster type

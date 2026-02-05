@@ -916,8 +916,10 @@ const GameEngine = {
 
                 // 3. Hiển thị hiệu ứng mất máu + sao
                 if (this.effectsUtil) {
+                    this.effectsUtil.playAttackSound('monster');
                     this.effectsUtil.showDamage(containerId, targetId, dmg);
                     this.effectsUtil.createStars(containerId, targetId, 8);
+                    
                 }
             },
     

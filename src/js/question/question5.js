@@ -475,6 +475,7 @@ class Question5 {
             }
             
             if (window.GameEngine?.effectsUtil) {
+                window.GameEngine.effectsUtil.playAttackSound('monster');
                 window.GameEngine.effectsUtil.showDamage('battleview', 'hero', damage);
             }
 

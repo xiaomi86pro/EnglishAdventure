@@ -56,6 +56,13 @@ class AudioManager {
       if (this.bgm) this.bgm.muted = false;
       this.sfxPool.forEach(a => a.muted = false);
     }
+
+    _normalizeSrc(src) {
+      if (!src || typeof src !== 'string') return src;
+      if (src.startsWith('./public/')) return `./${src.slice('./public/'.length)}`;
+      if (src.startsWith('/public/')) return `/${src.slice('/public/'.length)}`;
+      return src;
+    }
   
     _getFreeSfx() {
       const free = this.sfxPool.find(a => a.paused || a.ended);
@@ -69,9 +76,10 @@ class AudioManager {
   
     playSfx(src) {
       if (!src || this.muted) return;
+      const normalizedSrc = this._normalizeSrc(src);
       const a = this._getFreeSfx();
       try {
-        if (a.src !== src) a.src = src;
+        if (a.src !== normalizedSrc) a.src = normalizedSrc;
         a.currentTime = 0;
         a.volume = this.volume;
         a.play().catch(err => {
@@ -85,7 +93,8 @@ class AudioManager {
   
     async playBgm(src, { loop = true, fadeInMs = 0 } = {}) {
       if (!src) return;
-      if (this.bgm && this.bgmSrc === src) {
+      const normalizedSrc = this._normalizeSrc(src);
+      if (this.bgm && this.bgmSrc === normalizedSrc) {
         // nếu cùng src, resume nếu paused
         try { await this.bgm.play().catch(()=>{}); } catch(e){}
         return;
@@ -95,10 +104,12 @@ class AudioManager {
       this.bgm.preload = 'auto';
       this.bgm.loop = !!loop;
       this.bgm.volume = 0; // để fade in an toàn
-      this.bgmSrc = src;
-      this.bgm.src = src;
+      this.bgmSrc = normalizedSrc;
+      this.bgm.src = normalizedSrc;
       try {
-        await this.bgm.play().catch(err => console.warn('BGM play blocked', err));
+        await this.bgm.play().catch(err => {
+          console.warn('BGM play failed', { src: normalizedSrc, err });
+        });        
         if (fadeInMs > 0) this._fadeVolume(this.bgm, 0, this.volume, fadeInMs);
         else this.bgm.volume = this.volume;
         if (this.muted) this.bgm.muted = true;
