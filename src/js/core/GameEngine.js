@@ -890,31 +890,36 @@ const GameEngine = {
         
             refreshUI() {
                 if (!this.uiManager || typeof this.uiManager.updateAllUI !== 'function') return;
-        
-                const { player, monster, location, station, currentStep, totalSteps } = this.getUIState();
-                this.uiManager.updateAllUI(player, monster, location, station, currentStep, totalSteps);
-            },
-        
-        useHint(damage, options = {}) {
-        if (!this.player) return;
-    
-        const dmg = Number(damage) || 0;
-        const targetId = options.targetId || GameConfig.HINT.defaultTargetId;
-        const containerId = options.containerId || GameConfig.HINT.defaultContainerId;
-            
-        this.player.hp_current = Math.max(0, this.player.hp_current - dmg);
-      
-        console.log('[GameEngine] HP after hint:', this.player.hp_current);
-    
-        // 2. Cập nhật UI (luôn dùng state hiện tại của GameEngine)
-        this.refreshUI();
+                this.uiManager.updateAllUI(this.getUIState());
+                },
 
-        // 3. Hiển thị hiệu ứng mất máu + sao
-        if (this.effectsUtil) {
-            this.effectsUtil.showDamage(containerId, targetId, dmg);
-            this.effectsUtil.createStars(containerId, targetId, 8);
-        }
-    },
+            refreshBattleUI() {
+                    if (!this.uiManager || typeof this.uiManager.updateBattleStatus !== 'function') return;
+            
+                    const { player, monster } = this.getUIState();
+                    this.uiManager.updateBattleStatus(player, monster);
+                },
+            
+            useHint(damage, options = {}) {
+                if (!this.player) return;
+            
+                const dmg = Number(damage) || 0;
+                const targetId = options.targetId || GameConfig.HINT.defaultTargetId;
+                const containerId = options.containerId || GameConfig.HINT.defaultContainerId;
+                    
+                this.player.hp_current = Math.max(0, this.player.hp_current - dmg);
+            
+                console.log('[GameEngine] HP after hint:', this.player.hp_current);
+            
+                // 2. Cập nhật UI (luôn dùng state hiện tại của GameEngine)
+                this.refreshUI();
+
+                // 3. Hiển thị hiệu ứng mất máu + sao
+                if (this.effectsUtil) {
+                    this.effectsUtil.showDamage(containerId, targetId, dmg);
+                    this.effectsUtil.createStars(containerId, targetId, 8);
+                }
+            },
     
 };
 

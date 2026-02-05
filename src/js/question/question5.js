@@ -467,7 +467,10 @@ class Question5 {
             const damage = 10;
             window.GameEngine.player.hp_current = Math.max(0, window.GameEngine.player.hp_current - damage);
             // Dùng API cấp cao để refresh UI từ state hiện tại trong GameEngine
-            if (window.GameEngine?.refreshUI) {
+            // Chỉ refresh battle UI cho tick tấn công liên tục
+            if (window.GameEngine?.refreshBattleUI) {
+                window.GameEngine.refreshBattleUI();
+            } else if (window.GameEngine?.refreshUI) {
                 window.GameEngine.refreshUI();
             }
             
