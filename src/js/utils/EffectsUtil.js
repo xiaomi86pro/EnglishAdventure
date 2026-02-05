@@ -59,6 +59,16 @@ class EffectsUtil {
         const container = DOMUtil.getById(containerId);
         if (!container) return;
 
+        let pos = DOMUtil.getRelativeCenter(targetId, containerId);
+        if (!pos || !Number.isFinite(pos.x) || !Number.isFinite(pos.y)) {
+            const rect = DOMUtil.getRect(containerId);
+            if (!rect) return;
+            pos = {
+                x: rect.width / 2,
+                y: rect.height / 2
+            };
+        }
+
         const dmgEl = DOMUtil.createElement('div', {
             className: 'damage-popup',
             innerText: `-${damage}`,

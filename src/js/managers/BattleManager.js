@@ -179,12 +179,13 @@ class BattleManager {
      * @private
      */
     _showDamageNumber(targetElId, actualDamage) {
-        //const pos = DOMUtil.getRelativeCenter(targetElId, 'battleview');
-        //if (!pos || !this.effects) return;
+        if (!this.effects) return;
 
         this.effects.showDamage('battleview', targetElId , actualDamage);
 
         // Tạo hiệu ứng sao
+        const pos = DOMUtil.getRelativeCenter(targetElId, 'battleview');
+        if (!pos) return;
         this.effects.createStars('battleview', pos.x, pos.y, 8);
     }
 

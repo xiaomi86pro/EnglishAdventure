@@ -290,8 +290,8 @@ class Question6 {
         if (window.GameEngine && window.GameEngine.player) {
             window.GameEngine.player.hp_current = Math.max(0, window.GameEngine.player.hp_current - (this.damageOnHint || 5));
             window.GameEngine.updateAllUI();
-            if (typeof window.GameEngine.showDamage === 'function') {
-                window.GameEngine.showDamage(window.GameEngine.player, this.damageOnHint || 5);
+            if (window.GameEngine?.effectsUtil) {
+                window.GameEngine.effectsUtil.showDamage('battleview', 'hero', this.damageOnHint || 5);
             }
         }
         
