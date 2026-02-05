@@ -62,6 +62,12 @@
                     <span>👤</span>
                     <span>Profiles</span>
                 </button>
+
+                <button onclick="switchTab('sounds')" id="btn-tab-sounds"
+                    class="sidebar-btn">
+                    <span>🔊</span>
+                    <span>Sounds</span>
+                </button>
             
             </div>
             
@@ -484,6 +490,87 @@
                     </div>
                 </div>
             </div>
+            <div id="tab-sounds" class="hidden space-y-6">
+                <div class="bg-white p-6 rounded-3xl shadow">
+                    <div class="flex justify-between items-center mb-6">
+                        <h3 class="text-2xl font-bold text-blue-600">Quản lý Sounds</h3>
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div class="space-y-4">
+                            <div>
+                                <label class="text-xs font-bold text-gray-400 uppercase ml-2 mb-1 block">Key</label>
+                                <input type="text" id="sound-key" placeholder="VD: battle_hit"
+                                    class="w-full p-3 rounded-xl border-2 border-gray-100 outline-none focus:border-blue-400">
+                            </div>
+
+                            <div>
+                                <label class="text-xs font-bold text-gray-400 uppercase ml-2 mb-1 block">Category</label>
+                                <input type="text" id="sound-category" placeholder="VD: battle"
+                                    class="w-full p-3 rounded-xl border-2 border-gray-100 outline-none focus:border-blue-400">
+                            </div>
+
+                            <div>
+                                <label class="text-xs font-bold text-gray-400 uppercase ml-2 mb-1 block">Audio file</label>
+                                <input type="file" id="sound-file" accept="audio/*"
+                                    class="w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100">
+                            </div>
+                        </div>
+
+                        <div class="space-y-4">
+                            <div class="grid grid-cols-2 gap-4">
+                                <div>
+                                    <label class="text-xs font-bold text-gray-400 uppercase ml-2 mb-1 block">Duration (ms)</label>
+                                    <input type="number" id="sound-duration" placeholder="Tự động nếu bỏ trống"
+                                        class="w-full p-3 rounded-xl border-2 border-gray-100 outline-none focus:border-blue-400">
+                                </div>
+                                <div>
+                                    <label class="text-xs font-bold text-gray-400 uppercase ml-2 mb-1 block">Volume</label>
+                                    <input type="number" id="sound-volume" min="0" max="1" step="0.1" value="1"
+                                        class="w-full p-3 rounded-xl border-2 border-gray-100 outline-none focus:border-blue-400">
+                                </div>
+                            </div>
+
+                            <div class="flex flex-wrap items-center gap-6 pt-1">
+                                <label class="inline-flex items-center gap-2 font-semibold text-gray-700">
+                                    <input type="checkbox" id="sound-loop" class="h-4 w-4">
+                                    Loop
+                                </label>
+                                <label class="inline-flex items-center gap-2 font-semibold text-gray-700">
+                                    <input type="checkbox" id="sound-enabled" class="h-4 w-4" checked>
+                                    Enabled
+                                </label>
+                            </div>
+
+                            <button id="upload-sound-btn"
+                                class="w-full py-3 bg-blue-500 text-white rounded-xl font-bold hover:bg-blue-600 transition-colors shadow-lg shadow-blue-100">
+                                Upload sound lên bucket Sounds
+                            </button>
+                        </div>
+                    </div>
+
+                    <p id="sound-status" class="mt-4 text-sm text-gray-600 italic">Sẵn sàng upload sound...</p>
+
+                    <div class="mt-8">
+                        <h4 class="font-bold text-gray-700 mb-3">Danh sách sounds</h4>
+                        <div class="overflow-x-auto">
+                            <table class="w-full text-sm border border-gray-200 rounded-xl overflow-hidden">
+                                <thead class="bg-gray-100">
+                                    <tr>
+                                        <th class="px-3 py-2 text-left">Key</th>
+                                        <th class="px-3 py-2 text-left">Category</th>
+                                        <th class="px-3 py-2 text-left">Duration</th>
+                                        <th class="px-3 py-2 text-left">Volume</th>
+                                        <th class="px-3 py-2 text-left">Loop</th>
+                                        <th class="px-3 py-2 text-left">Enabled</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="sounds-list"></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
 </div>
@@ -498,6 +585,7 @@
     <script type="module" src="/src/js/admin/station_manager.js"></script>
     <script type="module" src="/src/js/admin/step_manager.js"></script>
     <script type="module" src="/src/js/admin/profile_manager.js"></script>
+    <script type="module" src="/src/js/admin/sound_manager.js"></script>
 
 </body>
 </html>

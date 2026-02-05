@@ -52,7 +52,7 @@ if (uploadBtn && fileInput) {
 // ===== TAB SWITCHING =====
 window.switchTab = function(tabName) {
     // Danh sách tất cả các tab
-    const tabs = ['vocab', 'assets', 'questions', 'locations', 'stations', 'steps', 'profiles'];
+    const tabs = ['vocab', 'assets', 'questions', 'locations', 'stations', 'steps', 'profiles','sounds'];
     
     // Ẩn tất cả tab
     tabs.forEach(tab => {
@@ -108,6 +108,11 @@ window.switchTab = function(tabName) {
                 window.ProfileManager.load();
             }
             break;
+        case 'sounds':
+            if (window.SoundManager) {
+                window.SoundManager.init();
+            }
+            break;    
     }
 };
 
@@ -130,6 +135,7 @@ async function startAdminSystem() {
     if (window.LocationManager) console.log('✓ LocationManager ready');
     if (window.StationManager) console.log('✓ StationManager ready');
     if (window.StepManager) console.log('✓ StepManager ready');
+    if (window.SoundManager) console.log('✓ SoundManager ready');
 }
 
 // Đảm bảo các Manager được load
