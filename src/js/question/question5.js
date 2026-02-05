@@ -466,7 +466,14 @@ class Question5 {
         if (window.GameEngine?.player) {
             const damage = 10;
             window.GameEngine.player.hp_current = Math.max(0, window.GameEngine.player.hp_current - damage);
-            window.uiManager.updateAllUI();
+            window.uiManager.updateAllUI(
+                window.GameEngine.player,
+                    window.GameEngine.monster,
+                    window.GameEngine.currentLocation,
+                    window.GameEngine.currentStation,
+                    window.GameEngine.currentStep,
+                    window.GameConfig?.TOTAL_STEPS_PER_STATION
+            );
             if (window.GameEngine?.effectsUtil) {
                 window.GameEngine.effectsUtil.showDamage('battleview', 'hero', damage);
             }
