@@ -16,6 +16,7 @@ import BattleManager from '../managers/BattleManager.js';
 import ProgressionManager from '../managers/ProgressionManager.js';
 import SaveGameService from '../services/SaveGameService.js';
 import SoundRegistry from '../audio/SoundRegistry.js';
+import AudioManager from '../audio_manager.js';
 
 const GameEngine = {
     // Core state
@@ -187,10 +188,7 @@ const GameEngine = {
      */
     _initManagers() {
         // Audio
-        this.audioManager = new AudioManager({ 
-            deathSrc: './sounds/Game_Over.mp3', 
-            sfxPoolSize: 8 
-        });
+        this.audioManager = new AudioManager({ sfxPoolSize: 8 });
 
         // Sound registry (Supabase-backed)
         this.soundRegistry = new SoundRegistry({
@@ -929,7 +927,9 @@ const GameEngine = {
                 // 3. Hiển thị hiệu ứng mất máu + sao
                 if (this.effectsUtil) {
                     this.effectsUtil.playAttackSound('monster');
+
                     this.effectsUtil.showDamage(containerId, targetId, dmg);
+                    
                     this.effectsUtil.createStars(containerId, targetId, 8);
                     
                 }

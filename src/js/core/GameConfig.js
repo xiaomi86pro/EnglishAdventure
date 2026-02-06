@@ -71,7 +71,7 @@ const GameConfig = {
     // Animation timings (ms)
     TIMINGS: {
         attackAnimation: 400,
-        damageDelay: 200,
+        damageDelay: 500,
         shakeEffect: 400,
         starEffect: 700,
         healEffect: 1500,

@@ -320,9 +320,11 @@ class EffectsUtil {
      * Phát âm thanh death
      */
     playDeathSound() {
-        if (this.audioManager) {
-            this.audioManager.playDeath();
-        }
+        this._playSoundByKey('death', () => {
+            if (this.audioManager) {
+                this.audioManager.playDeath(GameConfig.SOUNDS.death);
+            }
+        });
     }
 
     /**
@@ -457,8 +459,8 @@ class EffectsUtil {
             }, flyDuration + groundDelay);
         }
         
-         this._playSoundByKey('coin_drop_2', () => {
-            this._playSoundByKey('Drop_Coin');        
+         this._playSoundByKey('coin_drop', () => {
+            this._playSoundByKey('coin_drop');        
         });
     }
     

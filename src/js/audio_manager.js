@@ -1,23 +1,30 @@
-class AudioManager {
+export default class AudioManager {
     constructor(options = {}) {
       this.sfxPoolSize = options.sfxPoolSize || 6;
       this.sfxPool = [];
       this.bgm = null;
       this.bgmSrc = null;
-      this.deathSrc = options.deathSrc || '../sounds/Game_Over.mp3';
       this.unlocked = false;
       this.muted = false;
       this.volume = typeof options.volume === 'number' ? options.volume : 1;
       this._initPool();
       this._attachUnlockListener();
     }
-  
+    
+    _createAudio(src = '') {
+      const audio = new Audio(src);
+      audio.preload = 'auto';
+      audio.volume = this.volume;
+      audio.muted = this.muted;
+      return audio;
+    }
+
     _initPool() {
       for (let i = 0; i < this.sfxPoolSize; i++) {
-        const a = new Audio();
-        a.preload = 'auto';
-        a.volume = this.volume;
-        this.sfxPool.push(a);
+        const audioEl = new Audio();
+        audioEl.preload = 'auto';
+        audioEl.volume = this.volume;
+        this.sfxPool.push(audioEl);
       }
     }
   
@@ -25,7 +32,7 @@ class AudioManager {
       const unlock = async () => {
         try {
           // Try to play a tiny silent buffer to unlock audio on mobile/Chrome
-          const a = new Audio();
+          const a = this._createAudio();
           a.src = 'data:audio/mp3;base64,//uQZAAAAAAAAAAAAAAAAAAAAAA=='; // tiny silent clip
           a.volume = 0;
           await a.play().catch(()=>{});
@@ -68,10 +75,7 @@ class AudioManager {
       const free = this.sfxPool.find(a => a.paused || a.ended);
       if (free) return free;
       // nếu không có free, clone một instance tạm để tránh chặn
-      const clone = new Audio();
-      clone.preload = 'auto';
-      clone.volume = this.volume;
-      return clone;
+      return this._createAudio();
     }
   
     playSfx(src) {
@@ -100,8 +104,7 @@ class AudioManager {
         return;
       }
       this.stopBgm();
-      this.bgm = new Audio();
-      this.bgm.preload = 'auto';
+      this.bgm = this._createAudio();
       this.bgm.loop = !!loop;
       this.bgm.volume = 0; // để fade in an toàn
       this.bgmSrc = normalizedSrc;
@@ -147,9 +150,8 @@ class AudioManager {
   
     async preload(src) {
       if (!src) return;
-      const a = new Audio();
-      a.preload = 'auto';
-      a.src = src;
+      const normalizedSrc = this._normalizeSrc(src);
+      const a = this._createAudio(normalizedSrc);
       // try to load by playing briefly then pausing to ensure buffer
       try {
         await a.play().catch(()=>{});
@@ -161,13 +163,12 @@ class AudioManager {
       return a;
     }
   
-    async preloadDeath() {
+    async preloadDeath(src) {
       try {
-        if (!this.deathSrc) return;
+        if (!src) return;
+        const normalizedSrc = this._normalizeSrc(src);
         // preload into a dedicated element for reliable play
-        this._deathAudio = new Audio();
-        this._deathAudio.preload = 'auto';
-        this._deathAudio.src = this.deathSrc;
+        this._deathAudio = this._createAudio(normalizedSrc);
         // try to load
         await this._deathAudio.play().catch(()=>{});
         this._deathAudio.pause();
@@ -177,9 +178,12 @@ class AudioManager {
       }
     }
   
-    playDeath() {
+    playDeath(src) {
       if (this.muted) return;
-      const a = this._deathAudio || new Audio(this.deathSrc);
+      const normalizedSrc = this._normalizeSrc(src);
+      const a = this._deathAudio && (!normalizedSrc || this._deathAudio.src === normalizedSrc)
+        ? this._deathAudio
+        : this._createAudio(normalizedSrc);
       try {
         a.currentTime = 0;
         a.volume = this.volume;
@@ -205,6 +209,5 @@ class AudioManager {
       this.unlocked = false;
     }
   }
-  window.audioControl = new AudioManager();
   
   window.AudioManager = AudioManager;
