@@ -669,6 +669,24 @@ const GameEngine = {
 
             // 7. Khôi phục monster
             if (savedGame.monster && savedGame.monster.id) {
+                let restoredQuestionType = null;
+
+                // Ưu tiên question_type theo step hiện tại để đồng bộ với progress đã save
+                if (!this.isEndlessMode && this.currentStation?.id && this.currentStep > 0) {
+                    const { data: stepConfig, error: stepErr } = await window.supabase
+                        .from('steps')
+                        .select('question_type')
+                        .eq('station_id', this.currentStation.id)
+                        .eq('step_number', this.currentStep)
+                        .maybeSingle();
+
+                    if (stepErr) {
+                        console.warn('[GameEngine] Restore step question_type lookup failed:', stepErr);
+                    } else {
+                        restoredQuestionType = stepConfig?.question_type || null;
+                    }
+                }
+
                 // Load full monster data từ DB
                 const { data: monsterData } = await window.supabase
                     .from('monsters')
@@ -687,7 +705,7 @@ const GameEngine = {
                         isDead: false,
                         hasDroppedReward: false,
                         sprite_url: monsterData.image_url,
-                        questionType: GameConfig.getDefaultQuestionType(monsterData.type)
+                        questionType: restoredQuestionType || GameConfig.getDefaultQuestionType(monsterData.type)
                     };
                     
                     // ⭐ FIX: gán lại locationTier khi restore
