@@ -483,8 +483,12 @@ class UIManager {
         // ✅ Xóa admin buttons (nếu có)
         const killBtn = DOMUtil.getById('kill-btn');
         const adminBtn = DOMUtil.getById('admin-link-btn');
+        const testBtn = DOMUtil.getById('test-question-btn');
+        const testInput = DOMUtil.getById('test-question-input');
         if (killBtn) killBtn.remove();
         if (adminBtn) adminBtn.remove();
+        if (testBtn) testBtn.remove();
+        if (testInput) testInput.remove();
 
         // ✅ Clear questionarea
         DOMUtil.clearChildren('questionarea');
