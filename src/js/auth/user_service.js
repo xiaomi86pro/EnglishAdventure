@@ -78,7 +78,6 @@ export class UserService {
                     avatar_key: avatarKey,
                     level: 1,
                     exp: 0,
-                    hp_current: 0
                 }])
                 .select();
 
