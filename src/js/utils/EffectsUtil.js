@@ -297,24 +297,14 @@ class EffectsUtil {
         };
 
         const key = keyMap[monsterType];
-        const bgmPath = GameConfig.getMonsterBGM(monsterType);
-
-        if (key) {
-            this._playSoundByKey(key, () => {
-                if (bgmPath) {
-                    this.audioManager.playBgm(bgmPath, { loop: true, fadeInMs: 300 });
-                } else {
-                    this.audioManager.stopBgm({ fadeOutMs: 300 });
-                }
-            });
+        if (!key) {
+            this.audioManager.stopBgm({ fadeOutMs: 300 });
             return;
         }
 
-        if (bgmPath) {
-            this.audioManager.playBgm(bgmPath, { loop: true, fadeInMs: 300 });
-        } else {
+        this._playSoundByKey(key, () => {
             this.audioManager.stopBgm({ fadeOutMs: 300 });
-        }
+        });
     }
 
     /**
