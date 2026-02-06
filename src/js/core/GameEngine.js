@@ -15,6 +15,7 @@ import UIManager from '../managers/UIManager.js';
 import BattleManager from '../managers/BattleManager.js';
 import ProgressionManager from '../managers/ProgressionManager.js';
 import SaveGameService from '../services/SaveGameService.js';
+import SoundRegistry from '../audio/SoundRegistry.js';
 
 const GameEngine = {
     // Core state
@@ -27,6 +28,7 @@ const GameEngine = {
     // Managers & Handlers (sẽ được init trong _initManagers)
     audioManager: null,
     effectsUtil: null,
+    soundRegistry: null,
     monsterHandler: null,
     heroHandler: null,
     stateManager: null,
@@ -190,6 +192,16 @@ const GameEngine = {
             sfxPoolSize: 8 
         });
 
+        // Sound registry (Supabase-backed)
+        this.soundRegistry = new SoundRegistry({
+        supabase: window.supabase,
+        audioManager: this.audioManager
+        });
+        window.soundRegistry = this.soundRegistry;
+        this.soundRegistry.init().catch(err => {
+            console.warn('[GameEngine] SoundRegistry init failed', err);
+        });
+        
         // Utils
         this.effectsUtil = new EffectsUtil(this.audioManager);
 

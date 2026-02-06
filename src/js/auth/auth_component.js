@@ -393,11 +393,21 @@ async pickHero(heroId) {
             return;
         }
 
-        // Phát âm thanh intro
+        // Phát âm thanh intro (ưu tiên SoundRegistry, fallback về cách cũ)
         try {
-            const introSound = new Audio('https://xiaomi86pro.github.io/EnglishAdventure/sounds/StartGame.mp3');
-            introSound.currentTime = 0;
-            introSound.play().catch(e => console.log('Không thể phát âm thanh:', e));
+            const registry = window.soundRegistry;
+            if (registry && typeof registry.play === 'function') {
+                const played = await registry.play('start_game');
+                if (!played) {
+                    const introSound = new Audio('https://xiaomi86pro.github.io/EnglishAdventure/sounds/StartGame.mp3');
+                    introSound.currentTime = 0;
+                    introSound.play().catch(e => console.log('Không thể phát âm thanh:', e));
+                }
+            } else {
+                const introSound = new Audio('https://xiaomi86pro.github.io/EnglishAdventure/sounds/StartGame.mp3');
+                introSound.currentTime = 0;
+                introSound.play().catch(e => console.log('Không thể phát âm thanh:', e));
+            }
         } catch (e) {
             console.log('Lỗi audio:', e);
         }

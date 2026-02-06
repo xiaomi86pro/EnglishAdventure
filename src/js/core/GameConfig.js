@@ -2,6 +2,11 @@
  * GameConfig.js
  * Chứa tất cả constants, settings, và configuration cho game
  */
+const BASE_URL = (typeof import.meta !== 'undefined' && import.meta.env?.BASE_URL)
+    ? import.meta.env.BASE_URL
+    : '/';
+
+const withBase = (path) => `${BASE_URL}${path}`.replace(/([^:]\/)\/+/g, '$1');
 
 const GameConfig = {
     // Gameplay constants
@@ -42,8 +47,8 @@ const GameConfig = {
 
     // BGM theo loại monster
     MONSTER_BGM: {
-        boss: './public/sounds/Boss_Battle.mp3',
-        'final boss': './sounds/Final_Boss.mp3'
+        boss: withBase('sounds/Boss_Battle.mp3'),
+        'final boss': withBase('sounds/Final_Boss.mp3')
     },
     
     // Default question type theo monster type
@@ -56,11 +61,11 @@ const GameConfig = {
     
     // Sound effects paths
     SOUNDS: {
-        attack: './sounds/Slicing_flesh.mp3',
-        hit: './sounds/Punch.mp3',
-        heal: './sounds/Heal.mp3',
-        death: './sounds/Game_Over.mp3',
-        startGame: './sounds/StartGame.mp3'
+        attack: withBase('sounds/Slicing_flesh.mp3'),
+        hit: withBase('sounds/Punch.mp3'),
+        heal: withBase('sounds/Heal.mp3'),
+        death: withBase('sounds/Game_Over.mp3'),
+        startGame: withBase('sounds/StartGame.mp3')
     },
     
     // Animation timings (ms)

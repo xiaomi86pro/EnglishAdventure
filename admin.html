@@ -552,7 +552,10 @@
                     <p id="sound-status" class="mt-4 text-sm text-gray-600 italic">Sẵn sàng upload sound...</p>
 
                     <div class="mt-8">
-                        <h4 class="font-bold text-gray-700 mb-3">Danh sách sounds</h4>
+                        <div class="flex items-center justify-between mb-3">
+                            <h4 class="font-bold text-gray-700">Danh sách sounds</h4>
+                            <button id="save-all-sounds-btn" class="px-4 py-2 bg-emerald-500 text-white rounded-lg font-semibold hover:bg-emerald-600">Save all</button>
+                        </div>
                         <div class="overflow-x-auto">
                             <table class="w-full text-sm border border-gray-200 rounded-xl overflow-hidden">
                                 <thead class="bg-gray-100">
@@ -563,6 +566,7 @@
                                         <th class="px-3 py-2 text-left">Volume</th>
                                         <th class="px-3 py-2 text-left">Loop</th>
                                         <th class="px-3 py-2 text-left">Enabled</th>
+                                        <th class="px-3 py-2 text-left">Actions</th>
                                     </tr>
                                 </thead>
                                 <tbody id="sounds-list"></tbody>

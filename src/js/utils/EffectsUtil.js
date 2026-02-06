@@ -11,6 +11,23 @@ class EffectsUtil {
         this.audioManager = audioManager;
     }
 
+    _playSoundByKey(key, fallback) {
+        const registry = window.soundRegistry;
+
+        if (registry && typeof registry.play === 'function') {
+            registry.play(key).then((played) => {
+                if (!played && typeof fallback === 'function') {
+                    fallback();
+                }
+            }).catch(() => {
+                if (typeof fallback === 'function') fallback();
+            });
+            return;
+        }
+
+        if (typeof fallback === 'function') fallback();
+    }
+
     /**
      * Tạo hiệu ứng sao văng ra theo target element
      * @param {string} containerId - ID của container (thường là 'battleview')
@@ -96,6 +113,7 @@ class EffectsUtil {
      * @param {string} targetId - 'hero' hoặc 'monster'
      * @param {number} healAmount 
      */
+
     showHealEffect(containerId, targetId, healAmount) {
         const container = DOMUtil.getById(containerId);
         const target = DOMUtil.getById(targetId);
@@ -130,55 +148,52 @@ class EffectsUtil {
         /* =======================
            HEAL SOUND
         ======================= */
-        if (this.audioManager) {
-            this.audioManager.playSfx(GameConfig.SOUNDS.heal);
-        }
+        this._playSoundByKey('heal');
     
         /* =======================
-           HERO GREEN GLOW (FIX)
+        HERO GREEN GLOW (FIX)
         ======================= */
         const heroImg = target.querySelector('img');
         if (heroImg) {
-            heroImg.classList.add('heal-glow');
-            setTimeout(() => {
-                heroImg.classList.remove('heal-glow');
-            }, 800);
-        }
-    
+                    heroImg.classList.add('heal-glow');
+                    setTimeout(() => {
+                        heroImg.classList.remove('heal-glow');
+                    }, 800);
+            }
+        
         /* =======================
-           HEAL PARTICLES
+        HEAL PARTICLES
         ======================= */
         for (let i = 0; i < 8; i++) {
-            const particle = DOMUtil.createElement('div', {
-                className: 'heal-particle',
-                innerText: '💚',
-                styles: {
-                    position: 'absolute',
-                    left: `${pos.x}px`,
-                    top: `${pos.y}px`,
-                    fontSize: '20px',
-                    pointerEvents: 'none',
-                    zIndex: '45'
-                }
-            });
-    
-            const angle = (Math.PI * 2 / 8) * i;
-            const distance = 60;
-            const tx = Math.cos(angle) * distance;
-            const ty = Math.sin(angle) * distance;
-    
-            particle.style.setProperty('--heal-tx', `${tx}px`);
-            particle.style.setProperty('--heal-ty', `${ty}px`);
-            particle.style.animation = 'healParticle 1s ease-out forwards';
-    
-            container.appendChild(particle);
-            setTimeout(() => particle.remove(), 1000);
-        }
-    
+                    const particle = DOMUtil.createElement('div', {
+                        className: 'heal-particle',
+                        innerText: '💚',
+                        styles: {
+                            position: 'absolute',
+                            left: `${pos.x}px`,
+                            top: `${pos.y}px`,
+                            fontSize: '20px',
+                            pointerEvents: 'none',
+                            zIndex: '45'
+                        }
+                    });
+            
+                    const angle = (Math.PI * 2 / 8) * i;
+                    const distance = 60;
+                    const tx = Math.cos(angle) * distance;
+                    const ty = Math.sin(angle) * distance;
+            
+                    particle.style.setProperty('--heal-tx', `${tx}px`);
+                    particle.style.setProperty('--heal-ty', `${ty}px`);
+                    particle.style.animation = 'healParticle 1s ease-out forwards';
+            
+                    container.appendChild(particle);
+                    setTimeout(() => particle.remove(), 1000);
+            }
+        
         setTimeout(() => healEl.remove(), GameConfig.TIMINGS.healEffect);
-    }
-    
-
+     }    
+        
     /**
      * Hiệu ứng rung (shake) cho element
      * @param {string} elementId 
@@ -193,7 +208,7 @@ class EffectsUtil {
         setTimeout(() => {
             DOMUtil.removeClass(elementId, 'shake');
         }, GameConfig.TIMINGS.shakeEffect);
-    }
+        }
 
     /**
      * Hiệu ứng hit flash (chớp đỏ khi bị đánh)
@@ -264,11 +279,9 @@ class EffectsUtil {
     playAttackSound(attackerType) {
         if (!this.audioManager) return;
 
-        const sound = attackerType === 'hero' 
-            ? GameConfig.SOUNDS.attack 
-            : GameConfig.SOUNDS.hit;
-
-        this.audioManager.playSfx(sound);
+        const isHeroAttack = attackerType === 'hero';
+        const key = isHeroAttack ? 'attack' : 'hit';
+        this._playSoundByKey(key);
     }
 
     /**
@@ -278,7 +291,25 @@ class EffectsUtil {
     playMonsterBGM(monsterType) {
         if (!this.audioManager) return;
 
+        const keyMap = {
+            boss: 'boss_bgm',
+            'final boss': 'final_boss_bgm'
+        };
+
+        const key = keyMap[monsterType];
         const bgmPath = GameConfig.getMonsterBGM(monsterType);
+
+        if (key) {
+            this._playSoundByKey(key, () => {
+                if (bgmPath) {
+                    this.audioManager.playBgm(bgmPath, { loop: true, fadeInMs: 300 });
+                } else {
+                    this.audioManager.stopBgm({ fadeOutMs: 300 });
+                }
+            });
+            return;
+        }
+
         if (bgmPath) {
             this.audioManager.playBgm(bgmPath, { loop: true, fadeInMs: 300 });
         } else {
@@ -436,7 +467,9 @@ class EffectsUtil {
             }, flyDuration + groundDelay);
         }
         
-        window.audioControl.playSfx('./public/sounds/Coin_Drop2.wav');
+         this._playSoundByKey('coin_drop_2', () => {
+            this._playSoundByKey('Drop_Coin');        
+        });
     }
     
 
@@ -518,11 +551,8 @@ showLevelUp(heroId, newLevel) {
     if (!heroEl) return;
 
     // Phát âm thanh level up (nếu có)
-    if (this.audioManager) {
-        // Tạm thời dùng heal sound, sau có thể thêm level up sound riêng
-        this.audioManager.playSfx('./sounds/Heal.mp3');
-    }
-
+    this._playSoundByKey('level_up');
+   
     // Tạo cột sáng từ hero
     const rect = heroEl.getBoundingClientRect();
     const battleView = DOMUtil.getById('battleview');
