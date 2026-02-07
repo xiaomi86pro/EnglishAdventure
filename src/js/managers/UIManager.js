@@ -113,6 +113,8 @@ class UIManager {
         // 1. Cập nhật player info card
         this.updatePlayerCard(uiState.player);
 
+        this.toggleLeaderboardVisibility(true);
+
         // 2. Cập nhật monster info
         this.updateMonsterInfo(uiState.monster, uiState.location, uiState.station, uiState.currentStep, safeTotalSteps);
 
@@ -221,6 +223,17 @@ class UIManager {
         if (!historyslot) return;
 
         historyslot.classList.remove('hidden');
+    }
+
+    /**
+     * Bật/tắt hiển thị leaderboard
+     * @param {boolean} hidden
+     */
+    toggleLeaderboardVisibility(hidden = false) {
+        const leaderboardSlot = DOMUtil.getById('leaderboard-slot');
+        if (!leaderboardSlot) return;
+
+        leaderboardSlot.classList.toggle('hidden', hidden);
     }
 
     /**
@@ -459,6 +472,8 @@ class UIManager {
             userSlot.classList.add('hidden');
             userSlot.innerHTML = '';
         }
+
+        this.toggleLeaderboardVisibility(false);
 
         const monsterSlot = DOMUtil.getById('monster-info-slot');
         if (monsterSlot) {

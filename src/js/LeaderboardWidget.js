@@ -59,13 +59,28 @@ export class LeaderboardWidget {
         const list = DOMUtil.getById('leaderboard-list');
         if (!list) return;
 
-        if (players.length === 0) {
-            list.innerHTML = '<p class="text-white/50 text-xs text-center">Chưa có dữ liệu</p>';
-            return;
-        }
+        const top10 = Array.from({ length: 10 }, (_, index) => players[index] || null);
 
-        list.innerHTML = players.map((player, index) => {
+        list.innerHTML = top10.map((player, index) => {
             const rank = index + 1;
+            if (!player) {
+                return `
+                    <div class="bg-white/5 rounded-xl p-2 flex items-center gap-2 min-h-[64px]">
+                        <div class="w-6 text-center font-bold text-white/70 text-sm">${rank}</div>
+                        <div class="text-xl opacity-50">👤</div>
+                        <div class="flex-1 min-w-0">
+                            <p class="text-black/50 font-bold text-1xl truncate">--- Trống ---</p>
+                            <div class="flex items-center gap-2 text-[10px]">
+                                <span class="text-blue-300/70 font-bold text-2xl">⚡0</span>
+                                <span class="text-yellow-300/70 font-bold text-2xl" style="text-shadow: 2px 2px 0 #000, -2px -2px 0 #000, 2px -2px 0 #000, -2px 2px 0 #000, 0 2px 0 #000, 2px 0 0 #000, 0 -2px 0 #000, -2px 0 0 #000;">
+                                    <img src="./public/icon/Coin.png" alt="coin" class="inline-block align-middle mr-1" style="width: 1.2em; height: 1.2em;" />0
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }
+
             let medalEmoji = '';
             let bgClass = 'bg-white/10';
             
@@ -81,8 +96,7 @@ export class LeaderboardWidget {
             }
 
             return `
-                <div class="${bgClass} rounded-xl p-2 flex items-center gap-2">
-                    <div class="w-6 text-center font-bold text-white text-sm">
+            <div class="${bgClass} rounded-xl p-2 flex items-center gap-2 min-h-[64px]">                    <div class="w-6 text-center font-bold text-white text-sm">
                         ${medalEmoji || rank}
                     </div>
                     <div class="text-xl">${player.avatar_key || '👤'}</div>
