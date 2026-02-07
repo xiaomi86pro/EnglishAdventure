@@ -83,7 +83,7 @@ window.switchTab = function(tabName) {
             break;
             
         case 'assets':
-            assetManager.loadHeroes();
+            assetManager.init();
             break;
             
         case 'questions':
