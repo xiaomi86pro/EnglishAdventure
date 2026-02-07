@@ -19,6 +19,7 @@ class Question4 {
         this._cellHandlers = [];
         this._mouseupHandler = null;
         this._lastAnswered = null;
+        this._isFinalizing = false;
     }
 
     init() {
@@ -26,6 +27,7 @@ class Question4 {
         this.foundWords = [];
         this.hintCount = 0;  // Reset hint count
         this._lastAnswered = null;
+        this._isFinalizing = false;
 
         this._selectWords();
         if (this.wordsToFind.length > 0) {
@@ -313,6 +315,17 @@ class Question4 {
     }
 
     _attachEventListeners() {
+        if (this._mouseupHandler) {
+            document.removeEventListener('mouseup', this._mouseupHandler);
+            this._mouseupHandler = null;
+        }
+        if (this._cellHandlers.length > 0) {
+            this._cellHandlers.forEach(h => {
+                h.el.removeEventListener('mousedown', h.mousedown);
+                h.el.removeEventListener('mouseover', h.mouseover);
+            });
+            this._cellHandlers = [];
+        }
         let isSelecting = false;
         let selectedCells = [];
         this._cellHandlers = [];
@@ -337,7 +350,7 @@ class Question4 {
         });
 
         this._mouseupHandler = () => {
-            if (!isSelecting) return;
+            if (!isSelecting || this._isFinalizing) return;
             isSelecting = false;
 
             const selectedText = selectedCells.map(c => c.innerText).join('');
@@ -368,7 +381,15 @@ class Question4 {
                 this._lastAnswered = { en: wordObj.en, vi: wordObj.vi };
                 
                 const isFinal = this.foundWords.length === this.wordsToFind.length;
+                if (isFinal) {
+                    this._isFinalizing = true;
+                    cells.forEach(c => {
+                        c.style.pointerEvents = 'none';
+                    });
+                }
+                
                 if (typeof this.onCorrect === 'function') this.onCorrect(1, isFinal);
+                
             } else {
                 selectedCells.forEach(c => c.classList.remove("!bg-yellow-400"));
                 if (typeof this.onWrong === 'function') this.onWrong();
