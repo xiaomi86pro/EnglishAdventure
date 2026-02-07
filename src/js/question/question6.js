@@ -98,28 +98,46 @@ class Question6 {
         this._items.forEach((it, idx) => {
             const row = document.createElement('div');
             row.className = 'flex items-center gap-5 bg-slate-700/30 p-2 rounded-xl h-14 w-full';
-  
+        
+            // Cột nghĩa tiếng Việt
             const viDiv = document.createElement('div');
             viDiv.className = 'text-green-400 font-medium text-lg ml-2 leading-none flex-none w-[180px] truncate';
             viDiv.innerText = `${idx + 1}. ${this._escape(it.vi)}`;
-  
+        
+            // Khối tiếng Anh (root + zone + loa)
             const engDiv = document.createElement('div');
-            engDiv.className = 'flex items-center justify-end gap-1 min-w-[150px] h-12';
-  
+            engDiv.className = 'flex items-center justify-between gap-1 min-w-[150px] h-12 w-full';
+        
+            // Nhóm bên trái (root + zone)
+            const leftGroup = document.createElement('div');
+            leftGroup.className = 'flex items-center gap-1 q6-left-group';
+        
             const rootSpan = document.createElement('span');
-            rootSpan.className = 'text-2xl font-bold text-white tracking-widest leading-none';          rootSpan.innerText = it.leftPart;
-  
+            rootSpan.className = 'text-2xl font-bold text-white tracking-widest leading-none';
+            rootSpan.innerText = it.leftPart;
+        
             const zone = document.createElement('div');
             zone.className = 'min-w-[60px] h-10 px-2 ml-1 flex items-center justify-center border-b-4 border-dashed border-slate-400 text-slate-400 text-xl font-bold transition-all leading-none';
-            
             zone.setAttribute('data-index', idx);
             zone.setAttribute('data-expected', it.cutPart);
-            zone.innerText = '__'; 
-  
+            zone.innerText = '__';
+        
             this._dropZones.push(zone);
-            engDiv.appendChild(rootSpan);
-            engDiv.appendChild(zone);
-  
+        
+            leftGroup.appendChild(rootSpan);
+            leftGroup.appendChild(zone);
+        
+            // Nút loa bên phải
+            const speakerBtn = document.createElement('button');
+            speakerBtn.className = 'q6-speaker-btn text-slate-300 hover:text-yellow-400 transition-colors ml-auto';
+            speakerBtn.innerHTML = '🔊';
+            speakerBtn.addEventListener('click', () => {
+                this._speak(it.full);
+            });
+        
+            engDiv.appendChild(leftGroup);
+            engDiv.appendChild(speakerBtn);
+        
             row.appendChild(viDiv);
             row.appendChild(engDiv);
             listContainer.appendChild(row);
@@ -200,44 +218,37 @@ class Question6 {
         if (this._destroyed) return;
         const index = parseInt(zone.getAttribute('data-index'));
         const item = this._items[index];
-  
+    
         if (item.filled) return;
-        const tileEl = this._draggables.find(d => 
-            d.getAttribute('data-cut') === cut && 
+    
+        const tileEl = this._draggables.find(d =>
+            d.getAttribute('data-cut') === cut &&
             d.getAttribute('data-origin') === origin &&
-            !d.classList.contains('hidden')
+            !d.classList.contains('invisible')
         );
-  
+    
         if (cut === item.cutPart) {
-          item.filled = true;
-      
-          // Tìm container chứa từ
-          const engDiv = zone.parentElement;
-      
-          // Xoá root + zone
-          engDiv.innerHTML = '';
-      
-          // Tạo span mới cho từ hoàn chỉnh
-          const fullWord = document.createElement('span');
-          fullWord.innerText = item.full;
-          fullWord.className =
-              'text-2xl font-bold tracking-widest';
-          fullWord.style.color = '#22c55e'; // xanh chắc chắn
-      
-          engDiv.appendChild(fullWord);
-      
-          // Ẩn mảnh kéo
-          if (tileEl) tileEl.classList.add('invisible', 'pointer-events-none');
-      
-          if (window.GameEngine)
-              window.GameEngine.processBattleRound(1, 0, false);
-      
-          this._checkAllCompleted();
-          this._speak(item.full);
-      }
-      
-      
-       else {
+            item.filled = true;
+    
+            zone.textContent = item.cutPart;
+            zone.classList.add('q6-filled', 'text-green-400');
+            zone.classList.remove('border-dashed', 'border-slate-400', 'text-slate-400');
+    
+            // Ẩn nút loa
+            const speakerBtn = engDiv.querySelector('.q6-speaker-btn');
+            if (speakerBtn) {
+                speakerBtn.classList.add('hidden');
+            }
+    
+            // Ẩn mảnh kéo
+            if (tileEl) tileEl.classList.add('invisible', 'pointer-events-none');
+    
+            if (window.GameEngine)
+                window.GameEngine.processBattleRound(1, 0, false);
+    
+            this._checkAllCompleted();
+            this._speak(item.full);
+        } else {
             if (tileEl) {
                 tileEl.classList.add('bg-red-500', 'shake');
                 setTimeout(() => tileEl.classList.remove('bg-red-500', 'shake'), 500);
