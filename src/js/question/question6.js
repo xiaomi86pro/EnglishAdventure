@@ -114,6 +114,7 @@ class Question6 {
         
             const rootSpan = document.createElement('span');
             rootSpan.className = 'text-2xl font-bold text-white tracking-widest leading-none';
+            rootSpan.setAttribute('data-q6-root', idx);
             rootSpan.innerText = it.leftPart;
         
             const zone = document.createElement('div');
@@ -229,10 +230,16 @@ class Question6 {
     
         if (cut === item.cutPart) {
             item.filled = true;
+
+            const engDiv = zone.parentElement;
     
-            zone.textContent = item.cutPart;
-            zone.classList.add('q6-filled', 'text-green-400');
-            zone.classList.remove('border-dashed', 'border-slate-400', 'text-slate-400');
+            const rootSpan = engDiv?.querySelector(`[data-q6-root="${index}"]`);
+            if (rootSpan) {
+                rootSpan.textContent = item.full;
+                rootSpan.classList.remove('text-white');
+                rootSpan.classList.add('text-green-400');
+            }
+            zone.remove();
     
             // Ẩn nút loa
             const speakerBtn = engDiv.querySelector('.q6-speaker-btn');
@@ -302,7 +309,7 @@ class Question6 {
         const tile = this._draggables.find(d => 
             d.getAttribute('data-cut') === targetItem.cutPart && 
             d.getAttribute('data-origin') == targetIndex && 
-            !d.classList.contains('hidden')
+            !d.classList.contains('invisible')
         );
   
         if (zone) zone.classList.add('bg-yellow-500/20', 'border-yellow-400', 'text-yellow-300', 'scale-110');
