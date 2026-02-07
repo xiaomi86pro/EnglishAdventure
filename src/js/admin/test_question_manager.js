@@ -2,6 +2,7 @@
 export class TestQuestionManager {
     constructor(supabase) {
         this.supabase = supabase;
+        this.questionTypes = [];
     }
 
     // Khởi tạo
@@ -24,39 +25,77 @@ export class TestQuestionManager {
             if (error) throw error;
 
             if (data && data.length > 0) {
-                container.innerHTML = data.map(qt => `
-                    <div class="bg-gradient-to-br from-white to-gray-50 p-4 rounded-xl border-2 border-gray-200 hover:border-purple-400 transition-all shadow-sm">
-                        <div class="flex justify-between items-start mb-3">
-                            <div class="flex items-center gap-2">
-                                <span class="text-3xl">${qt.icon}</span>
-                                <div>
-                                    <h4 class="font-bold text-lg">${qt.name}</h4>
-                                    <p class="text-xs text-gray-500">Type ${qt.id}</p>
-                                </div>
-                            </div>
-                            <button onclick="window.testQuestionManager.showEditForm(${qt.id})" 
-                                    class="text-blue-500 hover:text-blue-700 text-sm mr-2">
-                                ✏️ Edit
-                            </button>
-                            <button onclick="window.testQuestionManager.deleteQuestionType(${qt.id})" 
-                                    class="text-red-500 hover:text-red-700 text-sm">
-                                🗑️
-                            </button>
-                        </div>
-                        <p class="text-sm text-gray-600 mb-3">${qt.description || ''}</p>
-                        <button onclick="window.testQuestionManager.testQuestion(${qt.id})" 
-                                class="w-full py-2 bg-purple-500 text-white rounded-lg hover:bg-purple-600 font-bold text-sm">
-                            ▶️ Test Question ${qt.id}
-                        </button>
+                this.questionTypes = data;
+                container.innerHTML = `
+                    <div class="bg-gray-50 p-4 rounded-xl border border-gray-200 h-full flex flex-col justify-start">                        <label for="question-type-select" class="block text-sm font-bold text-gray-700 mb-2">
+                            Chọn loại câu hỏi để test:
+                        </label>
+                        <select id="question-type-select" class="w-full p-3 border-2 border-gray-200 rounded-lg focus:border-purple-400 outline-none">
+                            ${data.map((qt, idx) => `
+                                <option value="${qt.id}" ${idx === 0 ? 'selected' : ''}>${qt.icon} Type ${qt.id} - ${qt.name}</option>
+                            `).join('')}
+                        </select>
                     </div>
-                `).join('');
+                <div id="selected-question-type-detail" class="h-full"></div>
+                `;
+
+                const select = document.getElementById('question-type-select');
+                if (select) {
+                    select.addEventListener('change', (event) => {
+                        const selectedId = parseInt(event.target.value, 10);
+                        this.renderSelectedQuestionType(selectedId);
+                    });
+                }
+
+                this.renderSelectedQuestionType(data[0].id);
             } else {
                 container.innerHTML = '<p class="text-gray-500 col-span-3">Chưa có loại câu hỏi nào</p>';
+                this.questionTypes = [];
             }
         } catch (err) {
             console.error('Lỗi load question types:', err);
             container.innerHTML = '<p class="text-red-500 col-span-3">Lỗi: ' + err.message + '</p>';
+            this.questionTypes = [];
         }
+    }
+
+    renderSelectedQuestionType(id) {
+        const detailContainer = document.getElementById('selected-question-type-detail');
+        if (!detailContainer) return;
+
+        const qt = this.questionTypes.find(item => item.id === id);
+        if (!qt) {
+            detailContainer.innerHTML = '<p class="text-sm text-gray-500">Không tìm thấy loại câu hỏi đã chọn.</p>';
+            return;
+        }
+
+        detailContainer.innerHTML = `
+            <div class="bg-gradient-to-br from-white to-gray-50 p-4 rounded-xl border-2 border-gray-200 shadow-sm h-full flex flex-col">                <div class="flex justify-between items-start mb-3">
+                    <div class="flex items-center gap-2">
+                        <span class="text-3xl">${qt.icon}</span>
+                        <div>
+                            <h4 class="font-bold text-lg">${qt.name}</h4>
+                            <p class="text-xs text-gray-500">Type ${qt.id}</p>
+                        </div>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <button onclick="window.testQuestionManager.showEditForm(${qt.id})" 
+                                class="text-blue-500 hover:text-blue-700 text-sm">
+                            ✏️ Edit
+                        </button>
+                        <button onclick="window.testQuestionManager.deleteQuestionType(${qt.id})" 
+                                class="text-red-500 hover:text-red-700 text-sm">
+                            🗑️
+                        </button>
+                    </div>
+                </div>
+                <p class="text-sm text-gray-600 mb-3">${qt.description || ''}</p>
+                <button onclick="window.testQuestionManager.testQuestion(${qt.id})" 
+                        class="w-full py-2 bg-purple-500 text-white rounded-lg hover:bg-purple-600 font-bold text-sm">
+                    ▶️ Test Question ${qt.id}
+                </button>
+            </div>
+        `;
     }
 
     // Setup nút thêm câu hỏi

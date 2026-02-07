@@ -350,7 +350,7 @@ class Question4 {
                 const hintEl = document.getElementById(`hint-${wordObj.en}`);
                 if (hintEl) {
                     hintEl.textContent = wordObj.en;
-                    hintEl.classList.remove('text-yellow-500');
+                    hintEl.classList.remove('text-yellow-400', 'text-yellow-500');
                     hintEl.classList.add('text-green-400', 'font-bold');
                 }
                 selectedCells.forEach(c => {
