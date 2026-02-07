@@ -591,6 +591,32 @@ const GameEngine = {
 
             // 7. Khôi phục monster
             if (savedGame.monster && savedGame.monster.id) {
+                let restoredQuestionType = savedGame.monster.questionType || null;
+
+                // Nếu save chưa có questionType thì fallback theo step hiện tại
+                if (!restoredQuestionType && !this.isEndlessMode && this.currentStation?.id && this.currentStep > 0) {
+                    const { data: stepConfig, error: stepErr } = await window.supabase
+                        .from('steps')
+                        .select('question_type')
+                        .eq('station_id', this.currentStation.id)
+                        .eq('step_number', this.currentStep)
+                        .maybeSingle();
+
+                    if (stepErr) {
+                        console.warn('[GameEngine] Restore step question_type lookup failed:', stepErr);
+                    } else {
+                        restoredQuestionType = stepConfig?.question_type || null;
+                    }
+                }
+
+                // Endless mode: tạm thời chỉ cho question 3 hoặc 4
+                if (this.isEndlessMode) {
+                    const q = Number(restoredQuestionType);
+                    restoredQuestionType = (q === 3 || q === 4)
+                        ? q
+                        : (savedGame.monster.type === 'final boss' ? 4 : 3);
+                }
+
                 // Load full monster data từ DB
                 const { data: monsterData } = await window.supabase
                     .from('monsters')
@@ -608,7 +634,7 @@ const GameEngine = {
                         state: 'idle',
                         isDead: false,
                         sprite_url: monsterData.image_url,
-                        questionType: GameConfig.getDefaultQuestionType(monsterData.type)
+                        questionType: restoredQuestionType || 1
                     };
                     
                     this.uiManager.renderMonsterSprite(this.monster);
@@ -768,8 +794,7 @@ const GameEngine = {
                 state: 'idle',
                 isDead: false,
                 sprite_url: randomMonster.image_url,
-                questionType: GameConfig.getDefaultQuestionType(randomMonster.type)
-            };
+                questionType: randomMonster.type === 'final boss' ? 4 : 3            };
 
             // 4. Render monster
             this.uiManager.renderMonsterSprite(this.monster);

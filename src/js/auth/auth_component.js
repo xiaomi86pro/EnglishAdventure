@@ -296,7 +296,8 @@ class AuthComponent {
                 isEndlessMode: cloudSave.is_endless_mode || false,
                 monster: cloudSave.monster_id ? {
                     id: cloudSave.monster_id,
-                    hp: cloudSave.monster_hp
+                    hp: cloudSave.monster_hp,
+                    questionType: cloudSave.monster_question_type || null
                 } : null
             };
             

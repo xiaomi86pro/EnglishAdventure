@@ -22,6 +22,7 @@ class SaveGameService {
                 is_endless_mode: gameState.isEndlessMode || false,
                 monster_id: gameState.monster?.id || null,
                 monster_hp: gameState.monster?.hp || null,
+                monster_question_type: gameState.monster?.questionType || null,
                 saved_at: new Date().toISOString()
             };
 
