@@ -65,7 +65,7 @@ export class LeaderboardWidget {
             const rank = index + 1;
             if (!player) {
                 return `
-                    <div class="bg-white/5 rounded-xl p-2 flex items-center gap-2 min-h-[64px]">
+                    <div class="bg-white/5 rounded-xl p-2 flex items-center gap-2 h-16">
                         <div class="w-6 text-center font-bold text-white/70 text-sm">${rank}</div>
                         <div class="text-xl opacity-50">👤</div>
                         <div class="flex-1 min-w-0">
@@ -96,20 +96,27 @@ export class LeaderboardWidget {
             }
 
             return `
-            <div class="${bgClass} rounded-xl p-2 flex items-center gap-2 min-h-[64px]">                    <div class="w-6 text-center font-bold text-white text-sm">
+            <div class="${bgClass} rounded-xl p-2 flex items-center gap-2 min-16">                    
+                    <div class="w-6 text-center font-bold text-white text-sm">
                         ${medalEmoji || rank}
                     </div>
                     <div class="text-xl">${player.avatar_key || '👤'}</div>
                     <div class="flex-1 min-w-0">
                         <p class="text-black font-bold text-1xl truncate">${player.display_name}</p>
-                        <div class="flex items-center gap-2 text-[10px]">
-                            <span class="text-blue-300 font-bold text-2xl">⚡${player.level}</span>
-                            <span class="text-yellow-300 font-bold text-2xl" style="text-shadow: 2px 2px 0 #000, -2px -2px 0 #000, 2px -2px 0 #000, -2px 2px 0 #000, 0 2px 0 #000, 2px 0 0 #000, 0 -2px 0 #000, -2px 0 0 #000;"">
-                            <img src="./icon/Coin.png" alt="coin" class="inline-block align-middle mr-1" style="width: 1.2em; height: 1.2em;" />${player.coin || 0}
+                        <div class="flex items-center gap-2 text-2xl">
+                            ⚡
+                            <span class="text-blue-300 font-bold text-2xl" style="text-shadow: 2px 2px 0 #000, -2px -2px 0 #000, 2px -2px 0 #000, -2px 2px 0 #000, 0 2px 0 #000, 2px 0 0 #000, 0 -2px 0 #000, -2px 0 0 #000;">
+                            ${player.level}
+                            </span>
+                            <span class="flex items-center gap-1 text-yellow-300 font-bold text-2xl leading-none">
+                            <img src="./icon/Coin.png" alt="coin" class="w-6 h-6 shrink-0"/>                            
+                            <span class="leading-none" style="text-shadow: 2px 2px 0 #000, -2px -2px 0 #000, 2px -2px 0 #000, -2px 2px 0 #000, 0 2px 0 #000, 2px 0 0 #000, 0 -2px 0 #000, -2px 0 0 #000;">
+                            ${player.coin || 0}
+                            </span>
                             </span>
                         </div>
                     </div>
-                </div>
+            </div>
             `;
         }).join('');
     }
