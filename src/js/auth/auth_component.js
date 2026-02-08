@@ -226,16 +226,7 @@ class AuthComponent {
      */
     async continueGame() {
         const userId = this.state.getSelectedUserId();
-
-        try {
-            const registry = window.soundRegistry;
-            if (registry && typeof registry.play === 'function') {
-                await registry.play('start_game');
-            }
-        } catch (e) {
-            console.log('Lỗi audio:', e);
-        }
-     
+  
         try {
             // 1. Load saved game từ cloud
             const saveResult = await this.saveGameService.load(userId);
@@ -312,7 +303,16 @@ class AuthComponent {
             // 6. Restore game
             if (window.GameEngine) {
                 await window.GameEngine.restoreGameState(formattedSave);
-            }
+
+            try {
+                const registry = window.soundRegistry;
+                if (registry && typeof registry.play === 'function') {
+                    await registry.play('start_game');
+                }
+                } catch (e) {
+                    console.log('Lỗi audio:', e);
+                }
+            }    
 
                // Nếu endless mode → Ẩn progress bar, hiện text "Luyện Tập"
             if (window.GameEngine?.isEndlessMode) {
