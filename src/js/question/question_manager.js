@@ -24,6 +24,7 @@ window.CONFIG = CONFIG;
 window.DATA_CACHE = window.DATA_CACHE || {
   vocabulary: { data: [], status: 'loading' },
   nouns: { data: [], status: 'idle' },
+  subjects: { data: [], status: 'idle' },
   adjectives: { data: [], status: 'idle' },
   question_templates: { data: [], status: 'idle' },
   places: { data: [], status: 'idle' },

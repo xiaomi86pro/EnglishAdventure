@@ -8,6 +8,7 @@ class Question8 {
       this.templates = this.dataPool.question_templates || [];
       this.nouns = this.dataPool.nouns || [];
       this.adjectives = this.dataPool.adjectives || [];
+      this.subjects = this.dataPool.subjects || [];
       
       this.containerId = opts.containerId || "questionarea";
       this.onCorrect = opts.onCorrect || null;
@@ -16,6 +17,26 @@ class Question8 {
       this.autoReload = true;
       this.currentData = null;
       this._destroyed = false;
+
+      this.instrumentVerbs = ["play", "learn", "practice", "study"];
+  }
+
+  pickRandom(list = []) {
+      if (!Array.isArray(list) || list.length === 0) return null;
+      return list[Math.floor(Math.random() * list.length)];
+  }
+
+  conjugateVerbBySubject(verb, subject) {
+      const person = Number(subject?.person);
+      const numberType = String(subject?.number_type || "").trim().toLowerCase();
+
+      if (person === 3 && numberType === "singular") {
+          if (verb.endsWith('y')) return `${verb.slice(0, -1)}ies`;
+          if (/(s|x|z|ch|sh)$/i.test(verb)) return `${verb}es`;
+          return `${verb}s`;
+      }
+
+      return verb;
   }
 
   speak(text, lang = "en-US", rate = 0.95) {
@@ -54,13 +75,30 @@ class Question8 {
           }
 
           // Chọn ngẫu nhiên 1 template
-          const template = articleTemplates[Math.floor(Math.random() * articleTemplates.length)];
+          const template = this.pickRandom(articleTemplates);
+          const answerType = String(template.answer_type || '').trim().toLowerCase();
 
           // Kiểm tra template có sử dụng {adj} không
           const hasAdjective = template.pattern.includes('{adj}');
 
+          const activeNouns = this.nouns.filter(n => n?.is_active !== false);
+          const activeSubjects = this.subjects.filter(s => s?.is_active !== false);
+
+          const preferInstrument = answerType === 'article_def_instrument' || answerType === 'article_instr';
+          let nounCandidates = activeNouns;
+
+          if (preferInstrument) {
+              nounCandidates = activeNouns.filter(n => String(n.noun_type || '').trim().toLowerCase() === 'instrument');
+          } else {
+              nounCandidates = activeNouns.filter(n => String(n.noun_type || '').trim().toLowerCase() !== 'instrument');
+          }
+
+          if (nounCandidates.length === 0) {
+              throw new Error("Không có noun phù hợp với answer_type hiện tại");
+          }
+
           // Chọn ngẫu nhiên 1 noun
-          const noun = this.nouns[Math.floor(Math.random() * this.nouns.length)];
+          const noun = this.pickRandom(nounCandidates);
 
           // Chọn ngẫu nhiên 1 adjective nếu template cần
           let adjective = null;
@@ -73,15 +111,17 @@ class Question8 {
               if (activeAdjectives.length === 0) {
                   throw new Error("Không có adjective active");
               }
-              adjective = activeAdjectives[Math.floor(Math.random() * activeAdjectives.length)];
+              adjective = this.pickRandom(activeAdjectives);
           }
+
+          const subject = this.pickRandom(activeSubjects);
 
           // Tạo câu hỏi dựa trên answer_type
           let question = template.pattern;
           let correctAnswer = '';
           let articleSource = ''; // Để tracking: 'noun' hoặc 'adjective'
 
-          if (template.answer_type === 'article_indef') {
+          if (answerType === 'article_indef') {
               // Câu hỏi dạng a/an (lần đầu nhắc đến)
               
               // LOGIC: Nếu có {adj} → dùng adjective.article_form, ngược lại → noun.article_form
@@ -97,7 +137,7 @@ class Question8 {
                   question = question.replace('{noun}', noun.word);
               }
 
-          } else if (template.answer_type === 'article_def_2nd') {
+            } else if (answerType === 'article_def_2nd' || answerType === 'article_def_instrument') {
               // Câu hỏi dạng the (lần thứ 2 nhắc đến)
               articleSource = 'second_mention';
               
@@ -120,10 +160,39 @@ class Question8 {
               }
               
               correctAnswer = 'the';
+            } else if (answerType === 'article_zero') {
+              correctAnswer = '';
+              question = question.replace('{noun}', noun.word);
+              if (hasAdjective && adjective) {
+                  question = question.replace('{adj}', adjective.base);
+              }
+          } else if (answerType === 'article_instr') {
+              if (!subject) {
+                  throw new Error("Không có dữ liệu subjects cho template article_instr");
+              }
+
+              const subjectWord = String(subject.word || '').trim();
+              const baseVerb = this.pickRandom(this.instrumentVerbs) || 'play';
+              const verb = this.conjugateVerbBySubject(baseVerb, subject);
+
+              question = question
+                  .replace('{subject}', subjectWord)
+                  .replace('{verb}', verb)
+                  .replace('{noun}', noun.word);
+
+              if (hasAdjective && adjective) {
+                  question = question.replace('{adj}', adjective.base);
+              }
+
+              correctAnswer = 'the';
+          } else {
+              throw new Error(`answer_type không hỗ trợ: ${answerType}`);
           }
 
-          // Tạo các lựa chọn (luôn có đủ 3 options: a, an, the)
-          const choices = ['a', 'an', 'the'];
+          // Tạo các lựa chọn (thêm blank cho article_zero)
+          const choices = ['a', 'an', 'the', ''];
+
+          const spokenSentence = question.replace(/___/g, correctAnswer ? `${correctAnswer} ` : '').replace(/\s+/g, ' ').trim();
 
           this.currentData = {
               question: question,
@@ -136,7 +205,8 @@ class Question8 {
               articleForm: correctAnswer,
               articleSource: articleSource, // 'noun', 'adjective', hoặc 'second_mention'
               hasAdjective: hasAdjective,
-              fullSentence: question.replace('___', correctAnswer)
+              subject: subject ? subject.word : null,
+              fullSentence: spokenSentence
           };
 
           this.renderQuestionUI();
@@ -175,7 +245,7 @@ class Question8 {
       choices.forEach(ch => {
           const btn = document.createElement("button");
           btn.className = "px-12 py-6 bg-white text-slate-800 rounded-2xl font-black text-3xl shadow-md hover:bg-yellow-400 hover:scale-110 transition-all duration-200 border-b-4 border-slate-300 active:border-b-0 active:translate-y-1";
-          btn.innerText = ch;
+          btn.innerText = ch === '' ? '( Để trống - Blank )' : ch;
           btn.onclick = () => this.handleChoice(ch, btn);
           container.appendChild(btn);
       });
@@ -233,7 +303,7 @@ class Question8 {
                       </div>
                       `;
                   }
-              } else if (answerType === 'article_def_2nd') {
+                } else if (answerType === 'article_def_2nd' || answerType === 'article_def_instrument' || answerType === 'article_instr') {
                   // Đúng the
                   feedback = `
                   <div class="text-left space-y-2">
@@ -244,6 +314,15 @@ class Question8 {
                       <div class="flex items-start gap-2">
                           <span class="text-red-400 text-xl">❌</span>
                           <span class="text-gray-300 text-lg">"A/An" is only used for the first mention.</span>
+                      </div>
+                  </div>
+                  `;
+                } else if (answerType === 'article_zero') {
+                  feedback = `
+                  <div class="text-left space-y-2">
+                      <div class="flex items-start gap-2">
+                          <span class="text-green-400 text-xl">✅</span>
+                          <span class="text-white text-lg">Correct! This sentence uses <strong>zero article</strong>, so we leave the blank empty.</span>
                       </div>
                   </div>
                   `;
@@ -301,7 +380,7 @@ class Question8 {
                           `;
                       }
                   }
-              } else if (answerType === 'article_def_2nd') {
+                } else if (answerType === 'article_def_2nd' || answerType === 'article_def_instrument' || answerType === 'article_instr') {
                   // Sai khi chọn a/an thay vì the
                   if (choice === 'a' || choice === 'an') {
                       feedback = `
@@ -313,6 +392,15 @@ class Question8 {
                       </div>
                       `;
                   }
+                } else if (answerType === 'article_zero') {
+                  feedback = `
+                  <div class="text-left">
+                      <div class="flex items-start gap-2">
+                          <span class="text-red-400 text-xl">❌</span>
+                          <span class="text-white text-lg">This needs <strong>zero article</strong>, so you should choose "( Để trống - Blank )".</span>
+                      </div>
+                  </div>
+                  `;
               }
               
               feedbackArea.innerHTML = feedback;
