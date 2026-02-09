@@ -50,7 +50,7 @@ const DataCacheManager = {
     6: ['vocabulary'],
     7: ['vocabulary'],
     8: ['question_templates', 'nouns', 'adjectives'],
-    9: ['question_templates', 'places'],
+    9: ['question_templates'],
     10: ['question_templates', 'pronouns'],
     11: ['question_templates', 'verbs'],
     12: ['question_templates', 'nouns'],
