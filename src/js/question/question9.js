@@ -3,9 +3,10 @@
 
 class Question9 {
     constructor(opts = {}) {
-        // Dữ liệu được inject từ QuestionManager (fallback)
         this.dataPool = opts.dataPool || {};
         this.templates = this.dataPool.question_templates || [];
+        this.nouns = this.dataPool.nouns || [];
+        this.adjectives = this.dataPool.adjectives || [];
 
         this.containerId = opts.containerId || "questionarea";
         this.onCorrect = opts.onCorrect || null;
@@ -33,93 +34,99 @@ class Question9 {
      */
     randomClockTime() {
         const hour = Math.floor(Math.random() * 12) + 1; // 1 -> 12
-        const meridiem = Math.random() < 0.5 ? "a.m." : "p.m.";
+        const meridiem = Math.random() < 0.5 ? "a.m" : "p.m";
         return `${hour} ${meridiem}`;
     }
 
+    pickRandom(list = []) {
+        if (!Array.isArray(list) || list.length === 0) return null;
+        return list[Math.floor(Math.random() * list.length)];
+    }
+
+    getWord(item) {
+        if (!item) return "";
+        return String(item.word || item.base || item.name || "").trim();
+    }
+
+    resolveCorrectAnswer(template) {
+        const explicit = String(template.correct_answer || template.correct || "").trim().toLowerCase();
+        if (["in", "on", "at"].includes(explicit)) return explicit;
+
+        const answerType = String(template.answer_type || "").trim().toLowerCase();
+        if (!answerType) return "";
+        if (answerType.includes("prep_time_in") || answerType.includes("prep_in") || answerType.endsWith("_in") || answerType === "in") return "in";
+        if (answerType.includes("prep_time_on") || answerType.includes("prep_on") || answerType.endsWith("_on") || answerType === "on") return "on";
+        if (answerType.includes("prep_time_at") || answerType.includes("prep_at") || answerType.endsWith("_at") || answerType === "at") return "at";
+
+        return "";
+    }
+
+    buildBindings(template) {
+        const activeNouns = this.nouns.filter(n => n?.is_active !== false);
+        const activeAdjectives = this.adjectives.filter(a => a?.is_active !== false);
+
+        const nounFromTemplate = this.getWord(template.noun || template.noun_word || template.noun_value);
+        const adjFromTemplate = this.getWord(template.adj || template.adjective || template.adjective_word || template.adj_value);
+
+        return {
+            year: this.randomYear(),
+            day: this.pickRandom(this.days) || "Monday",
+            time: this.randomClockTime(),
+            noun: nounFromTemplate || this.getWord(this.pickRandom(activeNouns)) || "book",
+            adj: adjFromTemplate || this.getWord(this.pickRandom(activeAdjectives)) || "nice"
+        };
+    }
+
+    fillDynamicSlots(text, bindings) {
+        return String(text || "").replace(/\{(\w+)\}/g, (_, key) => {
+            if (bindings[key] === undefined || bindings[key] === null || bindings[key] === "") {
+                return `{${key}}`;
+            }
+            return String(bindings[key]);
+        });
+    }
+
     /**
-     * Ưu tiên template từ DB (grammar_type = prep_time),
-     * nếu chưa có thì fallback về danh sách hard-coded theo yêu cầu.
+      * Luồng chính: template từ dataPool (DB thật).
+     * Fallback legacy: GRAMMAR_CACHE nếu cần giữ tương thích cũ.
      */
     getAvailableTemplates() {
-        const fixedTemplates = [
-            {
-                pattern: "I was born ___ {year}.",
-                correct: "in",
-                viHint: "Tôi được sinh ra vào năm {year}."
-            },
-            {
-                pattern: "We have English ___ {day}.",
-                correct: "on",
-                viHint: "Chúng tôi có môn tiếng Anh vào {day}."
-            },
-            {
-                pattern: "The class starts ___ {time}.",
-                correct: "at",
-                viHint: "Lớp học bắt đầu lúc {time}."
-            },
-            {
-                pattern: "I study ___ the morning.",
-                correct: "in",
-                viHint: "Tôi học vào buổi sáng."
-            },
-            {
-                pattern: "We play football ___ the afternoon.",
-                correct: "in",
-                viHint: "Chúng tôi chơi bóng đá vào buổi chiều."
-            },
-            {
-                pattern: "She checks her phone ___ the evening.",
-                correct: "in",
-                viHint: "Cô ấy kiểm tra điện thoại vào buổi tối."
-            }
-        ];
+        
+        const fromDataPool = (this.templates || []).filter(t =>
+            t.grammar_type === "prep_time" && t.is_active === true
+        );
 
-        // Yêu cầu: đọc template từ GRAMMAR_CACHE.templates và filter grammar_type = prep_time
-        // Giữ fallback dataPool.question_templates để an toàn nếu global cache chưa có.
+        if (fromDataPool.length > 0) {
+            console.debug("[Question9] Using templates from dataPool", {
+                grammarType: "prep_time",
+                count: fromDataPool.length
+            });
+            return fromDataPool;
+        }
+
         const cacheTemplates = (window.GRAMMAR_CACHE && Array.isArray(window.GRAMMAR_CACHE.templates))
             ? window.GRAMMAR_CACHE.templates
             : [];
 
-        const sourceTemplates = cacheTemplates.length > 0 ? cacheTemplates : (this.templates || []);
-
-        const dbTemplates = sourceTemplates.filter(t =>
+        const legacyTemplates = cacheTemplates.filter(t =>
             t.grammar_type === "prep_time" && t.is_active === true
         );
 
-        // Nếu có dữ liệu template hợp lệ trong DB, map về cùng format.
-        if (dbTemplates.length > 0) {
-            const matchedTemplates = dbTemplates
-                .map(t => {
-                    const normalizedPattern = String(t.pattern || "").trim();
-                    const match = fixedTemplates.find(ft => ft.pattern === normalizedPattern);
-                    if (!match) return null;
-                    return {
-                        pattern: match.pattern,
-                        correct: match.correct,
-                        viHint: match.viHint
-                    };
-                })
-                .filter(Boolean);
-
-            // Debug log: kiểm tra đang dùng template từ DB
-            console.debug("[Question9] Using templates from DB (GRAMMAR_CACHE)", {
+        if (legacyTemplates.length > 0) {
+            console.debug("[Question9] Using templates from legacy GRAMMAR_CACHE", {
                 grammarType: "prep_time",
-                totalFiltered: dbTemplates.length,
-                matchedFixedPatterns: matchedTemplates.length
+                count: legacyTemplates.length
             });
 
-            if (matchedTemplates.length > 0) {
-                return matchedTemplates;
-            }
+            return legacyTemplates;
+            
         }
 
-        // Debug log: fallback về hard-coded templates
-        console.debug("[Question9] Using hardcoded templates", {
+        console.debug("[Question9] No prep_time template found", {
             grammarType: "prep_time",
-            reason: "No valid DB template matched fixed patterns"
+            reason: "dataPool and GRAMMAR_CACHE are empty"
         });
-        return fixedTemplates;
+        return [];
     }
 
     async load(enemyType = "normal") {
@@ -131,34 +138,31 @@ class Question9 {
                 throw new Error("Không có template prep_time hợp lệ.");
             }
 
-            // Chọn 1 template ngẫu nhiên.
-            const template = templates[Math.floor(Math.random() * templates.length)];
+            /// Chọn 1 template ngẫu nhiên từ DB.
+            const template = this.pickRandom(templates);
 
-            // Fill slot động theo pattern tương ứng.
-            let sentence = template.pattern;
-            let viHint = template.viHint;
-
-            if (sentence.includes("{year}")) {
-                const year = this.randomYear();
-                sentence = sentence.replace("{year}", year);
-                viHint = viHint.replace("{year}", year);
+            const correct = this.resolveCorrectAnswer(template);
+            if (!correct) {
+                throw new Error("Template prep_time thiếu answer_type/correct_answer hợp lệ (in/on/at).");
             }
 
-            if (sentence.includes("{day}")) {
-                const day = this.days[Math.floor(Math.random() * this.days.length)];
-                sentence = sentence.replace("{day}", day);
-                viHint = viHint.replace("{day}", day);
+            // Pattern tự do từ DB: hỗ trợ slot động như {year}, {day}, {time}, {noun}, {adj}, ...
+            const bindings = this.buildBindings(template);
+
+            let sentence = this.fillDynamicSlots(template.pattern || "", bindings);
+            let viHint = this.fillDynamicSlots(template.vi_hint || template.viHint || "", bindings);
+
+            if (!sentence || sentence.trim() === "") {
+                throw new Error("Template prep_time thiếu pattern.");
             }
 
-            if (sentence.includes("{time}")) {
-                const time = this.randomClockTime();
-                sentence = sentence.replace("{time}", time);
-                viHint = viHint.replace("{time}", time);
+            if (!viHint || viHint.trim() === "") {
+                viHint = "Chọn giới từ thời gian phù hợp.";
             }
 
             this.currentData = {
                 sentence,
-                correct: template.correct,
+                correct,
                 viHint,
                 choices: [...this.choices]
             };
