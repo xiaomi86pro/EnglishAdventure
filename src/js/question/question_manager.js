@@ -49,7 +49,7 @@ const DataCacheManager = {
     5: ['vocabulary'],
     6: ['vocabulary'],
     7: ['vocabulary'],
-    8: ['question_templates', 'nouns', 'adjectives'],
+    8: ['question_templates','subjects','nouns','adjectives',],
     9: ['question_templates'],
     10: ['question_templates', 'pronouns'],
     11: ['question_templates', 'verbs'],
