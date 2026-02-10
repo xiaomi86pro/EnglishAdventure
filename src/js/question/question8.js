@@ -53,6 +53,29 @@ class Question8 {
       return vowels.includes(word.charAt(0).toLowerCase());
   }
 
+  normalizeNounType(nounType) {
+        return String(nounType || '').trim().toLowerCase();
+    }
+
+    isCountableNoun(noun) {
+        if (typeof noun?.countable === 'boolean') return noun.countable;
+        return String(noun?.countable || '').trim().toLowerCase() === 'true';
+    }
+
+    getZeroArticleNounForm(noun) {
+        const nounType = this.normalizeNounType(noun?.noun_type);
+        const word = String(noun?.word || '').trim();
+        const pluralForm = String(noun?.plural_form || '').trim();
+
+        // Zero article: countable noun => plural form, uncountable noun => base word.
+        // Với proper noun thì giữ nguyên từ gốc dù có cờ countable.
+        if (nounType !== 'proper' && this.isCountableNoun(noun)) {
+            return pluralForm || word;
+        }
+
+        return word;
+    }
+
   async load(enemyType = "normal") {
       this._destroyed = false;
       
@@ -89,6 +112,8 @@ class Question8 {
 
           if (preferInstrument) {
               nounCandidates = activeNouns.filter(n => String(n.noun_type || '').trim().toLowerCase() === 'instrument');
+          } else if (answerType === 'article_zero') {
+                nounCandidates = activeNouns.filter(n => this.normalizeNounType(n?.noun_type) !== 'instrument');
           } else {
               nounCandidates = activeNouns.filter(n => String(n.noun_type || '').trim().toLowerCase() !== 'instrument');
           }
@@ -162,7 +187,8 @@ class Question8 {
               correctAnswer = 'the';
             } else if (answerType === 'article_zero') {
               correctAnswer = '';
-              question = question.replace('{noun}', noun.word);
+              const zeroArticleNoun = this.getZeroArticleNounForm(noun);
+              question = question.replace('{noun}', zeroArticleNoun);
               if (hasAdjective && adjective) {
                   question = question.replace('{adj}', adjective.base);
               }
@@ -245,7 +271,7 @@ class Question8 {
       choices.forEach(ch => {
           const btn = document.createElement("button");
           btn.className = "px-12 py-6 bg-white text-slate-800 rounded-2xl font-black text-3xl shadow-md hover:bg-yellow-400 hover:scale-110 transition-all duration-200 border-b-4 border-slate-300 active:border-b-0 active:translate-y-1";
-          btn.innerText = ch === '' ? '( Để trống - Blank )' : ch;
+          btn.innerText = ch === '' ? 'Để trống' : ch;
           btn.onclick = () => this.handleChoice(ch, btn);
           container.appendChild(btn);
       });
@@ -279,7 +305,7 @@ class Question8 {
                       <div class="text-left space-y-2">
                           <div class="flex items-start gap-2">
                               <span class="text-green-400 text-xl">✅</span>
-                              <span class="text-white text-lg">"<strong>${correct}</strong>" is correct because "<strong>${adjective}</strong>" ${isVowel ? 'starts with a vowel sound' : 'starts with a consonant sound'}.</span>
+                              <span class="text-white text-lg">"<strong>${correct}</strong>" is correct because "<strong>${adjective}</strong>" ${isVowel ? 'starts with a vowel sound' : 'starts with a consonant sound (u, e, o, a, i) '}.</span>
                           </div>
                           <div class="flex items-start gap-2">
                               <span class="text-red-400 text-xl">❌</span>
