@@ -16,8 +16,26 @@ class Question9 {
         this.currentData = null;
         this._destroyed = false;
 
-        this.days = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"];
+        this.days = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday",'Saturday','Sunday',"the weekend"];
         this.choices = ["in", "on", "at"];
+        this.timePool = [
+            // clock times
+            "7 a.m",
+            "8 a.m",
+            "9 a.m",
+            "3 p.m",
+            "6 p.m",
+            "8 p.m",
+          
+            // fixed time points
+            "noon",
+            "midnight",
+            "night",
+          
+            // daily events (A1-friendly)
+            "lunchtime",
+            "bedtime"
+          ];
     }
 
     /**
@@ -36,6 +54,10 @@ class Question9 {
         const hour = Math.floor(Math.random() * 12) + 1; // 1 -> 12
         const meridiem = Math.random() < 0.5 ? "a.m" : "p.m";
         return `${hour} ${meridiem}`;
+    }
+
+    randomTime() {
+        return this.timePool[Math.floor(Math.random() * this.timePool.length)];
     }
 
     pickRandom(list = []) {
@@ -71,7 +93,7 @@ class Question9 {
         return {
             year: this.randomYear(),
             day: this.pickRandom(this.days) || "Monday",
-            time: this.randomClockTime(),
+            time: this.randomTime(),
             noun: nounFromTemplate || this.getWord(this.pickRandom(activeNouns)) || "book",
             adj: adjFromTemplate || this.getWord(this.pickRandom(activeAdjectives)) || "nice"
         };
