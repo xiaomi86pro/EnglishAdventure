@@ -27,16 +27,30 @@ class Question8 {
   }
 
   conjugateVerbBySubject(verb, subject) {
-      const person = Number(subject?.person);
-      const numberType = String(subject?.number_type || "").trim().toLowerCase();
-
-      if (person === 3 && numberType === "singular") {
-          if (verb.endsWith('y')) return `${verb.slice(0, -1)}ies`;
-          if (/(s|x|z|ch|sh)$/i.test(verb)) return `${verb}es`;
-          return `${verb}s`;
+    const person = Number(subject?.person);
+    const numberType = String(subject?.number_type || "").trim().toLowerCase();
+  
+    if (person === 3 && numberType === "singular") {
+      // study → studies (phụ âm + y)
+      if (/[bcdfghjklmnpqrstvwxyz]y$/i.test(verb)) {
+        return verb.slice(0, -1) + 'ies';
       }
-
-      return verb;
+  
+      // play → plays (nguyên âm + y)
+      if (/[aeiou]y$/i.test(verb)) {
+        return verb + 's';
+      }
+  
+      // watch → watches, fix → fixes
+      if (/(s|x|z|ch|sh)$/i.test(verb)) {
+        return verb + 'es';
+      }
+  
+      // mặc định
+      return verb + 's';
+    }
+  
+    return verb;
   }
 
   speak(text, lang = "en-US", rate = 0.95) {
