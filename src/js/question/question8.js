@@ -1,5 +1,18 @@
 // js/question/question8.js
 // Question Type 8: Articles (a/an/the) - Class Version
+const ARTICLE_EXPLANATION_VI = {
+    article_indef:
+      'Dùng "<strong>A/AN</strong>" khi nhắc đến một sự vật lần đầu và chưa xác định.',
+  
+    article_def_2nd:
+      'Dùng "<strong>the</strong>" vì "<strong>${noun}</strong>" này đã được nhắc đến trước đó và đã xác định.',
+  
+    article_instr:
+      'Dùng "<strong>the</strong>" trước tên nhạc cụ khi nói về việc chơi hoặc học nhạc cụ.',
+  
+    article_zero:
+      'Để trống bởi vì "<strong>${noun}</strong>" ở số nhiều, mang nghĩa chung hoặc là danh từ không đếm được.'
+  };
 
 class Question8 {
   constructor(opts = {}) {
@@ -24,6 +37,11 @@ class Question8 {
   pickRandom(list = []) {
       if (!Array.isArray(list) || list.length === 0) return null;
       return list[Math.floor(Math.random() * list.length)];
+  }
+
+  formatArticleExplanation(key, values = {}) {
+    const template = ARTICLE_EXPLANATION_VI[key] || '';
+    return template.replace(/\$\{(\w+)\}/g, (_, name) => values[name] ?? '');
   }
 
   conjugateVerbBySubject(verb, subject) {
@@ -319,12 +337,12 @@ class Question8 {
                       <div class="text-left space-y-2">
                           <div class="flex items-start gap-2">
                               <span class="text-green-400 text-xl">✅</span>
-                              <span class="text-white text-lg">"<strong>${correct}</strong>" is correct because "<strong>${adjective}</strong>" ${isVowel ? 'starts with a vowel sound' : 'starts with a consonant sound (u, e, o, a, i) '}.</span>
+                              <span class="text-white text-lg">"<strong>${correct}</strong>" là đúng vì "<strong>${adjective}</strong>" ${isVowel ? 'bắt đầu bằng một nguyên âm (âm u, e, o, a, i)' : 'bắt đầu bằng một phụ âm'}.</span>
                           </div>
                           <div class="flex items-start gap-2">
                               <span class="text-red-400 text-xl">❌</span>
-                              <span class="text-gray-300 text-lg">"The" is not used because this is the first mention.</span>
-                          </div>
+                              <span class="text-gray-300 text-lg">${this.formatArticleExplanation('article_indef')}</span>                          
+                              </div>
                       </div>
                       `;
                   } else {
@@ -334,12 +352,12 @@ class Question8 {
                       <div class="text-left space-y-2">
                           <div class="flex items-start gap-2">
                               <span class="text-green-400 text-xl">✅</span>
-                              <span class="text-white text-lg">"<strong>${correct}</strong>" is correct because "<strong>${noun}</strong>" ${isVowel ? 'starts with a vowel sound' : 'starts with a consonant sound'}.</span>
+                              <span class="text-white text-lg">"<strong>${correct}</strong>" là đúng vì "<strong>${noun}</strong>" ${isVowel ? 'bắt đầu bằng một nguyên âm (âm u, e, o, a, i)' : 'bắt đầu bằng một phụ âm'}.</span>
                           </div>
                           <div class="flex items-start gap-2">
                               <span class="text-red-400 text-xl">❌</span>
-                              <span class="text-gray-300 text-lg">"The" is not used because this is the first mention.</span>
-                          </div>
+                              <span class="text-gray-300 text-lg">${this.formatArticleExplanation('article_indef')}</span>                          
+                              </div>
                       </div>
                       `;
                   }
@@ -349,11 +367,11 @@ class Question8 {
                   <div class="text-left space-y-2">
                       <div class="flex items-start gap-2">
                           <span class="text-green-400 text-xl">✅</span>
-                          <span class="text-white text-lg">"<strong>The</strong>" is correct because this is the second mention of the noun.</span>
+                          <span class="text-white text-lg">${this.formatArticleExplanation('article_def_2nd', { noun })}</span>                      
                       </div>
                       <div class="flex items-start gap-2">
                           <span class="text-red-400 text-xl">❌</span>
-                          <span class="text-gray-300 text-lg">"A/An" is only used for the first mention.</span>
+                          <span class="text-gray-300 text-lg">"A/An" chỉ được dùng cho lần nhắc đến đầu tiên.</span>
                       </div>
                   </div>
                   `;
@@ -362,7 +380,7 @@ class Question8 {
                   <div class="text-left space-y-2">
                       <div class="flex items-start gap-2">
                           <span class="text-green-400 text-xl">✅</span>
-                          <span class="text-white text-lg">Correct! This sentence uses <strong>zero article</strong>, so we leave the blank empty.</span>
+                          <span class="text-white text-lg">${this.formatArticleExplanation('article_zero', { noun })}</span>                      
                       </div>
                   </div>
                   `;
@@ -392,7 +410,7 @@ class Question8 {
                       <div class="text-left">
                           <div class="flex items-start gap-2">
                               <span class="text-red-400 text-xl">❌</span>
-                              <span class="text-white text-lg">We don't use "<strong>the</strong>" here because this is the first time the noun is mentioned and it is not specific.</span>
+                              <span class="text-white text-lg">${this.formatArticleExplanation('article_indef')}</span>                          
                           </div>
                       </div>
                       `;
@@ -404,7 +422,7 @@ class Question8 {
                           <div class="text-left">
                               <div class="flex items-start gap-2">
                                   <span class="text-red-400 text-xl">❌</span>
-                                  <span class="text-white text-lg">"<strong>${choice}</strong>" is wrong. Use "<strong>${correct}</strong>" because "<strong>${adjective}</strong>" ${isVowel ? 'starts with a vowel sound' : 'starts with a consonant sound'}.</span>
+                                  <span class="text-white text-lg">"<strong>${choice}</strong>" là sai. Dùng "<strong>${correct}</strong>" bởi vì "<strong>${adjective}</strong>" ${isVowel ? 'bắt đầu bằng một nguyên âm (âm u, e, o, a, i)' : 'bắt đầu bằng một phụ âm'}.</span>
                               </div>
                           </div>
                           `;
@@ -414,7 +432,7 @@ class Question8 {
                           <div class="text-left">
                               <div class="flex items-start gap-2">
                                   <span class="text-red-400 text-xl">❌</span>
-                                  <span class="text-white text-lg">"<strong>${choice}</strong>" is wrong. Use "<strong>${correct}</strong>" because "<strong>${noun}</strong>" ${isVowel ? 'starts with a vowel sound' : 'starts with a consonant sound'}.</span>
+                                  <span class="text-white text-lg">"<strong>${choice}</strong>" là sai. Use "<strong>${correct}</strong>" bởi vì "<strong>${noun}</strong>" ${isVowel ? 'bắt đầu bằng một nguyên âm (âm u, e, o, a, i)' : 'bắt đầu bằng một phụ âm'}.</span>
                               </div>
                           </div>
                           `;
@@ -427,7 +445,7 @@ class Question8 {
                       <div class="text-left">
                           <div class="flex items-start gap-2">
                               <span class="text-red-400 text-xl">❌</span>
-                              <span class="text-white text-lg">We must use "<strong>the</strong>" here because this is the second mention of the noun. The noun is now specific.</span>
+                              <span class="text-white text-lg">${answerType === 'article_instr' ? this.formatArticleExplanation('article_instr') : this.formatArticleExplanation('article_def_2nd', { noun })}</span>
                           </div>
                       </div>
                       `;
@@ -437,7 +455,7 @@ class Question8 {
                   <div class="text-left">
                       <div class="flex items-start gap-2">
                           <span class="text-red-400 text-xl">❌</span>
-                          <span class="text-white text-lg">This needs <strong>zero article</strong>, so you should choose "( Để trống - Blank )".</span>
+                          <span class="text-white text-lg">${this.formatArticleExplanation('article_zero', { noun })}</span>                      
                       </div>
                   </div>
                   `;
