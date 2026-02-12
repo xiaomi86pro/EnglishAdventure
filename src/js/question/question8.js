@@ -325,136 +325,53 @@ class Question8 {
       });
   }
 
-  renderFeedbackPanel(items = []) {
-    return `
-    <div class="text-left space-y-2">
-        ${items.map(item => `
-            <div class="flex items-start gap-2">
-                <span class="${item.iconClass} text-xl">${item.icon}</span>
-                <span class="${item.textClass} text-lg">${item.text}</span>
-            </div>
-        `).join('')}
-    </div>
-    `;
-    }
-
-    getIndefiniteUsageText(article, word) {
-        const isVowel = this.isVowelSound(word);
-        return `"<strong>${article}</strong>" ${isVowel
-            ? `đúng vì "<strong>${word}</strong>" bắt đầu bằng một nguyên âm (âm u, e, o, a, i).`
-            : `đúng vì "<strong>${word}</strong>" bắt đầu bằng một phụ âm.`}`;
-    }
-
-    getIndefiniteCorrectionText(choice, correct, word) {
-        const isVowel = this.isVowelSound(word);
-        return `"<strong>${choice}</strong>" là sai. Dùng "<strong>${correct}</strong>" bởi vì "<strong>${word}</strong>" ${isVowel
-            ? 'bắt đầu bằng một nguyên âm (âm u, e, o, a, i)'
-            : 'bắt đầu bằng một phụ âm'}.`;
-    }
-
-    getCorrectFeedbackHTML(answerType, data) {
-        const { noun, adjective, hasAdjective, correct } = data;
-
-        if (answerType === 'article_indef') {
-            const targetWord = hasAdjective && adjective ? adjective : noun;
-            return this.renderFeedbackPanel([
-                {
-                    icon: '✅',
-                    iconClass: 'text-green-400',
-                    textClass: 'text-white',
-                    text: this.getIndefiniteUsageText(correct, targetWord)
-                },
-                {
-                    icon: '❌',
-                    iconClass: 'text-red-400',
-                    textClass: 'text-gray-300',
-                    text: this.formatArticleExplanation('wrong', 'article_indef')
-                }
-            ]);
-        }
-
-        if (answerType === 'article_def_2nd' || answerType === 'article_instr') {
-            const isInstrument = answerType === 'article_instr';
-            return this.renderFeedbackPanel([
-                {
-                    icon: '✅',
-                    iconClass: 'text-green-400',
-                    textClass: 'text-white',
-                    text: this.formatArticleExplanation('correct', isInstrument ? 'article_instr' : 'article_def_2nd', { noun })
-                },
-            ]);
-        }
-
-        if (answerType === 'article_zero') {
-            return this.renderFeedbackPanel([
-                {
-                    icon: '✅',
-                    iconClass: 'text-green-400',
-                    textClass: 'text-white',
-                    text: this.formatArticleExplanation('correct', 'article_zero', { noun })
-                },
-                {
-                    icon: '❌',
-                    iconClass: 'text-red-400',
-                    textClass: 'text-gray-300',
-                    text: this.formatArticleExplanation('wrong', 'article_zero', { noun })
-                }
-            ]);
-        }
-
-        return '';
-    }
-
-    getWrongFeedbackHTML(answerType, data) {
-        const { choice, correct, noun, adjective, hasAdjective } = data;
-
-        if (answerType === 'article_indef') {
-            if (choice === 'the') {
-                return this.renderFeedbackPanel([
-                    {
-                        icon: '❌',
-                        iconClass: 'text-red-400',
-                        textClass: 'text-white',
-                        text: this.formatArticleExplanation('wrong', 'article_indef')
-                    }
-                ]);
+    buildArticleFeedback({ isCorrect, answerType, noun, adjective, correct, choice }) {
+        const section = isCorrect ? 'correct' : 'wrong';
+  
+        // Chuẩn hóa answerType
+        const normalizedType =
+            answerType === 'article_def_instrument'
+                ? 'article_instr'
+                : answerType;
+  
+        // Trường hợp a/an cần xử lý vowel riêng
+        if (normalizedType === 'article_indef') {
+            const word = adjective || noun;
+            const isVowel = this.isVowelSound(word);
+  
+            if (isCorrect) {
+                return `
+                <div class="flex items-start gap-2">
+                    <span class="text-green-400 text-xl">✅</span>
+                    <span class="text-white text-lg">
+                        "<strong>${correct}</strong>" là đúng vì "<strong>${word}</strong>"
+                        ${isVowel ? 'bắt đầu bằng nguyên âm.' : 'bắt đầu bằng phụ âm.'}
+                    </span>
+                </div>
+                `;
             }
-
-            const targetWord = hasAdjective && adjective ? adjective : noun;
-            return this.renderFeedbackPanel([
-                {
-                    icon: '❌',
-                    iconClass: 'text-red-400',
-                    textClass: 'text-white',
-                    text: this.getIndefiniteCorrectionText(choice, correct, targetWord)
-                }
-            ]);
+            return `
+            <div class="flex items-start gap-2">
+                <span class="text-red-400 text-xl">❌</span>
+                <span class="text-white text-lg">
+                    "<strong>${choice}</strong>" sai. Phải dùng "<strong>${correct}</strong>"
+                    vì "<strong>${word}</strong>"
+                    ${isVowel ? 'bắt đầu bằng nguyên âm.' : 'bắt đầu bằng phụ âm.'}
+                </span>
+            </div>
+            `;
         }
-
-        if ((answerType === 'article_def_2nd' || answerType === 'article_instr') && (choice === 'a' || choice === 'an')) {
-            const key = answerType === 'article_instr' ? 'article_instr' : 'article_def_2nd';
-            return this.renderFeedbackPanel([
-                {
-                    icon: '❌',
-                    iconClass: 'text-red-400',
-                    textClass: 'text-white',
-                    text: this.formatArticleExplanation('wrong', key, { noun })
-                }
-            ]);
-        }
-
-        if (answerType === 'article_zero') {
-            return this.renderFeedbackPanel([
-                {
-                    icon: '❌',
-                    iconClass: 'text-red-400',
-                    textClass: 'text-white',
-                    text: this.formatArticleExplanation('wrong', 'article_zero', { noun })
-                }
-            ]);
-        }
-
-        return '';
+        // Các loại còn lại dùng object chuẩn
+      return `
+      <div class="flex items-start gap-2">
+          <span class="${isCorrect ? 'text-green-400' : 'text-red-400'} text-xl">
+              ${isCorrect ? '✅' : '❌'}
+          </span>
+          <span class="text-white text-lg">
+              ${this.formatArticleExplanation(section, normalizedType, { noun })}
+          </span>
+      </div>
+      `;
     }
 
   handleChoice(choice, btnEl) {
@@ -463,24 +380,25 @@ class Question8 {
       const answerType = this.currentData.answerType;
       const noun = this.currentData.noun;
       const adjective = this.currentData.adjective;
-      const hasAdjective = this.currentData.hasAdjective;
       const feedbackArea = document.getElementById("feedback-area");
+      const isCorrect =
+        String(choice).trim().toLowerCase() ===
+        String(correct).trim().toLowerCase();
 
-      const feedbackPayload = {
-        choice,
-        correct,
-        noun,
-        adjective,
-        hasAdjective
-      };
-
-      if (String(choice).trim().toLowerCase() === String(correct).trim().toLowerCase()) {
-
+        if (isCorrect) {
+    
         btnEl.classList.remove("bg-white", "text-slate-800", "hover:bg-yellow-400");
           btnEl.classList.add("bg-green-500", "text-white", "border-green-700");
           
           if (feedbackArea) {
-            feedbackArea.innerHTML = this.getCorrectFeedbackHTML(answerType, feedbackPayload);
+            feedbackArea.innerHTML = this.buildArticleFeedback({
+                isCorrect,
+                answerType,
+                noun,
+                adjective,
+                correct,
+                choice
+            });            
             this.speak(this.currentData.fullSentence);
           }   
           if (typeof this.onCorrect === "function") {
@@ -491,9 +409,15 @@ class Question8 {
           btnEl.classList.add("bg-red-500", "text-white", "border-red-700", "animate-shake");
           
           if (feedbackArea) {
-            feedbackArea.innerHTML = this.getWrongFeedbackHTML(answerType, feedbackPayload);      
-          }
-          
+            feedbackArea.innerHTML = this.buildArticleFeedback({
+                isCorrect,
+                answerType,
+                noun,
+                adjective,
+                correct,
+                choice
+            });
+            }
           if (typeof this.onWrong === "function") {
               this.onWrong();
           }
