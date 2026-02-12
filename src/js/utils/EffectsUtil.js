@@ -420,7 +420,7 @@ class EffectsUtil {
             const coin = DOMUtil.createElement('img', {
                 className: 'coin',
                 attributes: {
-                    src: './icon/Coin.png',
+                    src: '/icon/Coin.png',
                     alt: 'coin'
                 },
                 styles: {
