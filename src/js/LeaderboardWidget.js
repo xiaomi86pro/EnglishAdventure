@@ -73,7 +73,7 @@ export class LeaderboardWidget {
                             <div class="flex items-center gap-2 text-[10px]">
                                 <span class="text-blue-300/70 font-bold text-2xl">⚡0</span>
                                 <span class="text-yellow-300/70 font-bold text-2xl" style="text-shadow: 2px 2px 0 #000, -2px -2px 0 #000, 2px -2px 0 #000, -2px 2px 0 #000, 0 2px 0 #000, 2px 0 0 #000, 0 -2px 0 #000, -2px 0 0 #000;">
-                                    <img src="./public/icon/Coin.png" alt="coin" class="inline-block align-middle mr-1" style="width: 1.2em; height: 1.2em;" />0
+                                    <img src="./icon/Coin.png" alt="coin" class="inline-block align-middle mr-1" style="width: 1.2em; height: 1.2em;" />0
                                 </span>
                             </div>
                         </div>
