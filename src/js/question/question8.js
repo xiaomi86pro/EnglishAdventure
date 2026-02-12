@@ -87,15 +87,6 @@ class Question8 {
     return verb;
   }
 
-  speak(text, lang = "en-US", rate = 0.95) {
-      if (!window.speechSynthesis || this._destroyed) return;
-      try { window.speechSynthesis.cancel(); } catch (e) { }
-      const u = new SpeechSynthesisUtterance(text);
-      u.lang = lang;
-      u.rate = rate;
-      window.speechSynthesis.speak(u);
-  }
-
   isVowelSound(word) {
       const vowels = ['a', 'e', 'i', 'o', 'u'];
       return vowels.includes(word.charAt(0).toLowerCase());
@@ -399,7 +390,7 @@ class Question8 {
                 correct,
                 choice
             });            
-            this.speak(this.currentData.fullSentence);
+            window.speak?.(this.currentData.fullSentence, { lang: "en-US", rate: 0.95 });
           }   
           if (typeof this.onCorrect === "function") {
               this.onCorrect(1);
@@ -452,7 +443,7 @@ class Question8 {
 
   destroy() {
       this._destroyed = true;
-      try { window.speechSynthesis.cancel(); } catch (e) { }
+      window.stopSpeak?.();
       const area = document.getElementById(this.containerId);
       if (area) area.innerHTML = "";
       this.currentData = null;

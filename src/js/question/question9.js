@@ -244,7 +244,7 @@ class Question9 {
                 this.onCorrect(1);
             }
 
-            this.speakSentence();
+            window.speakSentenceWithBlank?.(this.currentData.sentence, this.currentData.correct, { lang: "en-US", rate: 0.95 });
         } else {
             btnEl.classList.remove("bg-white", "text-slate-800", "hover:bg-yellow-400");
             btnEl.classList.add("bg-red-500", "text-white", "border-red-700", "animate-shake");
@@ -252,29 +252,6 @@ class Question9 {
             if (typeof this.onWrong === "function") {
                 this.onWrong();
             }
-        }
-    }
-
-    /**
-     * Đọc câu hoàn chỉnh bằng cách thay ___ bằng đáp án đúng.
-     * Ưu tiên dùng helper speak() toàn cục nếu có.
-     */
-    speakSentence() {
-        if (!this.currentData || this._destroyed) return;
-
-        const fullSentence = String(this.currentData.sentence || "").replace("___", this.currentData.correct);
-
-        if (typeof window.speak === "function") {
-            window.speak(fullSentence);
-            return;
-        }
-
-        if (window.speechSynthesis) {
-            try { window.speechSynthesis.cancel(); } catch (e) { }
-            const u = new SpeechSynthesisUtterance(fullSentence);
-            u.lang = "en-US";
-            u.rate = 0.95;
-            window.speechSynthesis.speak(u);
         }
     }
 
@@ -306,7 +283,7 @@ class Question9 {
 
     destroy() {
         this._destroyed = true;
-        try { window.speechSynthesis.cancel(); } catch (e) { }
+        window.stopSpeak?.();        
         const area = document.getElementById(this.containerId);
         if (area) area.innerHTML = "";
         this.currentData = null;

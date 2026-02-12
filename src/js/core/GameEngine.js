@@ -189,6 +189,7 @@ const GameEngine = {
     _initManagers() {
         // Audio
         this.audioManager = new AudioManager({ sfxPoolSize: 8 });
+        this.audioManager.bindGlobalSpeechHelpers();
 
         // Sound registry (Supabase-backed)
         this.soundRegistry = new SoundRegistry({

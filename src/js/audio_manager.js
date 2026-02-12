@@ -202,11 +202,56 @@ export default class AudioManager {
     }
   
     destroy() {
+      this.stopSpeech();
       this.stopAll();
       this.sfxPool.length = 0;
       this.bgm = null;
       this.bgmSrc = null;
       this.unlocked = false;
+    }
+
+    stopSpeech() {
+      if (!window.speechSynthesis) return;
+      try { window.speechSynthesis.cancel(); } catch (e) {}
+    }
+
+    speak(text, { lang = 'en-US', rate = 0.95, cancelPrevious = true } = {}) {
+      const normalized = String(text || '').trim();
+      if (!normalized || !window.speechSynthesis) return false;
+
+      if (cancelPrevious) this.stopSpeech();
+
+      try {
+        const u = new SpeechSynthesisUtterance(normalized);
+        u.lang = lang;
+        u.rate = rate;
+        window.speechSynthesis.speak(u);
+        return true;
+      } catch (e) {
+        console.warn('TTS speak error', e);
+        return false;
+      }
+    }
+
+    speakSentenceWithBlank(sentence, answer = '', options = {}) {
+      const { blank = '___', lang = 'en-US', rate = 0.95, cancelPrevious = true } = options;
+      const sentenceText = String(sentence || '');
+      const answerText = String(answer || '').trim();
+      const blankToken = String(blank || '___');
+
+      const fullSentence = sentenceText
+        .replaceAll(blankToken, answerText ? `${answerText} ` : '')
+        .replace(/\s+/g, ' ')
+        .trim();
+
+      return this.speak(fullSentence, { lang, rate, cancelPrevious });
+    }
+
+    bindGlobalSpeechHelpers() {
+      window.speak = (text, options = {}) => this.speak(text, options);
+      window.speakSentenceWithBlank = (sentence, answer = '', options = {}) =>
+        this.speakSentenceWithBlank(sentence, answer, options);
+      window.stopSpeak = () => this.stopSpeech();
     }
   }
   
