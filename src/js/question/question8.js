@@ -1,17 +1,33 @@
 // js/question/question8.js
 // Question Type 8: Articles (a/an/the) - Class Version
 const ARTICLE_EXPLANATION_VI = {
-    article_indef:
-      'Dùng "<strong>A/AN</strong>" khi nhắc đến một sự vật lần đầu và chưa xác định.',
+    correct: {
+      article_indef:
+        'Đúng vì dùng "<strong>A/AN</strong>" khi nhắc đến một sự vật lần đầu và chưa xác định.',
   
-    article_def_2nd:
-      'Dùng "<strong>the</strong>" vì "<strong>${noun}</strong>" này đã được nhắc đến trước đó và đã xác định.',
+      article_def_2nd:
+        'Đúng vì dùng "<strong>the</strong>" khi "<strong>${noun}</strong>" đã được nhắc đến trước đó và đã xác định.',
   
-    article_instr:
-      'Dùng "<strong>the</strong>" trước tên nhạc cụ khi nói về việc chơi hoặc học nhạc cụ.',
+      article_instr:
+        'Đúng vì dùng "<strong>the</strong>" trước tên nhạc cụ khi nói về việc chơi hoặc học nhạc cụ.',
   
-    article_zero:
-      'Để trống bởi vì "<strong>${noun}</strong>" ở số nhiều, mang nghĩa chung hoặc là danh từ không đếm được.'
+      article_zero:
+        'Đúng vì để trống với "<strong>${noun}</strong>" khi danh từ ở số nhiều, mang nghĩa chung hoặc là danh từ không đếm được.'
+    },
+  
+    wrong: {
+      article_indef:
+        'Sai vì không dùng "<strong>the</strong>" khi đây là lần đầu nhắc đến và chưa xác định.',
+  
+      article_def_2nd:
+        'Sai vì ở đây phải dùng "<strong>the</strong>" do "<strong>${noun}</strong>" đã được nhắc đến trước đó.',
+  
+      article_instr:
+        'Sai vì trước tên nhạc cụ (khi nói chơi/học nhạc cụ) cần dùng "<strong>the</strong>".',
+  
+      article_zero:
+        'Sai vì trường hợp này cần để trống (zero article) với "<strong>${noun}</strong>".'
+    }
   };
 
 class Question8 {
@@ -39,10 +55,10 @@ class Question8 {
       return list[Math.floor(Math.random() * list.length)];
   }
 
-  formatArticleExplanation(key, values = {}) {
-    const template = ARTICLE_EXPLANATION_VI[key] || '';
+  formatArticleExplanation(section, key, values = {}) {
+    const template = ARTICLE_EXPLANATION_VI[section]?.[key] || '';
     return template.replace(/\$\{(\w+)\}/g, (_, name) => values[name] ?? '');
-  }
+}
 
   conjugateVerbBySubject(verb, subject) {
     const person = Number(subject?.person);
@@ -341,8 +357,7 @@ class Question8 {
                           </div>
                           <div class="flex items-start gap-2">
                               <span class="text-red-400 text-xl">❌</span>
-                              <span class="text-gray-300 text-lg">${this.formatArticleExplanation('article_indef')}</span>                          
-                              </div>
+                              <span class="text-gray-300 text-lg">${this.formatArticleExplanation('wrong', 'article_indef')}</span>                              </div>
                       </div>
                       `;
                   } else {
@@ -356,8 +371,7 @@ class Question8 {
                           </div>
                           <div class="flex items-start gap-2">
                               <span class="text-red-400 text-xl">❌</span>
-                              <span class="text-gray-300 text-lg">${this.formatArticleExplanation('article_indef')}</span>                          
-                              </div>
+                              <span class="text-gray-300 text-lg">${this.formatArticleExplanation('wrong', 'article_indef')}</span>                              </div>
                       </div>
                       `;
                   }
@@ -367,12 +381,10 @@ class Question8 {
                   <div class="text-left space-y-2">
                       <div class="flex items-start gap-2">
                           <span class="text-green-400 text-xl">✅</span>
-                          <span class="text-white text-lg">${this.formatArticleExplanation('article_def_2nd', { noun })}</span>                      
-                      </div>
+                          <span class="text-white text-lg">${answerType === 'article_instr' ? this.formatArticleExplanation('correct', 'article_instr') : this.formatArticleExplanation('correct', 'article_def_2nd', { noun })}</span>                      </div>
                       <div class="flex items-start gap-2">
                           <span class="text-red-400 text-xl">❌</span>
-                          <span class="text-gray-300 text-lg">"A/An" chỉ được dùng cho lần nhắc đến đầu tiên.</span>
-                      </div>
+                          <span class="text-gray-300 text-lg">${answerType === 'article_instr' ? this.formatArticleExplanation('wrong', 'article_instr') : this.formatArticleExplanation('wrong', 'article_def_2nd', { noun })}</span>                      </div>
                   </div>
                   `;
                 } else if (answerType === 'article_zero') {
@@ -380,8 +392,11 @@ class Question8 {
                   <div class="text-left space-y-2">
                       <div class="flex items-start gap-2">
                           <span class="text-green-400 text-xl">✅</span>
-                          <span class="text-white text-lg">${this.formatArticleExplanation('article_zero', { noun })}</span>                      
-                      </div>
+                          <span class="text-white text-lg">${this.formatArticleExplanation('correct', 'article_zero', { noun })}</span>
+                          </div>
+                          <div class="flex items-start gap-2">
+                              <span class="text-red-400 text-xl">❌</span>
+                              <span class="text-gray-300 text-lg">${this.formatArticleExplanation('wrong', 'article_zero', { noun })}</span>                      </div>
                   </div>
                   `;
               }
@@ -410,8 +425,7 @@ class Question8 {
                       <div class="text-left">
                           <div class="flex items-start gap-2">
                               <span class="text-red-400 text-xl">❌</span>
-                              <span class="text-white text-lg">${this.formatArticleExplanation('article_indef')}</span>                          
-                          </div>
+                              <span class="text-white text-lg">${this.formatArticleExplanation('wrong', 'article_indef')}</span>                          </div>
                       </div>
                       `;
                   } else {
@@ -445,8 +459,7 @@ class Question8 {
                       <div class="text-left">
                           <div class="flex items-start gap-2">
                               <span class="text-red-400 text-xl">❌</span>
-                              <span class="text-white text-lg">${answerType === 'article_instr' ? this.formatArticleExplanation('article_instr') : this.formatArticleExplanation('article_def_2nd', { noun })}</span>
-                          </div>
+                              <span class="text-white text-lg">${answerType === 'article_instr' ? this.formatArticleExplanation('wrong', 'article_instr') : this.formatArticleExplanation('wrong', 'article_def_2nd', { noun })}</span>                          </div>
                       </div>
                       `;
                   }
@@ -455,8 +468,7 @@ class Question8 {
                   <div class="text-left">
                       <div class="flex items-start gap-2">
                           <span class="text-red-400 text-xl">❌</span>
-                          <span class="text-white text-lg">${this.formatArticleExplanation('article_zero', { noun })}</span>                      
-                      </div>
+                          <span class="text-white text-lg">${this.formatArticleExplanation('wrong', 'article_zero', { noun })}</span>                      </div>
                   </div>
                   `;
               }
