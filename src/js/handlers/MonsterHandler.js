@@ -177,7 +177,7 @@ class MonsterHandler {
                 state: 'idle',
                 isDead: false,
                 hasDroppedReward: false,
-                sprite_url: '/icon/Coin.png',
+                sprite_url: getIcon('Coin'),
                 questionType: GameConfig.getDefaultQuestionType(randomMonster.type)
             };
 

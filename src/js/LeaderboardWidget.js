@@ -4,6 +4,7 @@
  */
 
 import DOMUtil from '@/js/utils/DOMUtil.js';
+import { getIcon } from "@/js/utils/iconLoader.js";
 
 export class LeaderboardWidget {
     constructor(supabase) {
@@ -57,6 +58,7 @@ export class LeaderboardWidget {
      */
     _renderList(players) {
         const list = DOMUtil.getById('leaderboard-list');
+
         if (!list) return;
 
         const top10 = Array.from({ length: 10 }, (_, index) => players[index] || null);
@@ -73,7 +75,7 @@ export class LeaderboardWidget {
                             <div class="flex items-center gap-2 text-[10px]">
                                 <span class="text-blue-300/70 font-bold text-2xl">⚡0</span>
                                 <span class="text-yellow-300/70 font-bold text-2xl" style="text-shadow: 2px 2px 0 #000, -2px -2px 0 #000, 2px -2px 0 #000, -2px 2px 0 #000, 0 2px 0 #000, 2px 0 0 #000, 0 -2px 0 #000, -2px 0 0 #000;">
-                                    <img src="/icon/Coin.png" alt="coin" class="inline-block align-middle mr-1" style="width: 1.2em; height: 1.2em;" />0
+                                    <img src="${getIcon('Coin')}"  alt="coin" class="inline-block align-middle mr-1" style="width: 1.2em; height: 1.2em;" />
                                 </span>
                             </div>
                         </div>
@@ -109,7 +111,7 @@ export class LeaderboardWidget {
                             ${player.level}
                             </span>
                             <span class="flex items-center gap-1 text-yellow-300 font-bold text-2xl leading-none">
-                            <img src="/icon/Coin.png" alt="coin" class="w-6 h-6 shrink-0"/>                            
+                            <img src="${getIcon('Coin')}"  alt="coin" class="w-6 h-6 shrink-0"/>                            
                             <span class="leading-none" style="text-shadow: 2px 2px 0 #000, -2px -2px 0 #000, 2px -2px 0 #000, -2px 2px 0 #000, 0 2px 0 #000, 2px 0 0 #000, 0 -2px 0 #000, -2px 0 0 #000;">
                             ${player.coin || 0}
                             </span>

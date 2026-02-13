@@ -5,6 +5,7 @@
 
 import GameConfig from '../core/GameConfig.js';
 import DOMUtil from './DOMUtil.js';
+import { getIcon } from "@/js/utils/iconLoader.js";
 
 class EffectsUtil {
     constructor(audioManager) {
@@ -420,7 +421,7 @@ class EffectsUtil {
             const coin = DOMUtil.createElement('img', {
                 className: 'coin',
                 attributes: {
-                    src: '/icon/Coin.png',
+                    src: getIcon('Coin'),
                     alt: 'coin'
                 },
                 styles: {
